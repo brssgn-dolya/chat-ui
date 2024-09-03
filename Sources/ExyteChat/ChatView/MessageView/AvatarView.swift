@@ -35,6 +35,7 @@ struct AvatarView_Previews: PreviewProvider {
     static var previews: some View {
         AvatarView(
             url: URL(string: "https://placeimg.com/640/480/sepia"),
+            cachedImage: nil,
             avatarSize: 32
         )
     }
