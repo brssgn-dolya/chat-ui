@@ -26,7 +26,7 @@ struct ChatMessageView<MessageContent: View>: View {
 
     var body: some View {
         Group {
-            if let messageBuilder = messageBuilder {
+            if let messageBuilder = messageBuilder, row.message.type != .text {
                 messageBuilder(
                     row.message,
                     row.positionInUserGroup,
