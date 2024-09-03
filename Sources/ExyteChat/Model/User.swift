@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import UIKit
 
 public struct User: Codable, Identifiable, Hashable {
     public let id: String
