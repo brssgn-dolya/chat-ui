@@ -55,6 +55,8 @@ public struct Message: Identifiable, Hashable {
     public var replyMessage: ReplyMessage?
 
     public var triggerRedraw: UUID?
+    
+    public var type: MessageType
 
     public init(id: String,
                 user: User,
@@ -63,7 +65,8 @@ public struct Message: Identifiable, Hashable {
                 text: String = "",
                 attachments: [Attachment] = [],
                 recording: Recording? = nil,
-                replyMessage: ReplyMessage? = nil) {
+                replyMessage: ReplyMessage? = nil,
+                type: MessageType = .text) {
 
         self.id = id
         self.user = user
@@ -73,6 +76,7 @@ public struct Message: Identifiable, Hashable {
         self.attachments = attachments
         self.recording = recording
         self.replyMessage = replyMessage
+        self.type = type
     }
 
     public static func makeMessage(
@@ -116,6 +120,17 @@ extension Message: Equatable {
         lhs.attachments == rhs.attachments &&
         lhs.recording == rhs.recording &&
         lhs.replyMessage == rhs.replyMessage
+    }
+}
+
+extension Message {
+    enum MessageType: String {
+        case status
+        case text
+        case geo
+        case file
+        case url
+        case call
     }
 }
 
