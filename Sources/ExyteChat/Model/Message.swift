@@ -124,7 +124,7 @@ extension Message: Equatable {
 }
 
 extension Message {
-    enum MessageType: String {
+    public enum MessageType: String {
         case status
         case text
         case geo
