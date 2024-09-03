@@ -176,7 +176,7 @@ struct MessageView: View {
     var avatarView: some View {
         Group {
             if showAvatar {
-                AvatarView(url: message.user.avatarURL, avatarSize: avatarSize)
+                AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
                     .contentShape(Circle())
                     .onTapGesture {
                         tapAvatarClosure?(message.user, message.id)

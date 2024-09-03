@@ -7,18 +7,27 @@ import SwiftUI
 struct AvatarView: View {
 
     let url: URL?
+    let cachedImage: UIImage?
     let avatarSize: CGFloat
 
     var body: some View {
-        CachedAsyncImage(url: url, urlCache: .imageCache) { image in
-            image
+        if let cachedImage = cachedImage {
+            Image(uiImage: cachedImage)
                 .resizable()
                 .scaledToFill()
-        } placeholder: {
-            Rectangle().fill(Color.gray)
+                .viewSize(avatarSize)
+                .clipShape(Circle())
+        } else {
+            CachedAsyncImage(url: url, urlCache: .imageCache) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                Rectangle().fill(Color.gray)
+            }
+            .viewSize(avatarSize)
+            .clipShape(Circle())
         }
-        .viewSize(avatarSize)
-        .clipShape(Circle())
     }
 }
 
