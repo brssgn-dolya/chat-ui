@@ -80,8 +80,18 @@ final class RecordingPlayer: ObservableObject {
         NotificationCenter.default.removeObserver(self)
         timeObserver = nil
         player?.replaceCurrentItem(with: nil)
-
-        let playerItem = AVPlayerItem(url: url)
+        
+        let playerItem: AVPlayerItem
+        
+        if let mimeType = recording?.mimeType {
+            let asset = AVURLAsset(url: url, options: [
+                "AVURLAssetOutOfBandMIMETypeKey": mimeType
+            ])
+            playerItem = AVPlayerItem(asset: asset)
+        } else {
+            playerItem = AVPlayerItem(url: url)
+        }
+        
         player = AVPlayer(playerItem: playerItem)
 
         NotificationCenter.default.addObserver(
