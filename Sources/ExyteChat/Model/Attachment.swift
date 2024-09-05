@@ -34,13 +34,15 @@ public struct Attachment: Codable, Identifiable, Hashable {
     public let full: URL
     public let type: AttachmentType
     public let aspectRatio: CGFloat?
+    public let mimeType: String?
 
-    public init(id: String, thumbnail: URL, full: URL, type: AttachmentType, aspectRatio: CGFloat? = nil) {
+    public init(id: String, thumbnail: URL, full: URL, type: AttachmentType, aspectRatio: CGFloat? = nil, mimeType: String? = nil) {
         self.id = id
         self.thumbnail = thumbnail
         self.full = full
         self.type = type
         self.aspectRatio = aspectRatio
+        self.mimeType = mimeType
     }
 
     public init(id: String, url: URL, type: AttachmentType) {

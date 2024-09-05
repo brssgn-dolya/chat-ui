@@ -24,7 +24,18 @@ final class VideoViewModel: ObservableObject {
 
     func onStart() {
         if player == nil {
-            self.player = AVPlayer(url: attachment.full)
+            let playerItem: AVPlayerItem
+            
+            if let mimeType = attachment.mimeType {
+                let asset = AVURLAsset(url: attachment.full, options: [
+                    "AVURLAssetOutOfBandMIMETypeKey": mimeType
+                ])
+                playerItem = AVPlayerItem(asset: asset)
+            } else {
+                playerItem = AVPlayerItem(url: attachment.full)
+            }
+            
+            self.player = AVPlayer(playerItem: playerItem)
             self.player?.publisher(for: \.status)
                 .assign(to: &$status)
 
