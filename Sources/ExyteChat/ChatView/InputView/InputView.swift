@@ -246,8 +246,13 @@ struct InputView: View {
                         sendButton
                             .disabled(!state.canSend)
                     } else {
-                        recordButton
-                            .highPriorityGesture(dragGesture())
+                        if style == .message {
+                            recordButton
+                                .highPriorityGesture(dragGesture())
+                        } else {
+                            EmptyView()
+                                .viewSize(48)
+                        }
                     }
                 }
                 .compositingGroup()
