@@ -120,16 +120,20 @@ struct InputView: View {
         VStack {
             viewOnTop
             HStack(alignment: .bottom, spacing: 10) {
-                HStack(alignment: .bottom, spacing: 0) {
-                    leftView
-                    middleView
-                    rightView
+                if style == .message {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        leftView
+                        middleView
+                        rightView
+                    }
+                    .background {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(fieldBackgroundColor)
+                    }
+                } else {
+                    Spacer()
                 }
-                .background {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(fieldBackgroundColor)
-                }
-
+                
                 rightOutsideButton
             }
             .padding(.horizontal, 12)
