@@ -44,8 +44,9 @@ struct AttachmentsGrid: View {
     var body: some View {
         VStack(spacing: 4) {
             if let attachment = single {
+                let aspectRatio = attachment.aspectRatio ?? 1.0
                 AttachmentCell(attachment: attachment, onTap: onTap)
-                    .frame(width: 204, height: grid.isEmpty ? 200 : 100)
+                    .frame(width: 204, height: grid.isEmpty ? 200 * aspectRatio : 100)
                     .clipped()
                     .cornerRadius(onlyOne ? 0 : 12)
             }
