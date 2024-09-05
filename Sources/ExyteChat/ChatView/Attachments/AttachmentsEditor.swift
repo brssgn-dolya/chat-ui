@@ -56,8 +56,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                         .padding(.top, g.safeAreaInsets.top)
                     albumSelectionView
                     Spacer()
-//                    inputView
-//                        .padding(.bottom, g.safeAreaInsets.bottom)
+                    inputView
+                        .padding(.bottom, g.safeAreaInsets.bottom)
                 }
                 .background(pickerTheme.main.albumSelectionBackground)
                 .ignoresSafeArea()
@@ -67,8 +67,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                         .padding(.top, g.safeAreaInsets.top)
                     cameraSelectionView
                     Spacer()
-//                    inputView
-//                        .padding(.bottom, g.safeAreaInsets.bottom)
+                    inputView
+                        .padding(.bottom, g.safeAreaInsets.bottom)
                 }
                 .ignoresSafeArea()
             }
