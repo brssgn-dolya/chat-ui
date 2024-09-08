@@ -58,6 +58,7 @@ public struct ChatTheme {
         public var textLightContext: Color
         public var textDarkContext: Color
         public var textMediaPicker: Color
+        public var textMyReply: Color
 
         public var recordDot: Color
 
@@ -82,6 +83,7 @@ public struct ChatTheme {
             textLightContext: Color = Color.black,
             textDarkContext: Color = Color.white,
             textMediaPicker: Color = Color(hex: "818C99"),
+            textMyReply: Color = .white,
             recordDot: Color = Color(hex: "F62121"),
             myMessageTime: Color = .white.opacity(0.4),
             frientMessageTime: Color = .black.opacity(0.4),
@@ -102,6 +104,7 @@ public struct ChatTheme {
             self.textLightContext = textLightContext
             self.textDarkContext = textDarkContext
             self.textMediaPicker = textMediaPicker
+            self.textMyReply = textMyReply
             self.recordDot = recordDot
             self.myMessageTime = myMessageTime
             self.frientMessageTime = frientMessageTime
