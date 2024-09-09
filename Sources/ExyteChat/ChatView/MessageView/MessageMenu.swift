@@ -19,6 +19,7 @@ public enum MessageMenuActionType: Equatable {
     case edit
     case delete
     case reply
+    case copy
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
@@ -88,7 +89,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 .filter {
                     ($0.type() == .edit && message.type == .text && message.user.isCurrentUser) ||
                     ($0.type() == .delete && message.user.isCurrentUser) ||
-                    ($0.type() == .reply)
+                    ($0.type() == .reply) || 
+                    ($0.type() == .copy && message.type == .text)
                 }
                 .map {
                     menuButton(title: $0.title(), icon: $0.icon(), action: $0)
