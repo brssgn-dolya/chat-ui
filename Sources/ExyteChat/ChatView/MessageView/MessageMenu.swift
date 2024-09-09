@@ -12,6 +12,13 @@ import enum FloatingButton.Alignment
 public protocol MessageMenuAction: Equatable, CaseIterable {
     func title() -> String
     func icon() -> Image
+    func type() -> MessageMenuActionType
+}
+
+public enum MessageMenuActionType: Equatable {
+    case edit
+    case delete
+    case reply
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
@@ -36,6 +43,15 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
             Image(.edit)
         }
     }
+    
+    public func type() -> MessageMenuActionType {
+        switch self {
+        case .reply:
+            return .reply
+        case .edit:
+            return .edit
+        }
+    }
 
     public static func == (lhs: DefaultMessageMenuAction, rhs: DefaultMessageMenuAction) -> Bool {
         if case .reply = lhs, case .reply = rhs {
@@ -58,6 +74,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
 
     @Binding var isShowingMenu: Bool
     @Binding var menuButtonsSize: CGSize
+    var message: Message
     var alignment: Alignment
     var leadingPadding: CGFloat
     var trailingPadding: CGFloat
@@ -67,9 +84,14 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     var body: some View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
-            buttons: ActionEnum.allCases.map {
-                menuButton(title: $0.title(), icon: $0.icon(), action: $0)
-            },
+            buttons: ActionEnum.allCases
+                .filter {
+                    ($0.type() == .edit && message.type == .text && message.user.isCurrentUser) ||
+                    ($0.type() == .delete && message.user.isCurrentUser) ||
+                }
+                .map {
+                    menuButton(title: $0.title(), icon: $0.icon(), action: $0)
+                },
             isOpen: $isShowingMenu
         )
         .straight()
