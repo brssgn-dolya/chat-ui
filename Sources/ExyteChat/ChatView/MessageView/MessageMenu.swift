@@ -88,6 +88,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 .filter {
                     ($0.type() == .edit && message.type == .text && message.user.isCurrentUser) ||
                     ($0.type() == .delete && message.user.isCurrentUser) ||
+                    ($0.type() == .reply)
                 }
                 .map {
                     menuButton(title: $0.title(), icon: $0.icon(), action: $0)
