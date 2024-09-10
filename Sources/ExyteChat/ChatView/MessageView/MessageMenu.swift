@@ -100,7 +100,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .straight()
         //.mainZStackAlignment(.top)
         .initialOpacity(0)
-        .direction(.bottom)
+        .direction(.top)
         .alignment(alignment)
         .spacing(2)
         .animation(.linear(duration: 0.2))
