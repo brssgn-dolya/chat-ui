@@ -66,6 +66,8 @@ struct MessageRow: Equatable {
         && lhs.message.status == rhs.message.status
         && lhs.message.text == rhs.message.text
         && lhs.message.triggerRedraw == rhs.message.triggerRedraw
+        && lhs.message.recording?.url == rhs.message.recording?.url
+        && lhs.message.attachments.first?.id == rhs.message.attachments.first?.id
     }
 }
 
