@@ -412,14 +412,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                 var finalCellPosition = menuCellPosition
                 
-                var log = "💬 Presenting message menu\n"
-                log += " - cellFrame.minY: \(cellFrame.minY)\n"
-                log += " - wholeMenuHeight: \(wholeMenuHeight)\n"
-                log += " - safeAreaInsets.bottom: \(safeAreaInsets.bottom)\n"
-                log += " - UIScreen.main.bounds.height: \(UIScreen.main.bounds.height)\n"
-                log += " - comparation result: \(cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height)\n"
-                print(log)
-                
                 if needsScrollTemp ||
                     cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height {
 
