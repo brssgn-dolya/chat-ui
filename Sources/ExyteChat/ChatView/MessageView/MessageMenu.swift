@@ -77,6 +77,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     @Binding var menuButtonsSize: CGSize
     var message: Message
     var alignment: Alignment
+    var direction: Direction
     var leadingPadding: CGFloat
     var trailingPadding: CGFloat
     var onAction: (ActionEnum) -> ()
@@ -100,7 +101,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .straight()
         //.mainZStackAlignment(.top)
         .initialOpacity(0)
-        .direction(.top)
+        .direction(direction)
         .alignment(alignment)
         .spacing(2)
         .animation(.linear(duration: 0.2))

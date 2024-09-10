@@ -138,6 +138,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var menuBgOpacity: CGFloat = 0
     @State private var menuCellOpacity: CGFloat = 0
     @State private var menuScrollView: UIScrollView?
+    @State private var menuDirection: Direction = .bottom
 
     public init(messages: [Message],
                 chatType: ChatType = .conversation,
@@ -371,6 +372,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             menuButtonsSize: $menuButtonsSize,
             message: row.message,
             alignment: row.message.user.isCurrentUser ? .right : .left,
+            direction: menuDirection,
             leadingPadding: avatarSize + MessageView.horizontalAvatarPadding * 2,
             trailingPadding: MessageView.statusViewSize + MessageView.horizontalStatusPadding,
             onAction: menuActionClosure(row.message)) {
@@ -402,7 +404,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         DispatchQueue.main.async {
             let wholeMenuHeight = menuButtonsSize.height + cellFrame.height
             let needsScrollTemp = wholeMenuHeight > UIScreen.main.bounds.height - safeAreaInsets.top - safeAreaInsets.bottom
-
+            
+            menuDirection = cellFrame.maxY > UIScreen.main.bounds.midX ? .top : .bottom
             menuCellPosition = CGPoint(x: cellFrame.midX, y: cellFrame.minY + wholeMenuHeight/2 - safeAreaInsets.top)
             menuCellOpacity = 1
 
