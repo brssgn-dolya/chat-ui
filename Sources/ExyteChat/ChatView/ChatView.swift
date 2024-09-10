@@ -414,11 +414,11 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 log += " - wholeMenuHeight: \(wholeMenuHeight)\n"
                 log += " - safeAreaInsets.bottom: \(safeAreaInsets.bottom)\n"
                 log += " - UIScreen.main.bounds.height: \(UIScreen.main.bounds.height)\n"
-                log += " - comparation result: \(cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height - safeAreaInsets.top + safeAreaInsets.bottom)\n"
+                log += " - comparation result: \(cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height - safeAreaInsets.top - safeAreaInsets.bottom)\n"
                 print(log)
                 
                 if needsScrollTemp ||
-                    cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height - safeAreaInsets.top + safeAreaInsets.bottom {
+                    cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height - safeAreaInsets.top - safeAreaInsets.bottom {
 
                     finalCellPosition = CGPoint(x: cellFrame.midX, y: UIScreen.main.bounds.height - wholeMenuHeight/2 - safeAreaInsets.top - safeAreaInsets.bottom
                     )
