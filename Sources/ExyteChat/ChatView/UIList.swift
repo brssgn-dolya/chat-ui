@@ -516,7 +516,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
                     .onTapGesture { }
                     .applyIf(showMessageMenuOnLongPress) {
-                        $0.onLongPressGesture(minimumDuration: 0.3) {
+                        $0.onLongPressGesture(minimumDuration: 0.2) {
                             self.viewModel.messageMenuRow = row
                         }
                     }
