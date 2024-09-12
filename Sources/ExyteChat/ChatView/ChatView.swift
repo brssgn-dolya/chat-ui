@@ -76,6 +76,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     // MARK: - Parameters
 
     let type: ChatType
+    let showAvatars: Bool
     let sections: [MessagesSection]
     let ids: [String]
     let didSendMessage: (DraftMessage) -> Void
@@ -106,7 +107,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var showDateHeaders: Bool = true
     var isScrollEnabled: Bool = true
     var avatarSize: CGFloat = 32
-    var showAvatars: Bool = true
     var messageUseMarkdown: Bool = false
     var showMessageMenuOnLongPress: Bool = true
     var showNetworkConnectionProblem: Bool = false
