@@ -39,7 +39,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     messageUseMarkdown: messageUseMarkdown,
                     isDisplayingMessageMenu: isDisplayingMessageMenu,
                     showMessageTimeView: showMessageTimeView, 
-                    isGroup: !showAvatar,
+                    isGroup: showAvatar,
                     font: messageFont)
             case .call, .status, .geo:
                 if let messageBuilder = messageBuilder {

@@ -191,7 +191,7 @@ struct MessageView: View {
             .sizeGetter($avatarViewSize)
         } else {
             EmptyView()
-                .padding(.horizontal, MessageView.horizontalAvatarPadding)
+                .frame(width: MessageView.horizontalAvatarPadding)
         }
     }
 
