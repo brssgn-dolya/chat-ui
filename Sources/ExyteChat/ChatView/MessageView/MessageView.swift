@@ -87,7 +87,7 @@ struct MessageView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if !message.user.isCurrentUser {
+            if !message.user.isCurrentUser && isGroup {
                 avatarView
             }
 
@@ -175,21 +175,19 @@ struct MessageView: View {
 
     @ViewBuilder
     var avatarView: some View {
-        if !isGroup {
-            Group {
-                if showAvatar {
-                    AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
-                        .contentShape(Circle())
-                        .onTapGesture {
-                            tapAvatarClosure?(message.user, message.id)
-                        }
-                } else {
-                    Color.clear.viewSize(avatarSize)
-                }
+        Group {
+            if showAvatar {
+                AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
+                    .contentShape(Circle())
+                    .onTapGesture {
+                        tapAvatarClosure?(message.user, message.id)
+                    }
+            } else {
+                Color.clear.viewSize(avatarSize)
             }
-            .padding(.horizontal, MessageView.horizontalAvatarPadding)
-            .sizeGetter($avatarViewSize)
         }
+        .padding(.horizontal, MessageView.horizontalAvatarPadding)
+        .sizeGetter($avatarViewSize)
     }
 
     @ViewBuilder
