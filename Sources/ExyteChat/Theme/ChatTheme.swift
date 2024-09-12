@@ -149,7 +149,7 @@ public struct ChatTheme {
 
         public struct Message {
             public var attachedDocument: Image
-            public var checkmark: Images
+            public var checkmark: Image
             public var checkmarks: Image
             public var error: Image
             public var muteVideo: Image
