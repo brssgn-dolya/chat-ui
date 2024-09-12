@@ -10,9 +10,9 @@ import SwiftUI
 public extension ChatView where MessageContent == EmptyView {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?) {
@@ -28,9 +28,9 @@ public extension ChatView where MessageContent == EmptyView {
 public extension ChatView where InputViewContent == EmptyView {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?) {
@@ -46,9 +46,9 @@ public extension ChatView where InputViewContent == EmptyView {
 public extension ChatView where MenuAction == DefaultMessageMenuAction {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure,
          inputViewBuilder: @escaping InputViewBuilderClosure) {
@@ -64,9 +64,9 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
 public extension ChatView where MessageContent == EmptyView, InputViewContent == EmptyView {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageMenuAction: MessageMenuActionClosure?) {
         self.type = chatType
@@ -80,9 +80,9 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
 public extension ChatView where InputViewContent == EmptyView, MenuAction == DefaultMessageMenuAction {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure) {
         self.type = chatType
@@ -96,9 +96,9 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
 public extension ChatView where MessageContent == EmptyView, MenuAction == DefaultMessageMenuAction {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void,
          inputViewBuilder: @escaping InputViewBuilderClosure) {
         self.type = chatType
@@ -112,9 +112,9 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
 public extension ChatView where MessageContent == EmptyView, InputViewContent == EmptyView, MenuAction == DefaultMessageMenuAction {
 
     init(messages: [Message],
+         showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         showAvatars: Bool = true,
          didSendMessage: @escaping (DraftMessage) -> Void) {
         self.type = chatType
         self.didSendMessage = didSendMessage
