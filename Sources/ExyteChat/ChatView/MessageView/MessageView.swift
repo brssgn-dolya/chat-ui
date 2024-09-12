@@ -21,6 +21,7 @@ struct MessageView: View {
     let messageUseMarkdown: Bool
     let isDisplayingMessageMenu: Bool
     let showMessageTimeView: Bool
+    let isGroup: Bool
 
     @State var avatarViewSize: CGSize = .zero
     @State var statusSize: CGSize = .zero
@@ -174,19 +175,21 @@ struct MessageView: View {
 
     @ViewBuilder
     var avatarView: some View {
-        Group {
-            if showAvatar {
-                AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
-                    .contentShape(Circle())
-                    .onTapGesture {
-                        tapAvatarClosure?(message.user, message.id)
-                    }
-            } else {
-                Color.clear.viewSize(avatarSize)
+        if !isGroup {
+            Group {
+                if showAvatar {
+                    AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
+                        .contentShape(Circle())
+                        .onTapGesture {
+                            tapAvatarClosure?(message.user, message.id)
+                        }
+                } else {
+                    Color.clear.viewSize(avatarSize)
+                }
             }
+            .padding(.horizontal, MessageView.horizontalAvatarPadding)
+            .sizeGetter($avatarViewSize)
         }
-        .padding(.horizontal, MessageView.horizontalAvatarPadding)
-        .sizeGetter($avatarViewSize)
     }
 
     @ViewBuilder
@@ -338,6 +341,7 @@ struct MessageView_Preview: PreviewProvider {
                 messageUseMarkdown: false,
                 isDisplayingMessageMenu: false,
                 showMessageTimeView: true,
+                isGroup: false,
                 font: UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 15))
             )
         }

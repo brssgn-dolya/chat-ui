@@ -106,6 +106,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var showDateHeaders: Bool = true
     var isScrollEnabled: Bool = true
     var avatarSize: CGFloat = 32
+    var showAvatars: Bool = true
     var messageUseMarkdown: Bool = false
     var showMessageMenuOnLongPress: Bool = true
     var showNetworkConnectionProblem: Bool = false
@@ -143,6 +144,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     public init(messages: [Message],
                 chatType: ChatType = .conversation,
                 replyMode: ReplyMode = .quote,
+                showAvatars: Bool = true,
                 didSendMessage: @escaping (DraftMessage) -> Void,
                 messageBuilder: @escaping MessageBuilderClosure,
                 inputViewBuilder: @escaping InputViewBuilderClosure,
@@ -154,6 +156,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         self.messageBuilder = messageBuilder
         self.inputViewBuilder = inputViewBuilder
         self.messageMenuAction = messageMenuAction
+        self.showAvatars = showAvatars
     }
 
     public var body: some View {
@@ -272,6 +275,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                showDateHeaders: showDateHeaders,
                isScrollEnabled: isScrollEnabled,
                avatarSize: avatarSize,
+               showAvatars: showAvatars,
                showMessageMenuOnLongPress: showMessageMenuOnLongPress,
                tapAvatarClosure: tapAvatarClosure,
                paginationHandler: paginationHandler,
@@ -373,10 +377,21 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             message: row.message,
             alignment: row.message.user.isCurrentUser ? .right : .left,
             direction: menuDirection,
-            leadingPadding: avatarSize + MessageView.horizontalAvatarPadding * 2,
+            leadingPadding: (showAvatars ? avatarSize : 0.0) + MessageView.horizontalAvatarPadding * 2,
             trailingPadding: MessageView.statusViewSize + MessageView.horizontalStatusPadding,
             onAction: menuActionClosure(row.message)) {
-                ChatMessageView(viewModel: viewModel, messageBuilder: messageBuilder, row: row, chatType: type, avatarSize: avatarSize, tapAvatarClosure: nil, messageUseMarkdown: messageUseMarkdown, isDisplayingMessageMenu: true, showMessageTimeView: showMessageTimeView, messageFont: messageFont)
+                ChatMessageView(
+                    viewModel: viewModel,
+                    messageBuilder: messageBuilder,
+                    row: row,
+                    chatType: type,
+                    avatarSize: avatarSize,
+                    tapAvatarClosure: nil,
+                    messageUseMarkdown: messageUseMarkdown, 
+                    isDisplayingMessageMenu: true,
+                    showMessageTimeView: showMessageTimeView, 
+                    showAvatar: showAvatars,
+                    messageFont: messageFont)
                     .onTapGesture {
                         hideMessageMenu()
                     }
