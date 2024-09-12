@@ -12,6 +12,7 @@ public struct Message: Identifiable, Hashable {
     public enum Status: Equatable, Hashable {
         case sending
         case sent
+        case received
         case read
         case error(DraftMessage)
 
@@ -21,6 +22,8 @@ public struct Message: Identifiable, Hashable {
                 return hasher.combine("sending")
             case .sent:
                 return hasher.combine("sent")
+            case .received:
+                return hasher.combine("received")
             case .read:
                 return hasher.combine("read")
             case .error:
@@ -33,6 +36,8 @@ public struct Message: Identifiable, Hashable {
             case (.sending, .sending):
                 return true
             case (.sent, .sent):
+                return true
+            case (.received, .received):
                 return true
             case (.read, .read):
                 return true

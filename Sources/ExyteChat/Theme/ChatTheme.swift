@@ -149,6 +149,7 @@ public struct ChatTheme {
 
         public struct Message {
             public var attachedDocument: Image
+            public var checkmark: Images
             public var checkmarks: Image
             public var error: Image
             public var muteVideo: Image
@@ -217,6 +218,7 @@ public struct ChatTheme {
             chevronRight: Image? = nil,
             cross: Image? = nil,
             attachedDocument: Image? = nil,
+            checkmark: Image? = nil,
             checkmarks: Image? = nil,
             error: Image? = nil,
             muteVideo: Image? = nil,
@@ -280,6 +282,7 @@ public struct ChatTheme {
 
             self.message = Message(
                 attachedDocument: attachedDocument ?? Image("attachedDocument", bundle: .current),
+                checkmark: checkmark ?? Image("checkmark", bundle: .current),
                 checkmarks: checkmarks ?? Image("checkmarks", bundle: .current),
                 error: error ?? Image("error", bundle: .current),
                 muteVideo: muteVideo ?? Image("muteVideo", bundle: .current),

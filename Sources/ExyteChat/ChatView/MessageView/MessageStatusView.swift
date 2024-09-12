@@ -23,6 +23,10 @@ struct MessageStatusView: View {
                 theme.images.message.checkmarks
                     .resizable()
                     .foregroundColor(theme.colors.grayStatus)
+            case .received:
+                theme.images.message.checkmark
+                    .resizable()
+                    .foregroundColor(theme.colors.grayStatus)
             case .read:
                 theme.images.message.checkmarks
                     .resizable()
