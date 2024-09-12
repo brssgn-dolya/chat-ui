@@ -20,11 +20,12 @@ struct MessageStatusView: View {
                     .rotationEffect(.degrees(90))
                     .foregroundColor(theme.colors.grayStatus)
             case .sent:
-                theme.images.message.checkmarks
+                theme.images.message.checkmark
                     .resizable()
+                    .scaledToFit()
                     .foregroundColor(theme.colors.grayStatus)
             case .received:
-                theme.images.message.checkmark
+                theme.images.message.checkmarks
                     .resizable()
                     .foregroundColor(theme.colors.grayStatus)
             case .read:
