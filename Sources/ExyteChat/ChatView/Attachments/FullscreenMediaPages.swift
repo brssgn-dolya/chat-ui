@@ -125,7 +125,7 @@ struct FullscreenMediaPages: View {
                             viewModel.toggleVideoPlaying()
                         }
 
-                    (viewModel.videoMuted ? theme.images.fullscreenMedia.unmute : theme.images.fullscreenMedia.mute)
+                    (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)
