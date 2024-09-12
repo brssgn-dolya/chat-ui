@@ -89,6 +89,9 @@ struct MessageView: View {
         HStack(alignment: .bottom, spacing: 0) {
             if !message.user.isCurrentUser && isGroup {
                 avatarView
+            } else {
+                Spacer()
+                    .frame(width: MessageView.horizontalAvatarPadding)
             }
 
             VStack(alignment: message.user.isCurrentUser ? .trailing : .leading, spacing: 2) {
