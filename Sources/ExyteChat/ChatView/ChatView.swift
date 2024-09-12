@@ -419,16 +419,16 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     )
                 }
 
-                withAnimation(.linear(duration: 0.1)) {
+                withAnimation(.linear(duration: 0.05)) {
                     menuBgOpacity = 0.9
                     menuCellPosition = finalCellPosition
                     isShowingMenu = true
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 needsScrollView = needsScrollTemp
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 readyToShowScrollView = true
                 if let menuScrollView = menuScrollView {
                     menuScrollView.contentOffset = CGPoint(x: 0, y: menuScrollView.contentSize.height - menuScrollView.frame.height + safeAreaInsets.bottom)
