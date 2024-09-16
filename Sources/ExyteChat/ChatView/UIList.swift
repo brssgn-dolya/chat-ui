@@ -552,7 +552,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     showMessageTimeView: showMessageTimeView, 
                     showAvatar: showAvatars,
                     messageFont: messageFont,
-                    tapDocumentClosure: tapAvatarClosure)
+                    tapDocumentClosure: tapDocumentClosure)
                     .transition(.scale)
                     .background(MessageMenuPreferenceViewSetter(id: row.id))
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
