@@ -71,6 +71,9 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     
     /// User and MessageId
     public typealias TapDocumentClosure = (User, String) -> ()
+    
+    /// User and MessageId
+    public typealias DocumentSelectionClosure = ([URL]) -> ()
 
     @Environment(\.safeAreaInsets) private var safeAreaInsets
     @Environment(\.chatTheme) private var theme
@@ -114,7 +117,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var showMessageMenuOnLongPress: Bool = true
     var showNetworkConnectionProblem: Bool = false
     var tapAvatarClosure: TapAvatarClosure?
-    var tapDocumentClosure: ChatView.TapDocumentClosure?
+    var tapDocumentClosure: TapDocumentClosure?
+    var documentSelectionClosure: DocumentSelectionClosure?
     var mediaPickerSelectionParameters: MediaPickerParameters?
     var orientationHandler: MediaPickerOrientationHandler = {_ in}
     var chatTitle: String?
@@ -205,9 +209,19 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     .environmentObject(globalFocusState)
             }
         
-            .fileImporter(isPresented: $inputViewModel.showFilePicker, allowedContentTypes: [.item], onCompletion: { result in
-                
-            })
+            .fileImporter(
+                isPresented: $inputViewModel.showFilePicker,
+                allowedContentTypes: [.item],
+                allowsMultipleSelection: true,
+                onCompletion: { result in
+                    switch result {
+                    case .success(let urls):
+                        documentSelectionClosure?(urls)
+                    case .failure(let failure):
+                        break
+                    }
+                }
+            )
         
             .onChange(of: inputViewModel.showAttachmentsSheet) {
                 if $0 {
@@ -609,6 +623,12 @@ public extension ChatView {
     func tapDocumentClosure(_ closure: @escaping TapDocumentClosure) -> ChatView {
         var view = self
         view.tapDocumentClosure = closure
+        return view
+    }
+    
+    func documentSelectionClosure(_ closure: @escaping DocumentSelectionClosure) -> ChatView {
+        var view = self
+        view.documentSelectionClosure = closure
         return view
     }
 
