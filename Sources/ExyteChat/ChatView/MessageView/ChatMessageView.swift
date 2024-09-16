@@ -41,7 +41,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     showMessageTimeView: showMessageTimeView, 
                     isGroup: showAvatar,
                     font: messageFont)
-            case .call, .status, .geo:
+            case .call, .status, .geo, .document:
                 if let messageBuilder = messageBuilder {
                     messageBuilder(
                         row.message,

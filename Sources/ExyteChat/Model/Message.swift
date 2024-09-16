@@ -134,6 +134,7 @@ extension Message {
         case text
         case geo
         case file
+        case document
         case url
         case call
     }
