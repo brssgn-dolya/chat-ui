@@ -128,7 +128,7 @@ struct MessageView: View {
                 attachmentsView(message)
             }
 
-            if !message.text.isEmpty {
+            if !message.text.isEmpty && message.type != .document {
                 textWithTimeView(message)
                     .font(Font(font))
             }
