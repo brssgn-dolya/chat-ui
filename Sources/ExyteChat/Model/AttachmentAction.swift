@@ -14,9 +14,9 @@ public enum AttachmentAction: Hashable, CaseIterable {
     var title: String {
         switch self {
         case .gallery:
-            return "Галерея"
+            return "🏞️ Галерея"
         case .file:
-            return "Файл"
+            return "📄 Файл"
         }
     }
 }
