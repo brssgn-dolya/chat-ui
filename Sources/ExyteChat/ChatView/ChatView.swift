@@ -68,6 +68,9 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     /// User and MessageId
     public typealias TapAvatarClosure = (User, String) -> ()
+    
+    /// User and MessageId
+    public typealias TapDocumentClosure = (User, String) -> ()
 
     @Environment(\.safeAreaInsets) private var safeAreaInsets
     @Environment(\.chatTheme) private var theme
@@ -111,6 +114,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var showMessageMenuOnLongPress: Bool = true
     var showNetworkConnectionProblem: Bool = false
     var tapAvatarClosure: TapAvatarClosure?
+    var tapDocumentClosure: ChatView.TapDocumentClosure?
     var mediaPickerSelectionParameters: MediaPickerParameters?
     var orientationHandler: MediaPickerOrientationHandler = {_ in}
     var chatTitle: String?
@@ -278,6 +282,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                showAvatars: showAvatars,
                showMessageMenuOnLongPress: showMessageMenuOnLongPress,
                tapAvatarClosure: tapAvatarClosure,
+               tapDocumentClosure: tapDocumentClosure,
                paginationHandler: paginationHandler,
                messageUseMarkdown: messageUseMarkdown,
                showMessageTimeView: showMessageTimeView,
@@ -391,7 +396,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     isDisplayingMessageMenu: true,
                     showMessageTimeView: showMessageTimeView, 
                     showAvatar: showAvatars,
-                    messageFont: messageFont)
+                    messageFont: messageFont,
+                    tapDocumentClosure: nil)
                     .onTapGesture {
                         hideMessageMenu()
                     }
@@ -568,6 +574,12 @@ public extension ChatView {
     func tapAvatarClosure(_ closure: @escaping TapAvatarClosure) -> ChatView {
         var view = self
         view.tapAvatarClosure = closure
+        return view
+    }
+    
+    func tapDocumentClosure(_ closure: @escaping TapDocumentClosure) -> ChatView {
+        var view = self
+        view.tapDocumentClosure = closure
         return view
     }
 

@@ -22,6 +22,7 @@ struct MessageView: View {
     let isDisplayingMessageMenu: Bool
     let showMessageTimeView: Bool
     let isGroup: Bool
+    let tapDocumentClosure: ChatView.TapDocumentClosure?
 
     @State var avatarViewSize: CGSize = .zero
     @State var statusSize: CGSize = .zero
@@ -145,6 +146,9 @@ struct MessageView: View {
             if message.type == .document {
                 VStack(alignment: .trailing, spacing: 8) {
                     documentView(message)
+                        .onTapGesture {
+                            tapDocumentClosure?(message.user, message.id)
+                        }
                     messageTimeView()
                         .padding(.bottom, 8)
                         .padding(.trailing, 12)
@@ -290,14 +294,14 @@ struct MessageView: View {
     
     @ViewBuilder
     func documentView(_ message: Message) -> some View {
-        HStack(spacing: .zero) {
+        HStack(spacing: 8) {
             Image(systemName: "doc")
                 .resizable()
                 .foregroundStyle(message.user.isCurrentUser ? .white : theme.colors.buttonBackground)
                 .scaledToFit()
                 .frame(width: 32, height: 32)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(message.text)
                     .font(.body)
                     .lineLimit(1)
@@ -376,6 +380,7 @@ struct MessageView_Preview: PreviewProvider {
                 isDisplayingMessageMenu: false,
                 showMessageTimeView: true,
                 isGroup: false,
+                tapDocumentClosure: nil,
                 font: UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 15))
             )
         }
