@@ -75,7 +75,7 @@ final class InputViewModel: ObservableObject {
             mediaPickerMode = .photos
             showPicker = true
         case .attach:
-            break
+            showAttachmentsSheet = true
         case .document:
             showFilePicker = true
         case .location:

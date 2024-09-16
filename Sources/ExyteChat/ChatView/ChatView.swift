@@ -188,9 +188,14 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             }
         
             .confirmationDialog("", isPresented: $inputViewModel.showAttachmentsSheet, titleVisibility: .hidden) {
-                ForEach(["Галерея", "Файли"], id: \.self) { action in
-                    Button(action) {
-                        print("\(action)")
+                ForEach(AttachmentAction.allCases, id: \.self) { action in
+                    Button(action.title) {
+                        switch action {
+                        case .gallery:
+                            inputViewModel.showPicker = true
+                        case .file:
+                            inputViewModel.showFilePicker = true
+                        }
                     }
                 }
             }
