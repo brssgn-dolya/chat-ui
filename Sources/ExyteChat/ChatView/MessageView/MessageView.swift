@@ -142,14 +142,14 @@ struct MessageView: View {
                 }
             }
             
-            if message.type == .document {
-                VStack(alignment: .trailing, spacing: 8) {
-                    documentView(message)
-                    messageTimeView()
-                        .padding(.bottom, 8)
-                        .padding(.trailing, 12)
-                }
-            }
+//            if message.type == .document {
+//                VStack(alignment: .trailing, spacing: 8) {
+//                    documentView(message)
+//                    messageTimeView()
+//                        .padding(.bottom, 8)
+//                        .padding(.trailing, 12)
+//                }
+//            }
         }
         .bubbleBackground(message, theme: theme)
     }
@@ -297,7 +297,7 @@ struct MessageView: View {
     }
 }
 
-extension View {
+public extension View {
 
     @ViewBuilder
     func bubbleBackground(_ message: Message, theme: ChatTheme, isReply: Bool = false) -> some View {
