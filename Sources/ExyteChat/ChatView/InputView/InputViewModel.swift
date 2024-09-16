@@ -11,9 +11,13 @@ final class InputViewModel: ObservableObject {
     @Published var text = ""
     @Published var attachments = InputViewAttachments()
     @Published var state: InputViewState = .empty
+    
+    @Published var showAttachmentsSheet = false
 
     @Published var showPicker = false
     @Published var mediaPickerMode = MediaPickerMode.photos
+    
+    @Published var showFilePicker = false
 
     @Published var showActivityIndicator = false
 
@@ -70,6 +74,12 @@ final class InputViewModel: ObservableObject {
         case .photo:
             mediaPickerMode = .photos
             showPicker = true
+        case .attach:
+            break
+        case .document:
+            showFilePicker = true
+        case .location:
+            break
         case .add:
             mediaPickerMode = .camera
         case .camera:

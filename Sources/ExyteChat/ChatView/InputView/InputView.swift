@@ -35,8 +35,9 @@ public enum InputViewAction {
     case deleteRecord
     case playRecord
     case pauseRecord
-    //    case location
-    //    case document
+    case attach
+    case location
+    case document
 
     case saveEdit
     case cancelEdit
@@ -337,7 +338,7 @@ struct InputView: View {
 
     var attachButton: some View {
         Button {
-            onAction(.photo)
+            onAction(.attach)
         } label: {
             theme.images.inputView.attach
                 .viewSize(24)

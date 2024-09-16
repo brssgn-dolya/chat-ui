@@ -186,13 +186,37 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     .ignoresSafeArea()
                 }
             }
-
+        
+            .confirmationDialog("", isPresented: $inputViewModel.showAttachmentsSheet, titleVisibility: .hidden) {
+                ForEach(["Галерея", "Файли"], id: \.self) { action in
+                    Button(action) {
+                        print("\(action)")
+                    }
+                }
+            }
+        
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
                 AttachmentsEditor(inputViewModel: inputViewModel, inputViewBuilder: inputViewBuilder, chatTitle: chatTitle, messageUseMarkdown: messageUseMarkdown, orientationHandler: orientationHandler, mediaPickerSelectionParameters: mediaPickerSelectionParameters, availableInput: availablelInput)
                     .environmentObject(globalFocusState)
             }
+        
+            .fileImporter(isPresented: $inputViewModel.showFilePicker, allowedContentTypes: [.item], onCompletion: { result in
+                
+            })
+        
+            .onChange(of: inputViewModel.showAttachmentsSheet) {
+                if $0 {
+                    globalFocusState.focus = nil
+                }
+            }
 
             .onChange(of: inputViewModel.showPicker) {
+                if $0 {
+                    globalFocusState.focus = nil
+                }
+            }
+        
+            .onChange(of: inputViewModel.showFilePicker) {
                 if $0 {
                     globalFocusState.focus = nil
                 }
