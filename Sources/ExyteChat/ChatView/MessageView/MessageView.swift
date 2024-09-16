@@ -306,6 +306,7 @@ struct MessageView: View {
                 
             }
         }
+        .padding(.horizontal, MessageView.horizontalTextPadding)
     }
 }
 
