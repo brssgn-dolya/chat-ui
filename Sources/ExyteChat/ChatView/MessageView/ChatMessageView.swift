@@ -28,7 +28,7 @@ struct ChatMessageView<MessageContent: View>: View {
     var body: some View {
         Group {
             switch row.message.type {
-            case .text, .file, .url:
+            case .text, .file, .url, .document:
                 MessageView(
                     viewModel: viewModel,
                     message: row.message,
@@ -41,7 +41,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     showMessageTimeView: showMessageTimeView, 
                     isGroup: showAvatar,
                     font: messageFont)
-            case .call, .status, .geo, .document:
+            case .call, .status, .geo:
                 if let messageBuilder = messageBuilder {
                     messageBuilder(
                         row.message,

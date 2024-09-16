@@ -142,14 +142,14 @@ struct MessageView: View {
                 }
             }
             
-//            if message.type == .document {
-//                VStack(alignment: .trailing, spacing: 8) {
-//                    documentView(message)
-//                    messageTimeView()
-//                        .padding(.bottom, 8)
-//                        .padding(.trailing, 12)
-//                }
-//            }
+            if message.type == .document {
+                VStack(alignment: .trailing, spacing: 8) {
+                    documentView(message)
+                    messageTimeView()
+                        .padding(.bottom, 8)
+                        .padding(.trailing, 12)
+                }
+            }
         }
         .bubbleBackground(message, theme: theme)
     }
@@ -290,9 +290,20 @@ struct MessageView: View {
     
     @ViewBuilder
     func documentView(_ message: Message) -> some View {
-        HStack {
+        HStack(spacing: .zero) {
             Image(systemName: "doc")
-            Text(message.text)
+                .resizable()
+                .tint(message.user.isCurrentUser ? .white : theme.colors.buttonBackground)
+                .scaledToFit()
+                .frame(width: 32, height: 32)
+            
+            VStack(spacing: .zero) {
+                Text(message.text)
+                    .font(.body)
+                Text("1.24 MB")
+                    .font(.footnote)
+                
+            }
         }
     }
 }
