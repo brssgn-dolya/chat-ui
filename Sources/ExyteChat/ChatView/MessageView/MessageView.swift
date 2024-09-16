@@ -293,11 +293,11 @@ struct MessageView: View {
         HStack(spacing: .zero) {
             Image(systemName: "doc")
                 .resizable()
-                .tint(message.user.isCurrentUser ? .white : theme.colors.buttonBackground)
+                .foregroundStyle(message.user.isCurrentUser ? .white : theme.colors.buttonBackground)
                 .scaledToFit()
                 .frame(width: 32, height: 32)
             
-            VStack(alignment: .leading, spacing: .zero) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(message.text)
                     .font(.body)
                     .lineLimit(1)
@@ -307,6 +307,7 @@ struct MessageView: View {
             }
         }
         .padding(.horizontal, MessageView.horizontalTextPadding)
+        .padding(.top, 8)
     }
 }
 
