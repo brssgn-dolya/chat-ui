@@ -218,7 +218,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     case .success(let urls):
                         documentSelectionClosure?(urls)
                     case .failure(let failure):
-                        break
+                        documentSelectionClosure?([])
                     }
                 }
             )

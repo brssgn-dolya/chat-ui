@@ -16,7 +16,7 @@ public enum AttachmentAction: Hashable, CaseIterable {
         case .gallery:
             return "Галерея"
         case .file:
-            return "Файли"
+            return "Файл"
         }
     }
 }
