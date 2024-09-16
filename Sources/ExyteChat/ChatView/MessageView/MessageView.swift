@@ -141,6 +141,15 @@ struct MessageView: View {
                         .padding(.trailing, 12)
                 }
             }
+            
+            if message.type == .document {
+                VStack(alignment: .trailing, spacing: 8) {
+                    documentView(message)
+                    messageTimeView()
+                        .padding(.bottom, 8)
+                        .padding(.trailing, 12)
+                }
+            }
         }
         .bubbleBackground(message, theme: theme)
     }
@@ -277,6 +286,14 @@ struct MessageView: View {
             }
         }
         .sizeGetter($timeSize)
+    }
+    
+    @ViewBuilder
+    func documentView(_ message: Message) -> some View {
+        HStack {
+            Image(systemName: "doc")
+            Text(message.text)
+        }
     }
 }
 
