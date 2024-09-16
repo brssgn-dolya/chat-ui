@@ -297,9 +297,10 @@ struct MessageView: View {
                 .scaledToFit()
                 .frame(width: 32, height: 32)
             
-            VStack(spacing: .zero) {
+            VStack(alignment: .leading, spacing: .zero) {
                 Text(message.text)
                     .font(.body)
+                    .lineLimit(1)
                 Text("1.24 MB")
                     .font(.footnote)
                 
