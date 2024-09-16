@@ -302,10 +302,10 @@ struct MessageView: View {
                 .frame(width: 32, height: 32)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(message.text)
+                Text(message.text.components(separatedBy: "-").first ?? "")
                     .font(.body)
                     .lineLimit(1)
-                Text("1.24 MB")
+                Text(message.text.components(separatedBy: "-").last ?? "")
                     .font(.footnote)
                 
             }
