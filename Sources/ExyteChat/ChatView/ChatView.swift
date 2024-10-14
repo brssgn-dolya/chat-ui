@@ -191,7 +191,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                             guard let data = try? Data(contentsOf: attachment.full), let image = UIImage(data: data) else { return }
                             
                             DispatchQueue.main.async {
-                                UIImageWriteToSavedPhotosAlbum(image, self, #selector(viewModel.image(_:didFinishSavingWithError:contextInfo:)), nil)
+                                UIImageWriteToSavedPhotosAlbum(image, viewModel, #selector(viewModel.image(_:didFinishSavingWithError:contextInfo:)), nil)
                             }
                         }
                     )

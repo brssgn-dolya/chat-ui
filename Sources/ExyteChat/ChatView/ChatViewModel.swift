@@ -55,11 +55,11 @@ final class ChatViewModel: ObservableObject {
     }
     
     // Completion handler for saving image
-        @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
-            if let error = error {
-                // Handle error
-                print("Error saving image: \(error.localizedDescription)")
-            } else {
-            }
+    @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        if let error = error {
+            // Handle error
+            print("Error saving image: \(error.localizedDescription)")
+        } else {
         }
+    }
 }
