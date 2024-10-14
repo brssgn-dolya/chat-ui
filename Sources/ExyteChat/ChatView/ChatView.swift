@@ -193,12 +193,12 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                             
                             DispatchQueue.main.async {
                                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                                viewModel.fullscreenAttachmentPresented = false
-                                showAttachmentSavedAlert = true
+//                                viewModel.fullscreenAttachmentPresented = false
+                                
 //
-//                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-//                                    
-//                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    showAttachmentSavedAlert = true
+                                }
                             }
                         }
                     )
