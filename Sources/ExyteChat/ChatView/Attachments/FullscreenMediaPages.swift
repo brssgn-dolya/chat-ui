@@ -139,6 +139,7 @@ struct FullscreenMediaPages: View {
                     }
                     
                     theme.images.messageMenu.save
+                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
                         .foregroundColor(.white)

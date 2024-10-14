@@ -148,6 +148,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var menuCellOpacity: CGFloat = 0
     @State private var menuScrollView: UIScrollView?
     @State private var menuDirection: Direction = .bottom
+    @State private var showAttachmentSavedAlert: Bool = false
 
     public init(messages: [Message],
                 chatType: ChatType = .conversation,
@@ -192,6 +193,10 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                             
                             DispatchQueue.main.async {
                                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    showAttachmentSavedAlert = true
+                                }
                             }
                         }
                     )
@@ -215,6 +220,14 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
                 AttachmentsEditor(inputViewModel: inputViewModel, inputViewBuilder: inputViewBuilder, chatTitle: chatTitle, messageUseMarkdown: messageUseMarkdown, orientationHandler: orientationHandler, mediaPickerSelectionParameters: mediaPickerSelectionParameters, availableInput: availablelInput)
                     .environmentObject(globalFocusState)
+            }
+        
+            .alert(isPresented: $showAttachmentSavedAlert) {
+                Alert(
+                    title: Text("Збережено"),
+                    message: Text("Медіа файл збережено до Вашої галереї"),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         
             .fileImporter(
