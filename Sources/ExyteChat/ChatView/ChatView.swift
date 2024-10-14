@@ -185,6 +185,14 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         safeAreaInsets: g.safeAreaInsets,
                         onClose: { [weak viewModel] in
                             viewModel?.dismissAttachmentFullScreen()
+                        },
+                        onSave: { index in
+                            let attachment = attachments[index]
+                            guard let data = try? Data(contentsOf: attachment.full), let image = UIImage(data: data) else { return }
+                            
+                            DispatchQueue.main.async {
+                                UIImageWriteToSavedPhotosAlbum(image, self, #selector(viewModel.image(_:didFinishSavingWithError:contextInfo:)), nil)
+                            }
                         }
                     )
                     .ignoresSafeArea()

@@ -4,6 +4,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 final class ChatViewModel: ObservableObject {
 
@@ -52,4 +53,13 @@ final class ChatViewModel: ObservableObject {
             globalFocusState?.focus = .uuid(inputFieldId)
         }
     }
+    
+    // Completion handler for saving image
+        @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+            if let error = error {
+                // Handle error
+                print("Error saving image: \(error.localizedDescription)")
+            } else {
+            }
+        }
 }

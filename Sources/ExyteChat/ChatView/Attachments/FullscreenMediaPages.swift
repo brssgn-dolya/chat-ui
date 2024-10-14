@@ -13,6 +13,7 @@ struct FullscreenMediaPages: View {
     @StateObject var viewModel: FullscreenMediaPagesViewModel
     var safeAreaInsets: EdgeInsets
     var onClose: () -> Void
+    var onSave: (Int) -> Void
 
     var body: some View {
         let closeGesture = DragGesture()
@@ -113,26 +114,38 @@ struct FullscreenMediaPages: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            if viewModel.showMinis, viewModel.attachments[viewModel.index].type == .video {
+            if viewModel.showMinis {
                 HStack(spacing: 20) {
-                    (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                        .padding(5)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            viewModel.toggleVideoPlaying()
-                        }
+                    if viewModel.attachments[viewModel.index].type == .video {
+                        (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .padding(5)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.toggleVideoPlaying()
+                            }
 
-                    (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
+                        (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .padding(5)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.toggleVideoMuted()
+                            }
+                    }
+                    
+                    theme.images.messageMenu.save
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)
                         .padding(5)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            viewModel.toggleVideoMuted()
+                            onSave(viewModel.index)
                         }
                 }
                 .foregroundColor(.white)
