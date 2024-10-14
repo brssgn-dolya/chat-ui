@@ -195,7 +195,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                                 viewModel.fullscreenAttachmentPresented = false
                                 showAttachmentSavedAlert = true
-//                                
+//
 //                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 //                                    
 //                                }
@@ -224,12 +224,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     .environmentObject(globalFocusState)
             }
         
-            .alert(isPresented: $showAttachmentSavedAlert) {
-                Alert(
-                    title: Text("Збережено"),
-                    message: Text("Медіа файл збережено до Вашої галереї"),
-                    dismissButton: .default(Text("OK"))
-                )
+            .alert("Медіа-файл успішно збережено", isPresented: $showAttachmentSavedAlert) {
+                Button("OK", role: .cancel) { }
             }
         
             .fileImporter(
