@@ -193,19 +193,20 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     // step 5
                     // apply the rest of the changes to table's dataSource, i.e. inserts
                     //print("5 apply inserts")
-                    context.coordinator.sections = sections
+                    
+                    tableView.performBatchUpdates {
+                        context.coordinator.sections = sections
+                        
+                        for operation in insertOperations {
+                            applyOperation(operation, tableView: tableView)
+                        }
+                    } completion: { _ in
+                        if !isScrollEnabled {
+                            tableContentHeight = tableView.contentSize.height
+                        }
 
-                    tableView.beginUpdates()
-                    for operation in insertOperations {
-                        applyOperation(operation, tableView: tableView)
+                        updateSemaphore.signal()
                     }
-                    tableView.endUpdates()
-
-                    if !isScrollEnabled {
-                        tableContentHeight = tableView.contentSize.height
-                    }
-
-                    updateSemaphore.signal()
                 }
             } else {
                 updateSemaphore.signal()
