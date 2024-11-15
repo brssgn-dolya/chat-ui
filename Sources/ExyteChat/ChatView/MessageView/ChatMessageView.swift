@@ -13,6 +13,8 @@ struct ChatMessageView<MessageContent: View>: View {
     
     @ObservedObject var viewModel: ChatViewModel
     
+    @Environment(\.chatTheme) private var theme
+    
     var messageBuilder: MessageBuilderClosure?
     
     let row: MessageRow
@@ -57,8 +59,10 @@ struct ChatMessageView<MessageContent: View>: View {
             }
         }
         .id(row.message.id)
-        .onReplyGesture {
-            
+        .applyIf(row.message.type != .call && row.message.type != .status) {
+            $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
+                viewModel.messageMenuActionInternal(message: row.message, action: DefaultMessageMenuAction.reply)
+            }
         }
     }
 }
