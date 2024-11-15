@@ -14,7 +14,7 @@ struct ReplyGesture: ViewModifier {
     }
     
     var swipeDirection: SwipeDirection
-    var maxSwipeOffset: CGFloat = 30
+    var maxSwipeOffset: CGFloat = 48.0
     var replySymbolColor: Color
     var onReply: (() -> Void)?
     
@@ -68,8 +68,11 @@ struct ReplyGesture: ViewModifier {
                 .gesture(drag)
             
             Image(systemName: "arrowshape.turn.up.backward.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24.0, height: 24.0)
                 .foregroundStyle(replySymbolColor)
-                .offset(x: -5)
+                .offset(x: -16.0)
                 .opacity(replySymbolOpacity)
                 .scaleEffect(.init(width: replySymbolOpacity, height: replySymbolOpacity))
                 .animation(.easeInOut, value: draggedOffset)
