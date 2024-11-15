@@ -14,16 +14,17 @@ struct ReplyGesture: ViewModifier {
     }
     
     var swipeDirection: SwipeDirection
-    var maxSwipeOffset: CGFloat = 48.0
-    var replySymbolColor: Color
+    var maxSwipeOffset: CGFloat = 48
+    var replySymbolColor: Color = .init(uiColor: .label)
     var onReply: (() -> Void)?
     
     @State private var draggedOffset: CGSize = .zero
+    @State private var shouldPlayHappitFeedback: Bool = true
     
     private var replySymbolOpacity: CGFloat {
         let horizontalOffset = abs(draggedOffset.width)
-        guard horizontalOffset > maxSwipeOffset / 2 else { return 0.0 }
-        let opaciry = (horizontalOffset - maxSwipeOffset / 2) / (maxSwipeOffset / 2)
+        guard horizontalOffset > maxSwipeOffset / 3 else { return 0.0 }
+        let opaciry = (horizontalOffset - maxSwipeOffset / 3) / (maxSwipeOffset - maxSwipeOffset / 3)
         return opaciry
     }
     
@@ -41,11 +42,16 @@ struct ReplyGesture: ViewModifier {
                     draggedOffset = .init(width: horizontalOffset, height: 0)
                     break
                 }
+                
+                guard abs(value.translation.width) > maxSwipeOffset - 5 && shouldPlayHappitFeedback else { return }
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                shouldPlayHappitFeedback = false
             }
             .onEnded { value in
                 draggedOffset = .zero
+                shouldPlayHappitFeedback = true
                 
-                guard abs(value.translation.width) > maxSwipeOffset - 3 else { return }
+                guard abs(value.translation.width) > maxSwipeOffset - 5 else { return }
                 
                 switch swipeDirection {
                 case .left:
@@ -55,8 +61,6 @@ struct ReplyGesture: ViewModifier {
                     guard value.translation.width > 0 else { return }
                     onReply?()
                 }
-                
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
     }
     
@@ -72,7 +76,7 @@ struct ReplyGesture: ViewModifier {
                 .scaledToFit()
                 .frame(width: 24.0, height: 24.0)
                 .foregroundStyle(replySymbolColor)
-                .offset(x: -16.0)
+                .offset(x: -16)
                 .opacity(replySymbolOpacity)
                 .scaleEffect(.init(width: replySymbolOpacity, height: replySymbolOpacity))
                 .animation(.easeInOut, value: draggedOffset)
