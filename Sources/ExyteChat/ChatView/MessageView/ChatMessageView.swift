@@ -57,5 +57,8 @@ struct ChatMessageView<MessageContent: View>: View {
             }
         }
         .id(row.message.id)
+        .onReplyGesture {
+            
+        }
     }
 }
