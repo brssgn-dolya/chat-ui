@@ -107,6 +107,8 @@ struct MessageView: View {
                 if !message.user.isCurrentUser && (positionInUserGroup == .single || (chatType == .conversation && positionInUserGroup == .first)) {
                     Text(message.user.name)
                         .font(.caption)
+                        .foregroundStyle(Color(uiColor: .label.withAlphaComponent(0.7)))
+                        .offset(x: 4.0)
                 }
                 
                 bubbleView(message)
