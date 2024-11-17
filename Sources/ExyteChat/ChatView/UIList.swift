@@ -565,14 +565,8 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     .transition(.scale)
                     .background(MessageMenuPreferenceViewSetter(id: row.id))
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
-//                    .applyIf(row.message.type != .call && row.message.type != .status) {
-//                        $0.onReplyGesture(replySymbolColor: chatTheme.colors.myMessage.opacity(0.7)) { [weak self] in
-//                            self?.viewModel.messageMenuActionInternal(message: row.message, action: DefaultMessageMenuAction.reply)
-//                        }
-//                    }
                     .applyIf(showMessageMenuOnLongPress) {
                         $0.gesture(LongPressGesture(minimumDuration: 0.15)
-                            .sequenced(before: DragGesture())
                             .onEnded({ _ in
                                 self.viewModel.messageMenuRow = row
                         }))
