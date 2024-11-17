@@ -103,7 +103,11 @@ struct MessageView: View {
                                 .frame(width: 2)
                         }
                 }
-                bubbleView(message)
+                
+                if !message.user.isCurrentUser && showAvatar {
+                    Text(message.user.name)
+                        .font(.caption)
+                }
             }
 
             if message.user.isCurrentUser, let status = message.status {
