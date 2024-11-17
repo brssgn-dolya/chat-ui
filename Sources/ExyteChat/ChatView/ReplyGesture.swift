@@ -69,7 +69,7 @@ struct ReplyGesture: ViewModifier {
             content
                 .offset(draggedOffset)
                 .animation(.easeInOut, value: draggedOffset)
-                .gesture(drag)
+                .simultaneousGesture(drag)
             
             Image(systemName: "arrowshape.turn.up.backward.circle")
                 .resizable()
