@@ -108,7 +108,7 @@ struct MessageView: View {
                     Text(message.user.name)
                         .font(.caption)
                         .foregroundStyle(Color(uiColor: .label.withAlphaComponent(0.7)))
-                        .offset(x: 4.0)
+                        .offset(x: 8.0)
                 }
                 
                 bubbleView(message)
