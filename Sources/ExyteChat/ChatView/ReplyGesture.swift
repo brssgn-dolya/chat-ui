@@ -29,7 +29,7 @@ struct ReplyGesture: ViewModifier {
     }
     
     private var drag: some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: maxSwipeOffset / 3)
             .onChanged { value in
                 switch swipeDirection {
                 case .left:
