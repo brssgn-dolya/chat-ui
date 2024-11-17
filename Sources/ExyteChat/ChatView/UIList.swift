@@ -571,8 +571,10 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
 //                        }
 //                    }
                     .applyIf(showMessageMenuOnLongPress) {
-                        $0.simultaneousGesture(LongPressGesture(minimumDuration: 0.15).onEnded({ _ in
-                            self.viewModel.messageMenuRow = row
+                        $0.gesture(LongPressGesture(minimumDuration: 0.15)
+                            .sequenced(before: DragGesture())
+                            .onEnded({ _ in
+                                self.viewModel.messageMenuRow = row
                         }))
                     }
             }
