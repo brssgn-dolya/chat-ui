@@ -108,6 +108,8 @@ struct MessageView: View {
                     Text(message.user.name)
                         .font(.caption)
                 }
+                
+                bubbleView(message)
             }
 
             if message.user.isCurrentUser, let status = message.status {
