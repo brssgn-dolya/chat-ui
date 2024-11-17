@@ -45,6 +45,15 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
     let ids: [String]
 
     @State private var isScrolledToTop = false
+    
+    @GestureState private var isDetectingLongPress = false
+    
+    var longPress: some Gesture {
+        LongPressGesture(minimumDuration: 0.15)
+            .onEnded { finished in
+                
+            }
+    }
 
     private let updatesQueue = DispatchQueue(label: "updatesQueue", qos: .utility)
     @State private var updateSemaphore = DispatchSemaphore(value: 1)
@@ -556,11 +565,8 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     .transition(.scale)
                     .background(MessageMenuPreferenceViewSetter(id: row.id))
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
-//                    .onTapGesture {
-//                        print("Message tapped")
-//                    }
                     .applyIf(showMessageMenuOnLongPress) {
-                        $0.onLongPressGesture() {
+                        $0.onLongPressGesture(minimumDuration: 0.15) {
                             self.viewModel.messageMenuRow = row
                         }
                     }
