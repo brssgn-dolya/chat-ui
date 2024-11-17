@@ -104,7 +104,7 @@ struct MessageView: View {
                         }
                 }
                 
-                if !message.user.isCurrentUser && showAvatar {
+                if !message.user.isCurrentUser && (positionInUserGroup == .single || (chatType == .conversation && positionInUserGroup == .first)) {
                     Text(message.user.name)
                         .font(.caption)
                 }
