@@ -104,7 +104,7 @@ struct MessageView: View {
                         }
                 }
                 
-                if !message.user.isCurrentUser && (positionInUserGroup == .single || (chatType == .conversation && positionInUserGroup == .first)) {
+                if !message.user.isCurrentUser && (positionInUserGroup == .single || (chatType == .conversation && positionInUserGroup == .first)) && isGroup {
                     Text(message.user.name)
                         .font(.caption)
                         .foregroundStyle(Color(uiColor: .label.withAlphaComponent(0.7)))
@@ -122,6 +122,8 @@ struct MessageView: View {
                 }
                 .sizeGetter($statusSize)
             }
+            
+            encryptionIndicatorView(isEncrypted: message.isEncrypted)
         }
         .padding(.top, topPadding)
         .padding(.bottom, bottomPadding)
@@ -298,6 +300,20 @@ struct MessageView: View {
             }
         }
         .sizeGetter($timeSize)
+    }
+    
+    @ViewBuilder
+    func encryptionIndicatorView(isEncrypted: Bool) -> some View {
+        Group {
+            if !isEncrypted {
+                Image(systemName: "lock.open.trianglebadge.exclamationmark.fill")
+                    .foregroundStyle(Color(uiColor: .systemOrange))
+                    .padding(.bottom, 4)
+                    .padding(.horizontal, 4)
+            } else {
+                EmptyView()
+            }
+        }
     }
     
     @ViewBuilder

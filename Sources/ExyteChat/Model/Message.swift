@@ -58,6 +58,7 @@ public struct Message: Identifiable, Hashable {
     public var attachments: [Attachment]
     public var recording: Recording?
     public var replyMessage: ReplyMessage?
+    public var isEncrypted: Bool
 
     public var triggerRedraw: UUID?
     
@@ -71,7 +72,8 @@ public struct Message: Identifiable, Hashable {
                 attachments: [Attachment] = [],
                 recording: Recording? = nil,
                 replyMessage: ReplyMessage? = nil,
-                type: MessageType = .text) {
+                type: MessageType = .text,
+                isEncrypted: Bool = false) {
 
         self.id = id
         self.user = user
@@ -82,6 +84,7 @@ public struct Message: Identifiable, Hashable {
         self.recording = recording
         self.replyMessage = replyMessage
         self.type = type
+        self.isEncrypted = isEncrypted
     }
 
     public static func makeMessage(

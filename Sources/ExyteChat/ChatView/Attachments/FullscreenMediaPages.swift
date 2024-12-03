@@ -38,6 +38,7 @@ struct FullscreenMediaPages: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false)
                             .ignoresSafeArea()
+                            .addPinchZoom()
                     }
                     .ignoresSafeArea()
                 }
@@ -45,7 +46,8 @@ struct FullscreenMediaPages: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .offset(viewModel.offset)
-            .gesture(closeGesture)
+            //.gesture(closeGesture)
+            //.simultaneousGesture(closeGesture)
             .onTapGesture {
                 withAnimation {
                     viewModel.showMinis.toggle()

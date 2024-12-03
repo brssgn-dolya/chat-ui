@@ -31,6 +31,8 @@ struct ReplyGesture: ViewModifier {
     private var drag: some Gesture {
         DragGesture(minimumDistance: maxSwipeOffset / 3)
             .onChanged { value in
+                guard abs(value.translation.height) < 5 else { return }
+                
                 switch swipeDirection {
                 case .left:
                     guard value.translation.width < 0 else { return }
@@ -69,7 +71,8 @@ struct ReplyGesture: ViewModifier {
             content
                 .offset(draggedOffset)
                 .animation(.easeInOut, value: draggedOffset)
-                .gesture(drag)
+                //.gesture(drag)
+                .simultaneousGesture(drag)
             
             Image(systemName: "arrowshape.turn.up.backward.circle")
                 .resizable()

@@ -31,9 +31,12 @@ struct AttachmentCell: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture {
+        .simultaneousGesture(TapGesture().onEnded { _ in
             onTap(attachment)
-        }
+        })
+//        .onTapGesture {
+//            
+//        }
     }
 
     var content: some View {
