@@ -67,6 +67,9 @@ public struct ChatTheme {
 
         public var timeCapsuleBackground: Color
         public var timeCapsuleForeground: Color
+        
+        public var anyLink: Color
+        public var darkLink: Color
 
         public init(
             grayStatus: Color = Color(hex: "AFB3B8"),
@@ -88,7 +91,9 @@ public struct ChatTheme {
             myMessageTime: Color = .white.opacity(0.4),
             frientMessageTime: Color = .black.opacity(0.4),
             timeCapsuleBackground: Color = .black.opacity(0.4),
-            timeCapsuleForeground: Color = .white
+            timeCapsuleForeground: Color = .white,
+            anyLink: Color = Color(hex: "BEE2FC"),
+            darkLink: Color = Color(hex: "2895E2")
         ) {
             self.grayStatus = grayStatus
             self.errorStatus = errorStatus
@@ -110,6 +115,8 @@ public struct ChatTheme {
             self.frientMessageTime = frientMessageTime
             self.timeCapsuleBackground = timeCapsuleBackground
             self.timeCapsuleForeground = timeCapsuleForeground
+            self.anyLink = anyLink
+            self.darkLink = darkLink
         }
     }
 

@@ -182,7 +182,13 @@ struct MessageView: View {
             }
 
             if !message.text.isEmpty {
-                MessageTextView(text: message.text, messageUseMarkdown: messageUseMarkdown)
+                MessageTextView(
+                    text: message.text,
+                    messageUseMarkdown: messageUseMarkdown,
+                    inbound: !message.user.isCurrentUser,
+                    anyLinkColor: theme.colors.anyLink,
+                    darkLinkColor: theme.colors.darkLink
+                )
                     .padding(.horizontal, MessageView.horizontalTextPadding)
             }
 
@@ -239,7 +245,13 @@ struct MessageView: View {
 
     @ViewBuilder
     func textWithTimeView(_ message: Message) -> some View {
-        let messageView = MessageTextView(text: message.text, messageUseMarkdown: messageUseMarkdown)
+        let messageView = MessageTextView(
+            text: message.text,
+            messageUseMarkdown: messageUseMarkdown,
+            inbound: !message.user.isCurrentUser,
+            anyLinkColor: theme.colors.anyLink,
+            darkLinkColor: theme.colors.darkLink
+        )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)
 
