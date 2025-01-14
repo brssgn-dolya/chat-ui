@@ -600,3 +600,27 @@ public extension ChatView {
     }
 
 }
+
+public struct PublicMessageStatusView: View {
+    private let status: Message.Status
+    private let onRetry: () -> Void
+    @State var statusSize: CGSize = .zero
+    var isLastMessageForCurrentUser: Bool
+    
+    public init(status: Message.Status, isLastMessageForCurrentUser: Bool, onRetry: @escaping () -> Void) {
+        self.status = status
+        self.isLastMessageForCurrentUser = isLastMessageForCurrentUser
+        self.onRetry = onRetry
+    }
+
+    public var body: some View {
+        if !isLastMessageForCurrentUser {
+            MessageStatusView(status: status) {
+                if case let .error(draft) = status {
+                    #warning("handle retry")
+                }
+            }
+            .sizeGetter($statusSize)
+        }
+    }
+}
