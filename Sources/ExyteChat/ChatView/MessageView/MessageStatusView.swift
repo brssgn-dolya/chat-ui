@@ -4,14 +4,19 @@
 
 import SwiftUI
 
-struct MessageStatusView: View {
+public struct MessageStatusView: View {
 
     @Environment(\.chatTheme) private var theme
 
     let status: Message.Status
     let onRetry: () -> Void
 
-    var body: some View {
+    public init(status: Message.Status, onRetry: @escaping () -> Void) {
+        self.status = status
+        self.onRetry = onRetry
+    }
+    
+    public var body: some View {
         Group {
             switch status {
             case .sending:
