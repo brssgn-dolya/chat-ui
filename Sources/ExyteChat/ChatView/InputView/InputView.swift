@@ -487,6 +487,9 @@ struct InputView: View {
             onAction(.playRecord)
         } label: {
             theme.images.recordAudio.playRecord
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
         }
     }
 
@@ -495,6 +498,9 @@ struct InputView: View {
             onAction(.pauseRecord)
         } label: {
             theme.images.recordAudio.pauseRecord
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
         }
     }
 
