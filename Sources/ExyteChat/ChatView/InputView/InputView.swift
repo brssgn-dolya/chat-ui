@@ -143,6 +143,11 @@ struct InputView: View {
         .background(backgroundColor)
         .onAppear {
             viewModel.recordingPlayer = recordingPlayer
+            viewModel.bindToRecordingPlayerState()
+        }
+        
+        .onDisappear {
+            viewModel.unbindRecordingPlayer()
         }
     }
 
