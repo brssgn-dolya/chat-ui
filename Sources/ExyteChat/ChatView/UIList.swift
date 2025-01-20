@@ -9,6 +9,7 @@ import SwiftUI
 
 public extension Notification.Name {
     static let onScrollToBottom = Notification.Name("onScrollToBottom")
+    static let audioPlaybackStarted = Notification.Name("audioPlaybackStarted")
 }
 
 struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {

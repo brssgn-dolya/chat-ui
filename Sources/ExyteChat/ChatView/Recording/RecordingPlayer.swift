@@ -68,10 +68,17 @@ final class RecordingPlayer: ObservableObject {
     }
 
     private func play() {
-        try? audioSession.setActive(true)
-        player?.play()
-        playing = true
+        guard !playing else { return }
+        do {
+            try audioSession.setActive(true)
+            player?.play()
+            playing = true
+            NotificationCenter.default.post(name: .audioPlaybackStarted, object: self)
+        } catch {
+            print("Failed to activate audio session: \(error.localizedDescription)")
+        }
     }
+
 
     private func setupPlayer(for url: URL, trackDuration: Double) {
         duration = trackDuration
@@ -93,6 +100,18 @@ final class RecordingPlayer: ObservableObject {
         }
         
         player = AVPlayer(playerItem: playerItem)
+        
+        NotificationCenter.default.addObserver(
+                 forName: .audioPlaybackStarted,
+                 object: nil,
+                 queue: .main
+             ) { [weak self] notification in
+                 guard let self else { return }
+                 if let sender = notification.object as? RecordingPlayer, sender !== self {
+                     self.pause()
+                 }
+             }
+
 
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
