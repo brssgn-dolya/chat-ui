@@ -58,6 +58,8 @@ final class Recorder {
             audioRecorder?.record()
             durationProgressHandler(0.0, [])
 
+            NotificationCenter.default.post(name: .recordingStarted, object: self)
+            
             DispatchQueue.main.async { [weak self] in
                 self?.audioTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                     self?.onTimer(durationProgressHandler)

@@ -110,7 +110,7 @@ final class InputViewModel: ObservableObject {
             state = .playingRecording
             if let recording = attachments.recording {
                 subscribeRecordPlayer()
-                recordingPlayer?.play(recording)
+                recordingPlayer?.togglePlay(recording)
             }
         case .pauseRecord:
             state = .pausedRecording

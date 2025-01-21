@@ -29,12 +29,8 @@ final class RecordingPlayer: ObservableObject {
         try? audioSession.overrideOutputAudioPort(.speaker)
     }
 
-    func play(_ recording: Recording) {
-        self.recording = recording
-        if let url = recording.url {
-            setupPlayer(for: url, trackDuration: recording.duration)
-            play()
-        }
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     func pause() {
@@ -79,7 +75,6 @@ final class RecordingPlayer: ObservableObject {
         }
     }
 
-
     private func setupPlayer(for url: URL, trackDuration: Double) {
         duration = trackDuration
         progress = 0.0
@@ -111,26 +106,39 @@ final class RecordingPlayer: ObservableObject {
                      self.pause()
                  }
              }
-
+        
+        NotificationCenter.default.addObserver(
+            forName: .recordingStarted,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            if let sender = notification.object as? Recorder, self.playing {
+                print("Pausing audio player due to recording start by \(sender).")
+                self.pause()
+            }
+        }
 
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
             queue: nil
         ) { [weak self] _ in
-            self?.playing = false
-            self?.player?.seek(to: .zero)
-            self?.didPlayTillEnd.send()
+            guard let self else { return }
+            self.playing = false
+            self.player?.seek(to: .zero)
+            self.didPlayTillEnd.send()
         }
-
+ 
         timeObserver = player?.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.2, preferredTimescale: 10),
             queue: DispatchQueue.main
         ) { [weak self] time in
-            guard let item = self?.player?.currentItem, !item.duration.seconds.isNaN else { return }
-            self?.duration = item.duration.seconds
-            self?.progress = time.seconds / item.duration.seconds
-            self?.secondsLeft = (item.duration - time).seconds.rounded()
+            guard let self else { return }
+            guard let item = self.player?.currentItem, !item.duration.seconds.isNaN else { return }
+            self.duration = item.duration.seconds
+            self.progress = time.seconds / item.duration.seconds
+            self.secondsLeft = (item.duration - time).seconds.rounded()
         }
     }
 
