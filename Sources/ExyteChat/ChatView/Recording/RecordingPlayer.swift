@@ -74,7 +74,7 @@ final class RecordingPlayer: ObservableObject {
             print("Failed to activate audio session: \(error.localizedDescription)")
         }
     }
-
+    
     private func setupPlayer(for url: URL, trackDuration: Double) {
         duration = trackDuration
         progress = 0.0
@@ -95,17 +95,34 @@ final class RecordingPlayer: ObservableObject {
         }
         
         player = AVPlayer(playerItem: playerItem)
-        
+        setupNotificationCenterObservers(for: playerItem)
+
+        timeObserver = player?.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.2, preferredTimescale: 10),
+            queue: .main
+        ) { [weak self] time in
+            guard let self else { return }
+            guard let item = self.player?.currentItem, !item.duration.seconds.isNaN else { return }
+            self.duration = item.duration.seconds
+            self.progress = time.seconds / item.duration.seconds
+            self.secondsLeft = (item.duration - time).seconds.rounded()
+        }
+    }
+}
+
+private extension RecordingPlayer {
+    func setupNotificationCenterObservers(for playerItem: AVPlayerItem) {
         NotificationCenter.default.addObserver(
-                 forName: .audioPlaybackStarted,
-                 object: nil,
-                 queue: .main
-             ) { [weak self] notification in
-                 guard let self else { return }
-                 if let sender = notification.object as? RecordingPlayer, sender !== self {
-                     self.pause()
-                 }
-             }
+            forName: .audioPlaybackStarted,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            if let sender = notification.object as? RecordingPlayer, sender !== self {
+                print("Pausing audio player because another player started playback.")
+                self.pause()
+            }
+        }
         
         NotificationCenter.default.addObserver(
             forName: .recordingStarted,
@@ -118,28 +135,16 @@ final class RecordingPlayer: ObservableObject {
                 self.pause()
             }
         }
-
+        
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
-            queue: nil
+            queue: .main
         ) { [weak self] _ in
             guard let self else { return }
             self.playing = false
             self.player?.seek(to: .zero)
             self.didPlayTillEnd.send()
         }
- 
-        timeObserver = player?.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.2, preferredTimescale: 10),
-            queue: DispatchQueue.main
-        ) { [weak self] time in
-            guard let self else { return }
-            guard let item = self.player?.currentItem, !item.duration.seconds.isNaN else { return }
-            self.duration = item.duration.seconds
-            self.progress = time.seconds / item.duration.seconds
-            self.secondsLeft = (item.duration - time).seconds.rounded()
-        }
     }
-
 }
