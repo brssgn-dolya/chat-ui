@@ -34,33 +34,37 @@ struct AttachmentCell: View {
         .simultaneousGesture(TapGesture().onEnded { _ in
             onTap(attachment)
         })
-//        .onTapGesture {
-//            
-//        }
     }
 
     var content: some View {
-        AsyncImageView(url: attachment.thumbnail)
+        AsyncImageView(url: attachment.thumbnail, imageData: attachment.thumbnailData)
     }
 }
 
 struct AsyncImageView: View {
 
     @Environment(\.chatTheme) var theme
-    let url: URL
+    let url: URL?
+    let imageData: Data?
 
     var body: some View {
-        CachedAsyncImage(url: url, urlCache: .imageCache) { imageView in
-            imageView
+        if let url {
+            CachedAsyncImage(url: url, urlCache: .imageCache) { imageView in
+                imageView
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                ZStack {
+                    Rectangle()
+                        .foregroundColor(theme.colors.inputLightContextBackground)
+                        .frame(minWidth: 100, minHeight: 100)
+                    ActivityIndicator(size: 30, showBackground: false)
+                }
+            }
+        } else if let imageData, let image = UIImage(data: imageData) {
+            Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-        } placeholder: {
-            ZStack {
-                Rectangle()
-                    .foregroundColor(theme.colors.inputLightContextBackground)
-                    .frame(minWidth: 100, minHeight: 100)
-                ActivityIndicator(size: 30, showBackground: false)
-            }
         }
     }
 }

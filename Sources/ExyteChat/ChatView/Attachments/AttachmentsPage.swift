@@ -13,16 +13,7 @@ struct AttachmentsPage: View {
 
     var body: some View {
         if attachment.type == .image {
-            CachedAsyncImage(url: attachment.full, urlCache: .imageCache) { phase in
-                switch phase {
-                case let .success(image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                default:
-                    ActivityIndicator()
-                }
-            }
+            image
         } else if attachment.type == .video {
             VideoView(viewModel: VideoViewModel(attachment: attachment))
         } else {
@@ -33,6 +24,26 @@ struct AttachmentsPage: View {
                 .overlay {
                     Text("Unknown")
                 }
+        }
+    }
+    
+    @ViewBuilder
+    private var image: some View {
+        if let imageData = attachment.thumbnailData, let image = UIImage(data: imageData) {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            CachedAsyncImage(url: attachment.full, urlCache: .imageCache) { phase in
+                switch phase {
+                case let .success(image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                default:
+                    ActivityIndicator()
+                }
+            }
         }
     }
 }

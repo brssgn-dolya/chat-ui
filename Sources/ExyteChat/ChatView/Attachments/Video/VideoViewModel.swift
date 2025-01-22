@@ -17,9 +17,16 @@ final class VideoViewModel: ObservableObject {
 
     private var subscriptions = Set<AnyCancellable>()
     @Published var status: AVPlayer.Status = .unknown
+    
+    private var loaderDelegate: CryptoResourceLoaderDelegate
 
     init(attachment: Attachment) {
         self.attachment = attachment
+        self.loaderDelegate = CryptoResourceLoaderDelegate(
+            url: attachment.full,
+            key: attachment.key ?? .init(),
+            iv: attachment.iv ?? .init()
+        )
     }
 
     func onStart() {
@@ -27,9 +34,15 @@ final class VideoViewModel: ObservableObject {
             let playerItem: AVPlayerItem
             
             if let mimeType = attachment.mimeType {
-                let asset = AVURLAsset(url: attachment.full, options: [
-                    "AVURLAssetOutOfBandMIMETypeKey": mimeType
-                ])
+                let options: [String : Any] = ["AVURLAssetOutOfBandMIMETypeKey": mimeType]
+                let asset = AVURLAsset(url: loaderDelegate.localStreamingURL, options: options)
+                if attachment.key != nil, attachment.iv != nil {
+                    asset.resourceLoader.setDelegate(
+                        loaderDelegate,
+                        queue: DispatchQueue.main
+                    )
+                }
+                
                 playerItem = AVPlayerItem(asset: asset)
             } else {
                 playerItem = AVPlayerItem(url: attachment.full)

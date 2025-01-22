@@ -104,7 +104,7 @@ public struct Message: Identifiable, Hashable {
                     guard let fullURL = await media.getURL() else {
                         return nil
                     }
-                    return Attachment(id: UUID().uuidString, thumbnail: thumbnailURL, full: fullURL, type: .video)
+                    return Attachment(id: UUID().uuidString, thumbnail: thumbnailURL, thumbnailData: nil, full: fullURL, type: .video)
                 }
             }
 
@@ -148,12 +148,23 @@ public struct Recording: Codable, Hashable {
     public var waveformSamples: [CGFloat]
     public var url: URL?
     public var mimeType: String?
+    public var key: Data?
+    public var iv: Data?
 
-    public init(duration: Double = 0.0, waveformSamples: [CGFloat] = [], url: URL? = nil, mimeType: String? = nil) {
+    public init(
+        duration: Double = 0.0,
+        waveformSamples: [CGFloat] = [],
+        url: URL? = nil,
+        mimeType: String? = nil,
+        key: Data? = nil,
+        iv: Data? = nil
+    ) {
         self.duration = duration
         self.waveformSamples = waveformSamples
         self.url = url
         self.mimeType = mimeType
+        self.key = key
+        self.iv = iv
     }
 }
 

@@ -23,6 +23,7 @@ final class RecordingPlayer: ObservableObject {
 
     private var player: AVPlayer?
     private var timeObserver: Any?
+    private var loaderDelegate: CryptoResourceLoaderDelegate?
 
     init() {
         try? audioSession.setCategory(.playback)
@@ -85,10 +86,34 @@ final class RecordingPlayer: ObservableObject {
         
         let playerItem: AVPlayerItem
         
-        if let mimeType = recording?.mimeType {
+        if let mimeType = recording?.mimeType,
+           let recording,
+           let key = recording.key,
+           let iv = recording.iv,
+           let url = recording.url
+        {
+            let loaderDelegate = CryptoResourceLoaderDelegate(
+                url: url,
+                key: key,
+                iv: iv)
+            
+            self.loaderDelegate = loaderDelegate
+            
+            let asset = AVURLAsset(url: loaderDelegate.localStreamingURL, options: [
+                "AVURLAssetOutOfBandMIMETypeKey": mimeType
+            ])
+            
+            asset.resourceLoader.setDelegate(
+                loaderDelegate,
+                queue: DispatchQueue.main
+            )
+            
+            playerItem = AVPlayerItem(asset: asset)
+        } else if let mimeType = recording?.mimeType {
             let asset = AVURLAsset(url: url, options: [
                 "AVURLAssetOutOfBandMIMETypeKey": mimeType
             ])
+            
             playerItem = AVPlayerItem(asset: asset)
         } else {
             playerItem = AVPlayerItem(url: url)
