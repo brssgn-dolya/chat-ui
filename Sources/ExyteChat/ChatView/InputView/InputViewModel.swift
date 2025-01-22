@@ -198,7 +198,7 @@ private extension InputViewModel {
         attachments.medias.publisher
             .receive(on: DispatchQueue.global())
             .asyncMap { media in
-                guard let thumbnailURL = await media.getThumbnailURL() else {
+                guard let thumbnailURL = await media.getThumbnailURL(), let thumbnailData = await media.getThumbnailData() else {
                     return nil
                 }
 
@@ -209,7 +209,7 @@ private extension InputViewModel {
                     guard let fullURL = await media.getURL() else {
                         return nil
                     }
-                    return Attachment(id: UUID().uuidString, thumbnail: thumbnailURL, full: fullURL, type: .video)
+                    return Attachment(id: UUID().uuidString, thumbnail: thumbnailURL, thumbnailData: thumbnailData, full: fullURL, type: .video)
                 }
             }
             .compactMap {
