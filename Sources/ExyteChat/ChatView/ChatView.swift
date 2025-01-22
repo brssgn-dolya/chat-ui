@@ -150,14 +150,16 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var menuDirection: Direction = .bottom
     @State private var showAttachmentSavedAlert: Bool = false
 
-    public init(messages: [Message],
-                chatType: ChatType = .conversation,
-                replyMode: ReplyMode = .quote,
-                showAvatars: Bool = true,
-                didSendMessage: @escaping (DraftMessage) -> Void,
-                messageBuilder: @escaping MessageBuilderClosure,
-                inputViewBuilder: @escaping InputViewBuilderClosure,
-                messageMenuAction: MessageMenuActionClosure?) {
+    public init(
+        messages: [Message],
+        chatType: ChatType = .conversation,
+        replyMode: ReplyMode = .quote,
+        showAvatars: Bool = true,
+        didSendMessage: @escaping (DraftMessage) -> Void,
+        messageBuilder: @escaping MessageBuilderClosure,
+        inputViewBuilder: @escaping InputViewBuilderClosure,
+        messageMenuAction: MessageMenuActionClosure?
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
@@ -189,7 +191,16 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         },
                         onSave: { index in
                             let attachment = attachments[index]
-                            guard let data = try? Data(contentsOf: attachment.full), let image = UIImage(data: data) else { return }
+                            
+                            var image: UIImage?
+                            
+                            if let imageData = attachment.thumbnailData {
+                                image = UIImage(data: imageData)
+                            } else if let data = try? Data(contentsOf: attachment.full) {
+                                image = UIImage(data: data)
+                            }
+                            
+                            guard let image else { return }
                             
                             DispatchQueue.main.async {
                                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
@@ -234,7 +245,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     switch result {
                     case .success(let urls):
                         documentSelectionClosure?(urls)
-                    case .failure(let failure):
+                    case .failure(_):
                         documentSelectionClosure?([])
                     }
                 }

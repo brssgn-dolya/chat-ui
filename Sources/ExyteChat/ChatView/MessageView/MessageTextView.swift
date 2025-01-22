@@ -23,8 +23,7 @@ struct MessageTextView: View {
 
     @ViewBuilder
     private func textView(_ text: String) -> some View {
-        if messageUseMarkdown,
-           let attributed = try? AttributedString(markdown: text, options: String.markdownOptions) {
+        if messageUseMarkdown {
             Text(formatAttributedString())
         } else {
             Text(text)

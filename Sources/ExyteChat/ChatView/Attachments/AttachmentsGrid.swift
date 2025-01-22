@@ -104,47 +104,47 @@ struct AttachmentsPair {
     }
 }
 
-#if DEBUG
-struct AttachmentsGrid_Preview: PreviewProvider {
-    private static let examples = [1, 2, 3, 4, 5, 10]
-
-    static var previews: some View {
-        Group {
-            ForEach(examples, id: \.self) { count in
-                ScrollView {
-                    AttachmentsGrid(attachments: .random(count: count), onTap: { _ in })
-                        .padding()
-                        .background(Color.white)
-                }
-            }
-            .padding()
-            .background(Color.secondary)
-        }
-    }
-}
-
-extension Array where Element == Attachment {
-    static func random(count: Int) -> [Attachment] {
-        return Swift.Array(repeating: 0, count: count)
-            .map { _ in randomAttachment() }
-    }
-
-    private static func randomAttachment() -> Attachment {
-        if Int.random(in: 0...3) == 0 {
-            return Attachment.randomVideo()
-        } else {
-            return Attachment.randomImage()
-        }
-    }
-}
-
-extension Attachment {
-    static func randomImage() -> Attachment {
-        Attachment(id: UUID().uuidString, url: URL(string: "https://placeimg.com/640/480/sepia")!, type: .image)
-    }
-    // TODO get video, not image
-    static func randomVideo() -> Attachment {
-        Attachment(id: UUID().uuidString, url: URL(string: "https://placeimg.com/640/480/sepia")!, type: .video)
-    }
-}
-#endif
+//#if DEBUG
+//struct AttachmentsGrid_Preview: PreviewProvider {
+//    private static let examples = [1, 2, 3, 4, 5, 10]
+//
+//    static var previews: some View {
+//        Group {
+//            ForEach(examples, id: \.self) { count in
+//                ScrollView {
+//                    AttachmentsGrid(attachments: .random(count: count), onTap: { _ in })
+//                        .padding()
+//                        .background(Color.white)
+//                }
+//            }
+//            .padding()
+//            .background(Color.secondary)
+//        }
+//    }
+//}
+//
+//extension Array where Element == Attachment {
+//    static func random(count: Int) -> [Attachment] {
+//        return Swift.Array(repeating: 0, count: count)
+//            .map { _ in randomAttachment() }
+//    }
+//
+//    private static func randomAttachment() -> Attachment {
+//        if Int.random(in: 0...3) == 0 {
+//            return Attachment.randomVideo()
+//        } else {
+//            return Attachment.randomImage()
+//        }
+//    }
+//}
+//
+//extension Attachment {
+//    static func randomImage() -> Attachment {
+//        Attachment(id: UUID().uuidString, url: URL(string: "https://placeimg.com/640/480/sepia")!, type: .image)
+//    }
+//    // TODO get video, not image
+//    static func randomVideo() -> Attachment {
+//        Attachment(id: UUID().uuidString, url: URL(string: "https://placeimg.com/640/480/sepia")!, type: .video)
+//    }
+//}
+//#endif
