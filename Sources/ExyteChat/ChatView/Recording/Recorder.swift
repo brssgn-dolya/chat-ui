@@ -90,6 +90,7 @@ final class Recorder {
         audioRecorder = nil
         audioTimer?.invalidate()
         audioTimer = nil
+        NotificationCenter.default.post(name: .recordingStopped, object: self)
     }
 }
 

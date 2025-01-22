@@ -11,6 +11,8 @@ public extension Notification.Name {
     static let onScrollToBottom = Notification.Name("onScrollToBottom")
     static let audioPlaybackStarted = Notification.Name("audioPlaybackStarted")
     static let recordingStarted = Notification.Name("recordingStarted")
+    static let recordingStopped = Notification.Name("recordingStopped")
+    
 }
 
 struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {

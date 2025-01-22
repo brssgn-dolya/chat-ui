@@ -150,16 +150,21 @@ final class InputViewModel: ObservableObject {
         playerStateSubscription = recordingPlayer.$playing
             .sink { [weak self] isPlaying in
                 guard let self else { return }
-                self.state = isPlaying ? .playingRecording : .pausedRecording
+                if isPlaying {
+                    self.state = .playingRecording
+                } else if self.state == .playingRecording {
+                    self.state = .pausedRecording
+                }
             }
     }
     
     func unbindRecordingPlayer() {
-        if state == .playingRecording {
-            playerStateSubscription = nil
+        if state == .playingRecording || state == .pausedRecording {
             recordingPlayer?.reset()
-            state = .empty
+            state = .pausedRecording
         }
+        
+        playerStateSubscription = nil
     }
 
 }

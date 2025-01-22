@@ -24,14 +24,32 @@ final class RecordingPlayer: ObservableObject {
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var loaderDelegate: CryptoResourceLoaderDelegate?
-
+    private var cancellables = Set<AnyCancellable>()
+    
     init() {
-        try? audioSession.setCategory(.playback)
-        try? audioSession.overrideOutputAudioPort(.speaker)
+        initializePlayer()
     }
 
-    deinit {
-        NotificationCenter.default.removeObserver(self)
+    func initializePlayer() {
+        do {
+            try audioSession.setCategory(.playback)
+            try audioSession.setMode(.default)
+
+            if audioSession.currentRoute.outputs.first?.portType == .builtInSpeaker {
+                try audioSession.overrideOutputAudioPort(.speaker)
+            }
+        } catch let error as NSError {
+            print("Audio session configuration failed with error code: \(error.code), description: \(error.localizedDescription)")
+            fallbackAudioConfiguration()
+        }
+    }
+    
+    func fallbackAudioConfiguration() {
+        do {
+            try audioSession.setCategory(.playback, mode: .default)
+        } catch let error {
+            print("Fallback configuration failed with error: \(error.localizedDescription)")
+        }
     }
 
     func pause() {
@@ -46,14 +64,19 @@ final class RecordingPlayer: ObservableObject {
                 setupPlayer(for: url, trackDuration: recording.duration)
             }
         }
-        if playing { pause() }
-        else { play() }
+        if playing {
+            pause()
+        } else {
+            play()
+        }
     }
 
     func seek(to progress: Double) {
         let goalTime = duration * progress
         player?.seek(to: CMTime(seconds: goalTime, preferredTimescale: 10))
-        if !playing { play() }
+        if !playing {
+            play()
+        }
     }
 
     func reset() {
@@ -120,8 +143,35 @@ final class RecordingPlayer: ObservableObject {
         }
         
         player = AVPlayer(playerItem: playerItem)
+        
+        playerItem.publisher(for: \.status)
+            .sink { [weak self] status in
+                guard let self else { return }
+                switch status {
+                case .readyToPlay:
+                    let itemDuration = playerItem.duration.seconds
+                    if !itemDuration.isNaN && itemDuration > 0 {
+                        self.duration = itemDuration
+                        self.secondsLeft = itemDuration
+                        initializePlayer()
+                    } else {
+                        self.duration = trackDuration
+                        self.secondsLeft = trackDuration
+                        initializePlayer()
+                    }
+                case .failed:
+                    print("Failed to load item: \(String(describing: playerItem.error?.localizedDescription))")
+                default:
+                    break
+                }
+            }
+            .store(in: &cancellables)
+        
+        setupTimeObserver()
         setupNotificationCenterObservers(for: playerItem)
+    }
 
+    private func setupTimeObserver() {
         timeObserver = player?.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.2, preferredTimescale: 10),
             queue: .main
@@ -137,6 +187,7 @@ final class RecordingPlayer: ObservableObject {
 
 private extension RecordingPlayer {
     func setupNotificationCenterObservers(for playerItem: AVPlayerItem) {
+        
         NotificationCenter.default.addObserver(
             forName: .audioPlaybackStarted,
             object: nil,
@@ -144,7 +195,6 @@ private extension RecordingPlayer {
         ) { [weak self] notification in
             guard let self else { return }
             if let sender = notification.object as? RecordingPlayer, sender !== self {
-                print("Pausing audio player because another player started playback.")
                 self.pause()
             }
         }
@@ -156,9 +206,17 @@ private extension RecordingPlayer {
         ) { [weak self] notification in
             guard let self else { return }
             if let sender = notification.object as? Recorder, self.playing {
-                print("Pausing audio player due to recording start by \(sender).")
                 self.pause()
             }
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .recordingStopped,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            self.initializePlayer()
         }
         
         NotificationCenter.default.addObserver(
