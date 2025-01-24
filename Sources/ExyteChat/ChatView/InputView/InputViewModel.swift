@@ -216,6 +216,9 @@ private extension InputViewModel {
 
     func unsubscribeRecordPlayer() {
         recordPlayerSubscription = nil
+        if recordingPlayer?.playing == true {
+            recordingPlayer?.reset()
+        }
     }
 }
 
