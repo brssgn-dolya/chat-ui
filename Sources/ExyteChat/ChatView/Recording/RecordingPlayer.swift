@@ -9,54 +9,24 @@ import Combine
 import AVFoundation
 
 final class RecordingPlayer: ObservableObject {
-
+    
+    // MARK: - Properties
+    
     @Published var playing = false
     @Published var duration: Double = 0.0
     @Published var secondsLeft: Double = 0.0
     @Published var progress: Double = 0.0
-
+    
     private let audioSession = AVAudioSession()
-
     var didPlayTillEnd = PassthroughSubject<Void, Never>()
-
     private var recording: Recording?
-
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var loaderDelegate: CryptoResourceLoaderDelegate?
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
-        initializePlayer()
-    }
-
-    func initializePlayer() {
-        do {
-            try audioSession.setCategory(.playback)
-            try audioSession.setMode(.default)
-
-            if audioSession.currentRoute.outputs.first?.portType == .builtInSpeaker {
-                try audioSession.overrideOutputAudioPort(.speaker)
-            }
-        } catch let error as NSError {
-            print("Audio session configuration failed with error code: \(error.code), description: \(error.localizedDescription)")
-            fallbackAudioConfiguration()
-        }
-    }
+    // MARK: - Public Methods
     
-    func fallbackAudioConfiguration() {
-        do {
-            try audioSession.setCategory(.playback, mode: .default)
-        } catch let error {
-            print("Fallback configuration failed with error: \(error.localizedDescription)")
-        }
-    }
-
-    func pause() {
-        player?.pause()
-        playing = false
-    }
-
     func togglePlay(_ recording: Recording) {
         if self.recording?.url != recording.url {
             self.recording = recording
@@ -70,7 +40,12 @@ final class RecordingPlayer: ObservableObject {
             play()
         }
     }
-
+    
+    func pause() {
+        player?.pause()
+        playing = false
+    }
+    
     func seek(to progress: Double) {
         let goalTime = duration * progress
         player?.seek(to: CMTime(seconds: goalTime, preferredTimescale: 10))
@@ -78,26 +53,17 @@ final class RecordingPlayer: ObservableObject {
             play()
         }
     }
-
+    
     func reset() {
         if playing {
             pause()
         }
         recording = nil
+        secondsLeft = 0.0
         progress = 0
     }
-
-    private func play() {
-        guard !playing else { return }
-        do {
-            try audioSession.setActive(true)
-            player?.play()
-            playing = true
-            NotificationCenter.default.post(name: .audioPlaybackStarted, object: self)
-        } catch {
-            print("Failed to activate audio session: \(error.localizedDescription)")
-        }
-    }
+    
+    // MARK: - Private Methods
     
     private func setupPlayer(for url: URL, trackDuration: Double) {
         duration = trackDuration
@@ -149,20 +115,13 @@ final class RecordingPlayer: ObservableObject {
                 guard let self else { return }
                 switch status {
                 case .readyToPlay:
-                    let itemDuration = playerItem.duration.seconds
-                    if !itemDuration.isNaN && itemDuration > 0 {
-                        self.duration = itemDuration
-                        self.secondsLeft = itemDuration
-                        initializePlayer()
-                    } else {
-                        self.duration = trackDuration
-                        self.secondsLeft = trackDuration
-                        initializePlayer()
-                    }
+                    prepareForPlayback()
                 case .failed:
                     print("Failed to load item: \(String(describing: playerItem.error?.localizedDescription))")
-                default:
-                    break
+                case .unknown:
+                    print("Status is unknown. Waiting for updates.")
+                @unknown default:
+                    print("Unhandled status: \(status.rawValue)")
                 }
             }
             .store(in: &cancellables)
@@ -170,7 +129,7 @@ final class RecordingPlayer: ObservableObject {
         setupTimeObserver()
         setupNotificationCenterObservers(for: playerItem)
     }
-
+    
     private func setupTimeObserver() {
         timeObserver = player?.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.2, preferredTimescale: 10),
@@ -180,12 +139,27 @@ final class RecordingPlayer: ObservableObject {
             guard let item = self.player?.currentItem, !item.duration.seconds.isNaN else { return }
             self.duration = item.duration.seconds
             self.progress = time.seconds / item.duration.seconds
-            self.secondsLeft = (item.duration - time).seconds 
+            self.secondsLeft = (item.duration - time).seconds
         }
     }
+    
+    private func play() {
+        guard !playing else { return }
+        do {
+            player?.play()
+            playing = true
+            NotificationCenter.default.post(name: .audioPlaybackStarted, object: self)
+        } catch {
+            print("Failed to activate audio session: \(error.localizedDescription)")
+        }
+    }
+
 }
 
+// MARK: - Observers
+
 private extension RecordingPlayer {
+    
     func setupNotificationCenterObservers(for playerItem: AVPlayerItem) {
         
         NotificationCenter.default.addObserver(
@@ -206,7 +180,7 @@ private extension RecordingPlayer {
         ) { [weak self] notification in
             guard let self else { return }
             if let sender = notification.object as? Recorder, self.playing {
-                self.pause()
+                self.reset()
             }
         }
         
@@ -216,7 +190,7 @@ private extension RecordingPlayer {
             queue: .main
         ) { [weak self] notification in
             guard let self else { return }
-            self.initializePlayer()
+            self.prepareForPlayback()
         }
         
         NotificationCenter.default.addObserver(
@@ -229,5 +203,59 @@ private extension RecordingPlayer {
             self.player?.seek(to: .zero)
             self.didPlayTillEnd.send()
         }
+    }
+}
+
+// MARK: - Session initialization
+
+private extension RecordingPlayer {
+    
+    func initializePlayer() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            do {
+                try self.audioSession.setCategory(.playback)
+                try self.audioSession.setMode(.default)
+                
+                if self.isUsingBuiltInSpeaker() {
+                    try self.audioSession.overrideOutputAudioPort(.speaker)
+                }
+            } catch {
+                self.handleAudioSessionError(error)
+            }
+        }
+    }
+    
+     func isUsingBuiltInSpeaker() -> Bool {
+        return audioSession.currentRoute.outputs.first?.portType == .builtInSpeaker
+    }
+    
+     func handleAudioSessionError(_ error: Error) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            print("Audio session configuration failed: \(error.localizedDescription)")
+            self.fallbackAudioConfiguration()
+        }
+    }
+    
+    func fallbackAudioConfiguration() {
+        do {
+            try audioSession.setCategory(.playback, mode: .default)
+        } catch let error {
+            print("Fallback configuration failed with error: \(error.localizedDescription)")
+        }
+    }
+    
+     func activateAudioSession() {
+        do {
+            try audioSession.setActive(true)
+        } catch {
+            print("Failed to activate audio session: \(error.localizedDescription)")
+        }
+    }
+    
+    func prepareForPlayback() {
+        activateAudioSession()
+        initializePlayer()
     }
 }
