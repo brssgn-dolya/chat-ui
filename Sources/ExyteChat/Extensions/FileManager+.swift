@@ -18,6 +18,6 @@ extension FileManager {
     }
 
     static var tempAudioFile: URL {
-        FileManager.tempDirPath.appendingPathComponent(UUID().uuidString + ".aac")
+        FileManager.tempDirPath.appendingPathComponent(UUID().uuidString + ".m4a")
     }
 }

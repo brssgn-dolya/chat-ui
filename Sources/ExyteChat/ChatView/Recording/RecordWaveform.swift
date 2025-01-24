@@ -20,7 +20,7 @@ struct RecordWaveformWithButtons: View {
     var colorWaveform: Color
 
     var duration: Int {
-        max(Int((recordPlayer.secondsLeft != 0 ? recordPlayer.secondsLeft : recording.duration) - 0.5), 0)
+        return max(Int((recordPlayer.secondsLeft != 0 ? recordPlayer.secondsLeft : recording.duration)), 0)
     }
 
     var body: some View {
