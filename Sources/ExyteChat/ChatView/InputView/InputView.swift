@@ -547,7 +547,8 @@ struct InputView: View {
     }
 
     func dragGesture() -> some Gesture {
-        DragGesture(minimumDistance: 0.0, coordinateSpace: .global)
+        let hapticFeedback = UIImpactFeedbackGenerator(style: .medium)
+        return DragGesture(minimumDistance: 0.0, coordinateSpace: .global)
             .onChanged { value in
                 if dragStart == nil {
                     dragStart = Date()
@@ -555,36 +556,36 @@ struct InputView: View {
                     tapDelayTimer = Timer.scheduledTimer(withTimeInterval: tapDelay, repeats: false) { _ in
                         if state != .isRecordingTap, state != .waitingForRecordingPermission {
                             self.onAction(.recordAudioHold)
+                            hapticFeedback.impactOccurred()
                         }
                     }
                 }
-
+                
                 if value.location.y < lockRecordFrame.minY,
                    value.location.x > recordButtonFrame.minX {
                     cancelGesture = true
                     onAction(.recordAudioLock)
                 }
-
-                if value.location.x < UIScreen.main.bounds.width/2,
+                
+                if value.location.x < UIScreen.main.bounds.width / 2,
                    value.location.y > recordButtonFrame.minY {
                     cancelGesture = true
                     onAction(.deleteRecord)
                 }
             }
-            .onEnded() { value in
+            .onEnded { value in
                 if !cancelGesture {
                     tapDelayTimer = nil
                     if recordButtonFrame.contains(value.location) {
                         if let dragStart = dragStart, Date().timeIntervalSince(dragStart) < tapDelay {
                             onAction(.recordAudioTap)
+                            hapticFeedback.impactOccurred()
                         } else if state != .waitingForRecordingPermission {
                             onAction(.send)
                         }
-                    }
-                    else if lockRecordFrame.contains(value.location) {
+                    } else if lockRecordFrame.contains(value.location) {
                         onAction(.recordAudioLock)
-                    }
-                    else if deleteRecordFrame.contains(value.location) {
+                    } else if deleteRecordFrame.contains(value.location) {
                         onAction(.deleteRecord)
                     } else {
                         onAction(.send)
