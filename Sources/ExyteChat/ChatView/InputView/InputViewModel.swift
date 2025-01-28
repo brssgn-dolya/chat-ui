@@ -29,6 +29,7 @@ final class InputViewModel: ObservableObject {
     private var saveEditingClosure: ((String) -> Void)?
 
     private var recordPlayerSubscription: AnyCancellable?
+    private var playerStateSubscription: AnyCancellable?
     private var subscriptions = Set<AnyCancellable>()
 
     func onStart() {
@@ -109,7 +110,7 @@ final class InputViewModel: ObservableObject {
             state = .playingRecording
             if let recording = attachments.recording {
                 subscribeRecordPlayer()
-                recordingPlayer?.play(recording)
+                recordingPlayer?.togglePlay(recording)
             }
         case .pauseRecord:
             state = .pausedRecording
@@ -140,6 +141,32 @@ final class InputViewModel: ObservableObject {
             attachments.recording?.url = url
         }
     }
+    
+    func bindToRecordingPlayerState() {
+        guard let recordingPlayer else { return }
+        
+        playerStateSubscription?.cancel()
+        
+        playerStateSubscription = recordingPlayer.$playing
+            .sink { [weak self] isPlaying in
+                guard let self else { return }
+                if isPlaying {
+                    self.state = .playingRecording
+                } else if self.state == .playingRecording {
+                    self.state = .pausedRecording
+                }
+            }
+    }
+    
+    func unbindRecordingPlayer() {
+        if state == .playingRecording || state == .pausedRecording {
+            recordingPlayer?.reset()
+            state = .pausedRecording
+        }
+        
+        playerStateSubscription = nil
+    }
+
 }
 
 private extension InputViewModel {
@@ -189,6 +216,9 @@ private extension InputViewModel {
 
     func unsubscribeRecordPlayer() {
         recordPlayerSubscription = nil
+        if recordingPlayer?.playing == true {
+            recordingPlayer?.reset()
+        }
     }
 }
 

@@ -20,6 +20,7 @@ public enum MessageMenuActionType: Equatable {
     case delete
     case reply
     case copy
+    case readBy
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
@@ -76,6 +77,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     @Binding var isShowingMenu: Bool
     @Binding var menuButtonsSize: CGSize
     var message: Message
+    var isGroup: Bool
     var alignment: Alignment
     var direction: Direction
     var leadingPadding: CGFloat
@@ -92,6 +94,9 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                     ($0.type() == .delete && message.user.isCurrentUser) ||
                     ($0.type() == .reply) || 
                     ($0.type() == .copy && message.type == .text)
+//                    ||
+//                    ($0.type() == .readBy && message.user.isCurrentUser
+//                     && isGroup && message.type == .text) //add more cases if needed
                 }
                 .map {
                     menuButton(title: $0.title(), icon: $0.icon(), action: $0)

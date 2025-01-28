@@ -20,7 +20,7 @@ struct RecordWaveformWithButtons: View {
     var colorWaveform: Color
 
     var duration: Int {
-        max(Int((recordPlayer.secondsLeft != 0 ? recordPlayer.secondsLeft : recording.duration) - 0.5), 0)
+        return max(Int((recordPlayer.secondsLeft != 0 ? recordPlayer.secondsLeft : recording.duration)), 0)
     }
 
     var body: some View {
@@ -37,9 +37,9 @@ struct RecordWaveformWithButtons: View {
             .foregroundColor(colorButton)
             .viewSize(40)
             .circleBackground(colorButtonBg)
-            .onTapGesture {
+            .highPriorityGesture(TapGesture().onEnded {
                 recordPlayer.togglePlay(recording)
-            }
+            })
             
             VStack(alignment: .leading, spacing: 5) {
                 RecordWaveformPlaying(samples: recording.waveformSamples, progress: recordPlayer.progress, color: colorWaveform, addExtraDots: false)

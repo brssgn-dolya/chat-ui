@@ -451,6 +451,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             isShowingMenu: $isShowingMenu,
             menuButtonsSize: $menuButtonsSize,
             message: row.message,
+            isGroup: showAvatars,
             alignment: row.message.user.isCurrentUser ? .right : .left,
             direction: menuDirection,
             leadingPadding: (showAvatars ? avatarSize : 0.0) + MessageView.horizontalAvatarPadding * 2,
