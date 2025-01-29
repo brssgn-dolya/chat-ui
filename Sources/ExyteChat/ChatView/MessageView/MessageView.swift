@@ -209,9 +209,11 @@ struct MessageView: View {
                 if showAvatar {
                     AvatarView(url: message.user.avatarURL, cachedImage: message.user.avatarCachedImage, avatarSize: avatarSize)
                         .contentShape(Circle())
-                        .onTapGesture {
-                            tapAvatarClosure?(message.user, message.id)
-                        }
+                        .highPriorityGesture(
+                            TapGesture().onEnded {
+                                tapAvatarClosure?(message.user, message.id)
+                            }
+                        )
                 } else {
                     Color.clear.viewSize(avatarSize)
                 }
