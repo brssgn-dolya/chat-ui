@@ -5,6 +5,7 @@
 import Foundation
 import Combine
 import ExyteMediaPicker
+import CoreLocation
 
 final class InputViewModel: ObservableObject {
 
@@ -18,6 +19,7 @@ final class InputViewModel: ObservableObject {
     @Published var mediaPickerMode = MediaPickerMode.photos
     
     @Published var showFilePicker = false
+    @Published var showLocationPicker: Bool = false
 
     @Published var showActivityIndicator = false
 
@@ -80,7 +82,7 @@ final class InputViewModel: ObservableObject {
         case .document:
             showFilePicker = true
         case .location:
-            break
+            showLocationPicker = true
         case .add:
             mediaPickerMode = .camera
         case .camera:
@@ -283,5 +285,24 @@ extension Publisher {
                 }
             }
         }
+    }
+}
+
+// MARK: - Location Message
+extension InputViewModel {
+    func sendLocationMessage(_ location: CLLocationCoordinate2D) {
+        guard isValidCoordinate(location) else {
+            return
+        }
+        
+        let geoLocationString = String(format: "geo:%.6f,%.6f", location.latitude, location.longitude)
+        self.text = geoLocationString
+        send()
+    }
+    
+    private func isValidCoordinate(_ location: CLLocationCoordinate2D) -> Bool {
+        return location.latitude.isFinite && location.longitude.isFinite &&
+        (-90...90).contains(location.latitude) &&
+        (-180...180).contains(location.longitude)
     }
 }

@@ -31,7 +31,7 @@ struct ChatMessageView<MessageContent: View>: View {
     var body: some View {
         Group {
             switch row.message.type {
-            case .text, .file, .url, .document:
+            case .text, .file, .url, .document, .geo:
                 MessageView(
                     viewModel: viewModel,
                     message: row.message,
@@ -45,7 +45,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     isGroup: showAvatar,
                     tapDocumentClosure: tapDocumentClosure,
                     font: messageFont)
-            case .call, .status, .geo:
+            case .call, .status:
                 if let messageBuilder = messageBuilder {
                     messageBuilder(
                         row.message,

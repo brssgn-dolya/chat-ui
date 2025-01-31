@@ -10,6 +10,7 @@ import Foundation
 public enum AttachmentAction: Hashable, CaseIterable {
     case gallery
     case file
+    case location
     
     var title: String {
         switch self {
@@ -17,6 +18,8 @@ public enum AttachmentAction: Hashable, CaseIterable {
             return "Галерея"
         case .file:
             return "Файл"
+        case .location:
+            return "Локація"
         }
     }
 }

@@ -223,11 +223,19 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                             inputViewModel.showPicker = true
                         case .file:
                             inputViewModel.showFilePicker = true
+                        case .location:
+                            inputViewModel.showLocationPicker = true
                         }
                     }
                 }
             }
         
+            .fullScreenCover(isPresented: $inputViewModel.showLocationPicker) {
+                LocationPickerView { selectedLocation in
+                    inputViewModel.sendLocationMessage(selectedLocation)
+                }
+            }
+
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
                 AttachmentsEditor(inputViewModel: inputViewModel, inputViewBuilder: inputViewBuilder, chatTitle: chatTitle, messageUseMarkdown: messageUseMarkdown, orientationHandler: orientationHandler, mediaPickerSelectionParameters: mediaPickerSelectionParameters, availableInput: availablelInput)
                     .environmentObject(globalFocusState)
@@ -252,6 +260,12 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             )
         
             .onChange(of: inputViewModel.showAttachmentsSheet) {
+                if $0 {
+                    globalFocusState.focus = nil
+                }
+            }
+        
+            .onChange(of: inputViewModel.showLocationPicker) {
                 if $0 {
                     globalFocusState.focus = nil
                 }
