@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 struct MessageView: View {
 
@@ -138,8 +139,14 @@ struct MessageView: View {
             if !message.attachments.isEmpty {
                 attachmentsView(message)
             }
+            
+            if message.type == .geo {
+                VStack(alignment: .trailing, spacing: 8) {
+                    locationView(message)
+                }
+            }
 
-            if !message.text.isEmpty && message.type != .document {
+            if !message.text.isEmpty && message.type != .document && message.type != .geo {
                 textWithTimeView(message)
                     .font(Font(font))
             }
@@ -370,6 +377,50 @@ public extension View {
                 }
             }
             .cornerRadius(radius)
+    }
+}
+
+// MARK: - Location View
+
+extension MessageView {
+    
+    @ViewBuilder
+    func locationView(_ message: Message) -> some View {
+        let coordinates = parseCoordinates(from: message.text)
+        
+        if let lat = coordinates?.latitude, let lon = coordinates?.longitude {
+            ZStack {
+                MapSnapshotView(latitude: lat, longitude: lon)
+                    .frame(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128) // Обмежена ширина
+                    .cornerRadius(20)
+                    .overlay(alignment: .bottomTrailing) {
+                        messageTimeView(needsCapsule: true)
+                            .padding(4)
+                    }
+                    .highPriorityGesture(
+                        TapGesture().onEnded {
+                            openMaps(latitude: lat, longitude: lon)
+                        }
+                    )
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
+        }
+    }
+    
+    func parseCoordinates(from text: String) -> (latitude: Double, longitude: Double)? {
+        let cleanText = text.replacingOccurrences(of: "geo:", with: "")
+        let components = cleanText.split(separator: ";").first?.split(separator: ",").compactMap { Double($0) }
+        
+        if let lat = components?.first, let lon = components?.last {
+            return (latitude: lat, longitude: lon)
+        }
+        return nil
+    }
+    
+    func openMaps(latitude: Double, longitude: Double) {
+        let url = URL(string: "http://maps.apple.com/?q=\(latitude),\(longitude)")!
+        UIApplication.shared.open(url)
     }
 }
 
