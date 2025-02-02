@@ -30,6 +30,7 @@ struct MapSnapshotView: View {
             }
         }
         .onAppear {
+                clearOldCache()
             if let cached = cachedImage {
                 snapshotImage = cached
             } else {
@@ -38,6 +39,7 @@ struct MapSnapshotView: View {
                 }
             }
         }
+
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
             clearMemoryCache()
         }
@@ -136,3 +138,72 @@ struct MapSnapshotView: View {
         }
     }
 }
+
+
+extension MapSnapshotView {
+    private func clearOldCache() {
+        let fileManager = FileManager.default
+        guard let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else { return }
+
+        DispatchQueue.global(qos: .background).async {
+
+            if let files = try? fileManager.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: [.creationDateKey, .fileSizeKey], options: .skipsHiddenFiles) {
+                let expirationInterval: TimeInterval = 7 * 24 * 60 * 60
+                let maxCacheSize: Int64 = 50 * 1024 * 1024
+                let now = Date()
+                var totalSize: Int64 = 0
+                var filesToDelete: [(URL, Date, Int64)] = []
+
+                for file in files {
+                    if let attrs = try? file.resourceValues(forKeys: [.creationDateKey, .fileSizeKey]),
+                       let creationDate = attrs.creationDate,
+                       let fileSize = attrs.fileSize {
+                        totalSize += Int64(fileSize)
+
+                        if now.timeIntervalSince(creationDate) > expirationInterval {
+                            filesToDelete.append((file, creationDate, Int64(fileSize)))
+                        }
+                    }
+                }
+
+                for (file, _, fileSize) in filesToDelete {
+                    do {
+                        try fileManager.removeItem(at: file)
+                        totalSize -= fileSize
+                        #if DEBUG
+                        print("🗑 Видалено застарілий файл: \(file.lastPathComponent)")
+                        #endif
+                    } catch {
+                        print("❌ Помилка видалення файлу: \(file.lastPathComponent), \(error.localizedDescription)")
+                    }
+                }
+
+                if totalSize > maxCacheSize {
+                    let sortedFiles = files.compactMap { file -> (URL, Date)? in
+                        if let creationDate = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate {
+                            return (file, creationDate)
+                        }
+                        return nil
+                    }.sorted { $0.1 < $1.1 }
+
+                    for (file, _) in sortedFiles {
+                        if let fileSize = (try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize {
+                            do {
+                                try fileManager.removeItem(at: file)
+                                totalSize -= Int64(fileSize)
+                                #if DEBUG
+                                print("🗑 Видалено файл для звільнення місця: \(file.lastPathComponent)")
+                                #endif
+
+                                if totalSize <= maxCacheSize { break }
+                            } catch {
+                                print("❌ Помилка видалення файлу: \(file.lastPathComponent), \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
