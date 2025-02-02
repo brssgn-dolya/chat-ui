@@ -7,46 +7,87 @@
 
 import SwiftUI
 import MapKit
-import Photos
 
 struct MapSnapshotView: View {
     let latitude: Double
     let longitude: Double
-
-    @State private var snapshotImage: UIImage?
     
+    @State private var snapshotImage: UIImage?
+    @State private var isLoading = false
     private static let imageCache = NSCache<NSString, UIImage>()
-
+    @State private var lastLoadedLocation: CLLocation?
+    
     var body: some View {
-        Group {
+        ZStack {
             if let snapshotImage {
                 Image(uiImage: snapshotImage)
                     .resizable()
                     .scaledToFill()
             } else {
-                SkeletonView()
-                
-                    .task {
-                        await loadSnapshot()
-                    }
+                mapPlaceholderView()
             }
         }
+        .onAppear {
+            Task {
+                await loadSnapshot()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            clearMemoryCache()
+        }
+    }
+    
+    @ViewBuilder
+    private func mapPlaceholderView() -> some View {
+        Image("map_placeholder")
+            .resizable()
+            .scaledToFill()
+            .overlay(alignment: .center) {
+                Image(systemName: "mappin.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.red)
+            }
     }
 
     private func loadSnapshot() async {
-        let cacheKey = "\(latitude),\(longitude)" as NSString
+        guard !isLoading else { return }
+        isLoading = true
         
-        if let cachedImage = Self.imageCache.object(forKey: cacheKey) {
+        let cacheKey = cacheKeyForCurrentLocation()
+        
+        if let cachedImage = getCachedImage(for: cacheKey) {
             snapshotImage = cachedImage
+            isLoading = false
             return
         }
 
+        guard shouldUpdateSnapshot() else {
+            isLoading = false
+            return
+        }
+        
         if let image = await generateSnapshot() {
-            Self.imageCache.setObject(image, forKey: cacheKey)
+            saveImageToCache(image, key: cacheKey)
             snapshotImage = image
         }
+        
+        isLoading = false
     }
-
+    
+    private func shouldUpdateSnapshot() -> Bool {
+        let currentLocation = CLLocation(latitude: latitude, longitude: longitude)
+        
+        if let lastLocation = lastLoadedLocation,
+           currentLocation.distance(from: lastLocation) < 50 {
+            return false
+        }
+        
+        lastLoadedLocation = currentLocation
+        return true
+    }
+    
     private func generateSnapshot() async -> UIImage? {
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let options = MKMapSnapshotter.Options()
@@ -55,69 +96,65 @@ struct MapSnapshotView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
         )
         options.size = CGSize(width: 260, height: 120)
-        options.scale = UIScreen.main.scale
-        options.mapType = .mutedStandard // Вимикає зайві елементи
-        options.showsPointsOfInterest = false // Прибирає назви вулиць
+        options.scale = 2.0
+        options.mapType = .mutedStandard
+        options.showsPointsOfInterest = false
+        options.showsBuildings = false
         
         return await withCheckedContinuation { continuation in
             MKMapSnapshotter(options: options).start { snapshot, _ in
-                guard let snapshot else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                let pinImage = UIImage(systemName: "mappin.circle.fill")?.withTintColor(.red, renderingMode: .alwaysOriginal)
-                continuation.resume(returning: overlayPin(on: snapshot, coordinate: coordinate, pinImage: pinImage))
+                continuation.resume(returning: snapshot.map { overlayPin(on: $0, coordinate: coordinate) })
             }
-        }
-    }
-
-    private func overlayPin(on snapshot: MKMapSnapshotter.Snapshot, coordinate: CLLocationCoordinate2D, pinImage: UIImage?) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: snapshot.image.size)
-        return renderer.image { context in
-            snapshot.image.draw(at: .zero)
-            
-            if let pinImage {
-                let point = snapshot.point(for: coordinate)
-                let pinSize = CGSize(width: 20, height: 20)
-                let pinOrigin = CGPoint(x: point.x - pinSize.width / 2, y: point.y - pinSize.height)
-                pinImage.draw(in: CGRect(origin: pinOrigin, size: pinSize))
-            }
-        }
-    }
-
-}
-
-struct SkeletonView: View {
-    @State private var opacity: Double = 0.3
-
-    var body: some View {
-        ZStack {
-            Image("map_placeholder")
-                .overlay {
-                    overlayPin()
-                }
-
         }
     }
     
-    @ViewBuilder
-    private func overlayPin() -> some View {
-        GeometryReader { geo in
-            let pinSize = CGSize(width: 20, height: 20)
-            let point = convertCoordinateToPoint(in: geo.size)
-
-            Image(systemName: "mappin.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: pinSize.width, height: pinSize.height)
-                .foregroundColor(.red)
-                .position(x: point.x, y: point.y - pinSize.height / 2)
+    private func overlayPin(on snapshot: MKMapSnapshotter.Snapshot, coordinate: CLLocationCoordinate2D) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: snapshot.image.size)
+        return renderer.image { context in
+            snapshot.image.draw(at: .zero)
+            if let pinImage = UIImage(systemName: "mappin.circle.fill")?.withRenderingMode(.alwaysOriginal) {
+                let point = snapshot.point(for: coordinate)
+                pinImage.draw(in: CGRect(origin: CGPoint(x: point.x - 10, y: point.y - 20), size: CGSize(width: 20, height: 20)))
+            }
         }
     }
-
-    private func convertCoordinateToPoint(in size: CGSize) -> CGPoint {
-        let x = size.width / 2
-        let y = size.height / 2
-        return CGPoint(x: x, y: y)
+    
+    private func cacheKeyForCurrentLocation() -> NSString {
+        return "\(latitude),\(longitude)" as NSString
+    }
+    
+    private func getCachedImage(for key: NSString) -> UIImage? {
+        if let cachedImage = Self.imageCache.object(forKey: key) {
+            return cachedImage
+        }
+        if let diskImage = loadImageFromDisk(key as String) {
+            Self.imageCache.setObject(diskImage, forKey: key)
+            return diskImage
+        }
+        return nil
+    }
+    
+    private func saveImageToCache(_ image: UIImage, key: NSString) {
+        Self.imageCache.setObject(image, forKey: key)
+        saveImageToDisk(image, key: key as String)
+    }
+    
+    private func clearMemoryCache() {
+        Self.imageCache.removeAllObjects()
+    }
+    
+    private func getCacheURL(for key: String) -> URL {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!.appendingPathComponent("\(key).png")
+    }
+    
+    private func loadImageFromDisk(_ key: String) -> UIImage? {
+        guard let data = try? Data(contentsOf: getCacheURL(for: key)) else { return nil }
+        return UIImage(data: data)
+    }
+    
+    private func saveImageToDisk(_ image: UIImage, key: String) {
+        if let data = image.pngData() {
+            try? data.write(to: getCacheURL(for: key))
+        }
     }
 }
