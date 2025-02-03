@@ -93,7 +93,8 @@ struct MapSnapshotView: View {
         let renderer = UIGraphicsImageRenderer(size: snapshot.image.size)
         return renderer.image { _ in
             snapshot.image.draw(at: .zero)
-            if let pinImage = UIImage(systemName: "mappin.circle.fill")?.withRenderingMode(.alwaysOriginal) {
+            if let pinImage = UIImage(systemName: "mappin.circle.fill")?
+                .withTintColor(.red, renderingMode: .alwaysOriginal) {
                 let point = snapshot.point(for: coordinate)
                 pinImage.draw(in: CGRect(origin: CGPoint(x: point.x - 10, y: point.y - 20), size: CGSize(width: 20, height: 20)))
             }

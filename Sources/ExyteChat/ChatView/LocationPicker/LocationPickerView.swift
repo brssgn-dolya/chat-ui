@@ -15,11 +15,11 @@ struct LocationPickerView: View {
     @StateObject private var locationManager = LocationManager()
     
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 48.3794, longitude: 31.1656),
-        span: MKCoordinateSpan(latitudeDelta: 5.0, longitudeDelta: 5.0)
+        center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+        span: MKCoordinateSpan(latitudeDelta: 180, longitudeDelta: 360)
     )
     
-    @State private var selectedLocation: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 48.3794, longitude: 31.1656)
+    @State private var selectedLocation: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     
     var onSelectLocation: (CLLocationCoordinate2D) -> Void
     
