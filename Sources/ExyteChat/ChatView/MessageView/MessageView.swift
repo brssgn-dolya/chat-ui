@@ -391,10 +391,10 @@ extension MessageView {
         if let lat = coordinates?.latitude, let lon = coordinates?.longitude {
             ZStack {
                 MapSnapshotView(latitude: lat, longitude: lon)
-                    .frame(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128) // Обмежена ширина
+                    .frame(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128)
                     .cornerRadius(20)
                     .overlay(alignment: .bottomTrailing) {
-                        messageTimeView(needsCapsule: true)
+                        timeView(text: message.time)
                             .padding(4)
                     }
                     .highPriorityGesture(
@@ -408,6 +408,20 @@ extension MessageView {
         }
     }
     
+    @ViewBuilder
+    func timeView(text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundColor(Color.white.opacity(0.85))
+            .padding(.top, 4)
+            .padding(.bottom, 4)
+            .padding(.horizontal, 8)
+            .background {
+                Capsule()
+                    .fill(Color.black.opacity(0.3))
+            }
+    }
+
     func parseCoordinates(from text: String) -> (latitude: Double, longitude: Double)? {
         let cleanText = text.replacingOccurrences(of: "geo:", with: "")
         let components = cleanText.split(separator: ";").first?.split(separator: ",").compactMap { Double($0) }

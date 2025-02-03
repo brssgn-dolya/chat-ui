@@ -11,14 +11,14 @@ import MapKit
 struct MapSnapshotView: View {
     let latitude: Double
     let longitude: Double
-
+    
     @State private var snapshotImage: UIImage?
     private static let imageCache = NSCache<NSString, UIImage>()
     
     private var cachedImage: UIImage? {
         getCachedImage(for: cacheKeyForCurrentLocation())
     }
-
+    
     var body: some View {
         ZStack {
             if let snapshotImage {
@@ -30,7 +30,7 @@ struct MapSnapshotView: View {
             }
         }
         .onAppear {
-                clearOldCache()
+            clearOldCache()
             if let cached = cachedImage {
                 snapshotImage = cached
             } else {
@@ -39,12 +39,12 @@ struct MapSnapshotView: View {
                 }
             }
         }
-
+        
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
             clearMemoryCache()
         }
     }
-
+    
     @ViewBuilder
     private func mapPlaceholderView() -> some View {
         Image("map_placeholder")
@@ -55,10 +55,11 @@ struct MapSnapshotView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 20, height: 20)
+                    .offset(y: -10)
                     .foregroundColor(.red)
             }
     }
-
+    
     private func generateAndCacheSnapshot() async {
         if let image = await generateSnapshot() {
             DispatchQueue.global(qos: .background).async {
@@ -67,7 +68,7 @@ struct MapSnapshotView: View {
             snapshotImage = image
         }
     }
-
+    
     private func generateSnapshot() async -> UIImage? {
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let options = MKMapSnapshotter.Options()
@@ -80,14 +81,14 @@ struct MapSnapshotView: View {
         options.mapType = .mutedStandard
         options.showsPointsOfInterest = false
         options.showsBuildings = false
-
+        
         return await withCheckedContinuation { continuation in
             MKMapSnapshotter(options: options).start { snapshot, _ in
                 continuation.resume(returning: snapshot.map { overlayPin(on: $0, coordinate: coordinate) })
             }
         }
     }
-
+    
     private func overlayPin(on snapshot: MKMapSnapshotter.Snapshot, coordinate: CLLocationCoordinate2D) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: snapshot.image.size)
         return renderer.image { _ in
@@ -98,11 +99,11 @@ struct MapSnapshotView: View {
             }
         }
     }
-
+    
     private func cacheKeyForCurrentLocation() -> NSString {
         return "\(latitude),\(longitude)" as NSString
     }
-
+    
     private func getCachedImage(for key: NSString) -> UIImage? {
         if let cachedImage = Self.imageCache.object(forKey: key) {
             return cachedImage
@@ -113,32 +114,31 @@ struct MapSnapshotView: View {
         }
         return nil
     }
-
+    
     private func saveImageToCache(_ image: UIImage, key: NSString) {
         Self.imageCache.setObject(image, forKey: key)
         saveImageToDisk(image, key: key as String)
     }
-
+    
     private func clearMemoryCache() {
         Self.imageCache.removeAllObjects()
     }
-
+    
     private func getCacheURL(for key: String) -> URL {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!.appendingPathComponent("\(key).png")
     }
-
+    
     private func loadImageFromDisk(_ key: String) -> UIImage? {
         guard let data = try? Data(contentsOf: getCacheURL(for: key)) else { return nil }
         return UIImage(data: data)
     }
-
+    
     private func saveImageToDisk(_ image: UIImage, key: String) {
         if let data = image.pngData() {
             try? data.write(to: getCacheURL(for: key))
         }
     }
 }
-
 
 extension MapSnapshotView {
     private func clearOldCache() {
