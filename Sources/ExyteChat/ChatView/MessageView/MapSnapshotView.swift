@@ -172,10 +172,10 @@ extension MapSnapshotView {
                         try fileManager.removeItem(at: file)
                         totalSize -= fileSize
                         #if DEBUG
-                        print("🗑 Видалено застарілий файл: \(file.lastPathComponent)")
+                        print("🗑 Deleted outdated file: \(file.lastPathComponent)")
                         #endif
                     } catch {
-                        print("❌ Помилка видалення файлу: \(file.lastPathComponent), \(error.localizedDescription)")
+                        print("❌ Error deleting file: \(file.lastPathComponent), \(error.localizedDescription)")
                     }
                 }
 
@@ -193,12 +193,12 @@ extension MapSnapshotView {
                                 try fileManager.removeItem(at: file)
                                 totalSize -= Int64(fileSize)
                                 #if DEBUG
-                                print("🗑 Видалено файл для звільнення місця: \(file.lastPathComponent)")
+                                print("🗑 Deleted file to free up space: \(file.lastPathComponent)")
                                 #endif
 
                                 if totalSize <= maxCacheSize { break }
                             } catch {
-                                print("❌ Помилка видалення файлу: \(file.lastPathComponent), \(error.localizedDescription)")
+                                print("❌ Error deleting file: \(file.lastPathComponent), \(error.localizedDescription)")
                             }
                         }
                     }
