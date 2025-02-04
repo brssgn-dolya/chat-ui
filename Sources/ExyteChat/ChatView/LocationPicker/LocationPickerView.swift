@@ -78,7 +78,6 @@ struct LocationPickerView: View {
                         .frame(height: 50)
                         .background(Color.green)
                         .cornerRadius(12)
-                        .shadow(color: Color.green.opacity(0.3), radius: 5, x: 0, y: 3)
                     }
                     
                     .alert(isPresented: $showAlert) {
@@ -106,7 +105,6 @@ struct LocationPickerView: View {
                         .frame(height: 50)
                         .background(Color.accentColor)
                         .cornerRadius(12)
-                        .shadow(color: Color.accentColor.opacity(0.3), radius: 5, x: 0, y: 3)
                 }
                 
                 Button(action: {
@@ -117,13 +115,13 @@ struct LocationPickerView: View {
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color(UIColor.systemGray6))
+                        .background(Color(UIColor.systemGray4))
                         .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
                 }
             }
             .padding()
         }
+        .background(Color(UIColor.systemGray6))
         .onAppear {
             locationUpdateCancellable = locationUpdatePublisher.sink { _ in
                 let newCenter = region.center
