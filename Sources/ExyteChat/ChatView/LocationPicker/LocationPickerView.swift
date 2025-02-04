@@ -48,7 +48,7 @@ struct LocationPickerView: View {
                     Image(systemName: "mappin.circle.fill")
                         .resizable()
                         .frame(width: 40, height: 40)
-                        .foregroundColor(.red)
+                        .foregroundColor(Color(UIColor.systemRed))
                         .offset(y: -20)
                     Circle()
                         .fill(Color.black.opacity(0.2))
