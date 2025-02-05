@@ -32,15 +32,27 @@ struct MessageMapView: View {
     
     private static let regionSpan = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
     @State private var snapshotImage: UIImage?
+    @State private var isPinVisible = false
+    @State private var shouldAnimatePin = false
     
     var body: some View {
         ZStack {
             snapshotView
-            pinOverlay
+            if isPinVisible {
+                pinOverlay
+                    .transition(.scale)
+            }
         }
         .frame(width: snapshotSize.width, height: snapshotSize.height)
         .task {
             await loadSnapshot()
+            if shouldAnimatePin {
+                withAnimation(.easeIn(duration: 0.3)) {
+                    isPinVisible = true
+                }
+            } else {
+                isPinVisible = true
+            }
         }
     }
     
@@ -65,15 +77,16 @@ struct MessageMapView: View {
         
         if let cachedImage = MapSnapshotCache.shared[cacheKey] {
             snapshotImage = cachedImage
-            return
-        }
-        
-        do {
-            let image = try await generateSnapshot()
-            MapSnapshotCache.shared[cacheKey] = image
-            snapshotImage = image
-        } catch {
-            print("Error loading snapshot: \(error.localizedDescription)")
+            shouldAnimatePin = false
+        } else {
+            do {
+                let image = try await generateSnapshot()
+                MapSnapshotCache.shared[cacheKey] = image
+                snapshotImage = image
+                shouldAnimatePin = true
+            } catch {
+                shouldAnimatePin = false
+            }
         }
     }
     
@@ -93,7 +106,6 @@ struct MessageMapView: View {
         return try await MKMapSnapshotter(options: options).snapshotAsync().image
     }
 }
-
 
 enum MKMapSnapshotterError: Error {
     static let unknownError = NSError(domain: "MKMapSnapshotterError", code: -1, userInfo: [
@@ -116,4 +128,3 @@ extension MKMapSnapshotter {
         }
     }
 }
-
