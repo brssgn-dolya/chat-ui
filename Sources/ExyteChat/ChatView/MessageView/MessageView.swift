@@ -387,11 +387,12 @@ extension MessageView {
     @ViewBuilder
     func locationView(_ message: Message) -> some View {
         let coordinates = parseCoordinates(from: message.text)
+        let size = CGSize(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128)
         
         if let lat = coordinates?.latitude, let lon = coordinates?.longitude {
             ZStack {
-                MessageMapView(latitude: lat, longitude: lon)
-                    .frame(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128)
+                MessageMapView(latitude: lat, longitude: lon, snapshotSize: size)
+                    .frame(width: size.width, height: size.height)
                     .cornerRadius(20)
                     .overlay(alignment: .bottomTrailing) {
                         timeView(text: message.time)

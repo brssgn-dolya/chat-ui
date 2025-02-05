@@ -8,63 +8,108 @@
 import SwiftUI
 import MapKit
 
+final class MapSnapshotCache {
+    private var cache = NSCache<NSString, UIImage>()
+    static let shared = MapSnapshotCache()
+    
+    func get(forKey key: String) -> UIImage? {
+        cache.object(forKey: key as NSString)
+    }
+    
+    func set(_ image: UIImage, forKey key: String) {
+        cache.setObject(image, forKey: key as NSString)
+    }
+}
+
 struct MessageMapView: View {
     let latitude: Double
     let longitude: Double
+    let snapshotSize: CGSize
+    let regionSpan = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+    
+    private var cache = MapSnapshotCache.shared
+    @State private var snapshotImage: UIImage?
+    
+    init(latitude: Double, longitude: Double, snapshotSize: CGSize) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.snapshotSize = snapshotSize
+    }
     
     var body: some View {
         ZStack {
-            MessageMapViewRepresentable(latitude: latitude, longitude: longitude)
-                .frame(maxHeight: .infinity)
-                .overlay(alignment: .center) {
-                    Image(systemName: "mappin.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                        .offset(y: -10)
-                        .foregroundColor(Color(UIColor.systemRed))
-                }
+            snapshotView
+            pinOverlay
+        }
+        .frame(width: snapshotSize.width, height: snapshotSize.height)
+        .task {
+            await loadSnapshot()
         }
     }
-}
-
-struct MessageMapViewRepresentable: UIViewRepresentable {
-    let latitude: Double
-    let longitude: Double
     
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView()
-        mapView.isUserInteractionEnabled = false
-        mapView.isScrollEnabled = false
-        mapView.isZoomEnabled = false
-        mapView.isPitchEnabled = false
-        mapView.isRotateEnabled = false
-        mapView.showsUserLocation = false
-        mapView.layer.contentsGravity = .resizeAspectFill
+    private var snapshotView: some View {
+        Image(uiImage: snapshotImage ?? UIImage(named: "map_placeholder")!)
+            .resizable()
+            .scaledToFill()
+            .clipped()
+    }
+    
+    private var pinOverlay: some View {
+        Image(systemName: "mappin.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 20, height: 20)
+            .offset(y: -10)
+            .foregroundColor(.red)
+    }
+    
+    private func loadSnapshot() async {
+        let cacheKey = "\(latitude)_\(longitude)_\(Int(snapshotSize.width))x\(Int(snapshotSize.height))"
         
-        updateMapView(mapView)
-        return mapView
+        if let cachedImage = cache.get(forKey: cacheKey) {
+            await MainActor.run { self.snapshotImage = cachedImage }
+            return
+        }
+        do {
+            let snapshot = try await generateSnapshot(size: snapshotSize)
+            let image = snapshot.image
+            cache.set(image, forKey: cacheKey)
+            await MainActor.run { self.snapshotImage = image }
+        } catch {
+            print("Помилка завантаження знімка: \(error.localizedDescription)")
+        }
     }
     
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-        updateMapView(uiView)
-    }
-    
-    private func updateMapView(_ mapView: MKMapView) {
+    private func generateSnapshot(size: CGSize) async throws -> MKMapSnapshotter.Snapshot {
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        let newRegion = MKCoordinateRegion(
-            center: coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-        )
+        let region = MKCoordinateRegion(center: coordinate, span: regionSpan)
         
-        let threshold: Double = 0.00001
-        let currentCenter = mapView.region.center
+        let options = MKMapSnapshotter.Options()
+        options.region = region
+        options.size = size
+        options.scale = UIScreen.main.scale
         
-        if abs(currentCenter.latitude - coordinate.latitude) > threshold ||
-            abs(currentCenter.longitude - coordinate.longitude) > threshold {
-            mapView.setRegion(newRegion, animated: false)
-        }
+        return try await MKMapSnapshotter(options: options).snapshotAsync()
     }
 }
 
+enum MKMapSnapshotterError: Error {
+    case unknownError
+}
+
+extension MKMapSnapshotter {
+    func snapshotAsync() async throws -> Snapshot {
+        try await withCheckedThrowingContinuation { continuation in
+            start { snapshot, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let snapshot = snapshot {
+                    continuation.resume(returning: snapshot)
+                } else {
+                    continuation.resume(throwing: MKMapSnapshotterError.unknownError)
+                }
+            }
+        }
+    }
+}
 
