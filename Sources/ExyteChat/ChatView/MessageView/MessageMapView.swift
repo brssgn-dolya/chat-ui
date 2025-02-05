@@ -9,15 +9,19 @@ import SwiftUI
 import MapKit
 
 final class MapSnapshotCache {
-    private var cache = NSCache<NSString, UIImage>()
     static let shared = MapSnapshotCache()
     
-    func get(forKey key: String) -> UIImage? {
-        cache.object(forKey: key as NSString)
-    }
+    private var cache = NSCache<NSString, UIImage>()
     
-    func set(_ image: UIImage, forKey key: String) {
-        cache.setObject(image, forKey: key as NSString)
+    private init() {}
+    
+    subscript(key: String) -> UIImage? {
+        get { cache.object(forKey: key as NSString) }
+        set {
+            if let newValue = newValue {
+                cache.setObject(newValue, forKey: key as NSString)
+            }
+        }
     }
 }
 
@@ -25,16 +29,9 @@ struct MessageMapView: View {
     let latitude: Double
     let longitude: Double
     let snapshotSize: CGSize
-    let regionSpan = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
     
-    private var cache = MapSnapshotCache.shared
+    private static let regionSpan = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
     @State private var snapshotImage: UIImage?
-    
-    init(latitude: Double, longitude: Double, snapshotSize: CGSize) {
-        self.latitude = latitude
-        self.longitude = longitude
-        self.snapshotSize = snapshotSize
-    }
     
     var body: some View {
         ZStack {
@@ -64,37 +61,44 @@ struct MessageMapView: View {
     }
     
     private func loadSnapshot() async {
-        let cacheKey = "\(latitude)_\(longitude)_\(Int(snapshotSize.width))x\(Int(snapshotSize.height))"
+        let cacheKey = makeCacheKey()
         
-        if let cachedImage = cache.get(forKey: cacheKey) {
-            await MainActor.run { self.snapshotImage = cachedImage }
+        if let cachedImage = MapSnapshotCache.shared[cacheKey] {
+            snapshotImage = cachedImage
             return
         }
+        
         do {
-            let snapshot = try await generateSnapshot(size: snapshotSize)
-            let image = snapshot.image
-            cache.set(image, forKey: cacheKey)
-            await MainActor.run { self.snapshotImage = image }
+            let image = try await generateSnapshot()
+            MapSnapshotCache.shared[cacheKey] = image
+            snapshotImage = image
         } catch {
-            print("Помилка завантаження знімка: \(error.localizedDescription)")
+            print("Error loading snapshot: \(error.localizedDescription)")
         }
     }
     
-    private func generateSnapshot(size: CGSize) async throws -> MKMapSnapshotter.Snapshot {
+    private func makeCacheKey() -> String {
+        "\(latitude)_\(longitude)_\(Int(snapshotSize.width))x\(Int(snapshotSize.height))"
+    }
+    
+    private func generateSnapshot() async throws -> UIImage {
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        let region = MKCoordinateRegion(center: coordinate, span: regionSpan)
+        let region = MKCoordinateRegion(center: coordinate, span: Self.regionSpan)
         
         let options = MKMapSnapshotter.Options()
         options.region = region
-        options.size = size
+        options.size = snapshotSize
         options.scale = UIScreen.main.scale
         
-        return try await MKMapSnapshotter(options: options).snapshotAsync()
+        return try await MKMapSnapshotter(options: options).snapshotAsync().image
     }
 }
 
+
 enum MKMapSnapshotterError: Error {
-    case unknownError
+    static let unknownError = NSError(domain: "MKMapSnapshotterError", code: -1, userInfo: [
+        NSLocalizedDescriptionKey: "Unknown error occurred while creating the snapshot."
+    ])
 }
 
 extension MKMapSnapshotter {
