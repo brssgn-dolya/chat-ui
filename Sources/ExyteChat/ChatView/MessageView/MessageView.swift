@@ -390,7 +390,7 @@ extension MessageView {
         
         if let lat = coordinates?.latitude, let lon = coordinates?.longitude {
             ZStack {
-                MapSnapshotView(latitude: lat, longitude: lon)
+                MessageMapView(latitude: lat, longitude: lon)
                     .frame(width: min(UIScreen.main.bounds.width * 0.6, 260), height: 128)
                     .cornerRadius(20)
                     .overlay(alignment: .bottomTrailing) {
