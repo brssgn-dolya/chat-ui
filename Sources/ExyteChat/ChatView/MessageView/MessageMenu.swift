@@ -21,6 +21,7 @@ public enum MessageMenuActionType: Equatable {
     case reply
     case copy
     case readBy
+    case forward
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
