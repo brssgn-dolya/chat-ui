@@ -221,16 +221,23 @@ struct InputView: View {
                     .padding(5)
                     .background(Circle().foregroundStyle(.red))
             }
-
+            
             Button {
-                onAction(.saveEdit)
+                if !viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    viewModel.text = viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    onAction(.saveEdit)
+                }
             } label: {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.white)
                     .fontWeight(.bold)
                     .padding(5)
-                    .background(Circle().foregroundStyle(.green))
+                    .background(
+                        Circle()
+                            .foregroundStyle(viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .green)
+                    )
             }
+            .disabled(viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
     }
 
