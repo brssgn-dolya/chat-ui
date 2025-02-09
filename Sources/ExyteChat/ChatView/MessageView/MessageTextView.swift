@@ -25,6 +25,9 @@ struct MessageTextView: View {
     private func textView(_ text: String) -> some View {
         if messageUseMarkdown {
             Text(formatAttributedString())
+                .highPriorityGesture(TapGesture().onEnded {
+                    handleTap(on: text)
+                })
         } else {
             Text(text)
         }
@@ -55,10 +58,28 @@ struct MessageTextView: View {
         
         return attributedString
     }
-}
+    
+    private func handleTap(on text: String) {
+        if let url = extractFirstURL(from: text) {
+            UIApplication.shared.open(url)
+        }
+    }
 
-struct MessageTextView_Previews: PreviewProvider {
-    static var previews: some View {
-        MessageTextView(text: "Hello world!", messageUseMarkdown: false, inbound: true, anyLinkColor: .blue, darkLinkColor: .blue)
+    private func extractFirstURL(from text: String) -> URL? {
+        let linkRegex = try! NSRegularExpression(pattern: #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#, options: [])
+        let matches = linkRegex.matches(in: text, range: NSRange(location: 0, length: text.utf16.count))
+
+        for match in matches {
+            if let range = Range(match.range, in: text) {
+                return URL(string: String(text[range]))
+            }
+        }
+        return nil
     }
 }
+
+//struct MessageTextView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        MessageTextView(text: "Hello world!", messageUseMarkdown: false, inbound: true, anyLinkColor: .blue, darkLinkColor: .blue)
+//    }
+//}
