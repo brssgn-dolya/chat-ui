@@ -21,13 +21,15 @@ struct MessageTextView: View {
     var body: some View {
         if let text = text, !text.isEmpty {
             textView(text)
-                .confirmationDialog("Оберіть посилання", isPresented: $showLinkOptions, titleVisibility: .visible) {
+                .confirmationDialog("Оберіть посилання",
+                                    isPresented: $showLinkOptions,
+                                    titleVisibility: .visible) {
                     ForEach(linkOptions, id: \.self) { url in
                         Button(url.absoluteString) {
                             UIApplication.shared.open(url)
                         }
                     }
-                    Button("Відміна", role: .cancel) { }
+                    Button("Скасувати", role: .cancel) { }
                 }
         }
     }
@@ -35,7 +37,13 @@ struct MessageTextView: View {
     @ViewBuilder
     private func textView(_ text: String) -> some View {
         if messageUseMarkdown {
-            Text(formatAttributedString())
+            // Use MarkdownProcessor to get the formatted text.
+            let attributedText = MarkdownProcessor(text: text,
+                                                   inbound: inbound,
+                                                   anyLinkColor: anyLinkColor,
+                                                   darkLinkColor: darkLinkColor)
+                .formattedAttributedString()
+            Text(attributedText)
                 .highPriorityGesture(TapGesture().onEnded {
                     handleTap(on: text)
                 })
@@ -44,61 +52,20 @@ struct MessageTextView: View {
         }
     }
     
-    private func formatAttributedString() -> AttributedString {
-        let baseText = text ?? ""
-        var attributedString = AttributedString(baseText)
-        
-        let linkRegex = try! NSRegularExpression(
-            pattern: #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#,
-            options: []
-        )
-        
-        let nsRange = NSRange(baseText.startIndex..<baseText.endIndex, in: baseText)
-        let matches = linkRegex.matches(in: baseText, options: [], range: nsRange)
-        
-        for match in matches {
-            if let range = Range(match.range, in: baseText),
-               let attrStart = AttributedString.Index(range.lowerBound, within: attributedString),
-               let attrEnd = AttributedString.Index(range.upperBound, within: attributedString) {
-                
-                let attrRange = attrStart..<attrEnd
-                let urlString = String(baseText[range])
-                
-                attributedString[attrRange].link = URL(string: urlString)
-                attributedString[attrRange].foregroundColor = inbound ? darkLinkColor : anyLinkColor
-                attributedString[attrRange].underlineStyle = .single
-            }
-        }
-        
-        return attributedString
-    }
-    
+    /// Handles tap gestures on the text.
+    /// If one URL is found, it opens it directly; if multiple URLs are found, it presents a confirmation dialog.
     private func handleTap(on text: String) {
-        let urls = extractAllURLs(from: text)
+        let processor = MarkdownProcessor(text: text,
+                                          inbound: inbound,
+                                          anyLinkColor: anyLinkColor,
+                                          darkLinkColor: darkLinkColor)
+        let urls = processor.extractURLs()
         if urls.count == 1, let url = urls.first {
             UIApplication.shared.open(url)
         } else if urls.count > 1 {
             linkOptions = urls
             showLinkOptions = true
         }
-    }
-    
-    private func extractAllURLs(from text: String) -> [URL] {
-        var urls: [URL] = []
-        let linkRegex = try! NSRegularExpression(
-            pattern: #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#,
-            options: []
-        )
-        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = linkRegex.matches(in: text, options: [], range: nsRange)
-        
-        for match in matches {
-            if let range = Range(match.range, in: text),
-               let url = URL(string: String(text[range])) {
-                urls.append(url)
-            }
-        }
-        return urls
     }
 }
 
