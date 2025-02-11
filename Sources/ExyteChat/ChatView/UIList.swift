@@ -572,6 +572,9 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {
                         $0.gesture(LongPressGesture(minimumDuration: 0.15)
                             .onEnded({ _ in
+                                let generator = UIImpactFeedbackGenerator(style: .medium)
+                                generator.prepare()
+                                generator.impactOccurred()
                                 self.viewModel.messageMenuRow = row
                         }))
                     }
