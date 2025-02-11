@@ -13,22 +13,24 @@ public protocol MessageMenuAction: Equatable, CaseIterable {
     func title() -> String
     func icon() -> Image
     func type() -> MessageMenuActionType
+
+    static func menuItems(for message: Message) -> [Self]
+}
+
+public extension MessageMenuAction {
+    public static func menuItems(for message:Message) -> [Self] {
+        Self.allCases.map { $0 }
+    }
 }
 
 public enum MessageMenuActionType: Equatable {
-    case edit
-    case delete
-    case reply
-    case copy
-    case readBy
-    case forward
+    case edit, delete, reply, copy, readBy, forward
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
-
     case reply
-    case edit(saveClosure: (String)->Void)
-
+    case edit(saveClosure: (String) -> Void)
+    
     public func title() -> String {
         switch self {
         case .reply:
@@ -37,7 +39,7 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
             "Edit"
         }
     }
-
+    
     public func icon() -> Image {
         switch self {
         case .reply:
@@ -57,17 +59,19 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
     }
 
     public static func == (lhs: DefaultMessageMenuAction, rhs: DefaultMessageMenuAction) -> Bool {
-        if case .reply = lhs, case .reply = rhs {
+        switch (lhs, rhs) {
+        case (.reply, .reply):
             return true
-        }
-        if case .edit(_) = lhs, case .edit(_) = rhs {
+        case (.edit, .edit):
             return true
+        default:
+            return false
         }
-        return false
     }
 
     public static var allCases: [DefaultMessageMenuAction] = [
-        .reply, .edit(saveClosure: {_ in})
+        .reply,
+        .edit(saveClosure: { _ in })
     ]
 }
 
@@ -89,23 +93,12 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     var body: some View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
-            buttons: ActionEnum.allCases
-                .filter {
-                    ($0.type() == .edit && message.type == .text && message.user.isCurrentUser) ||
-                    ($0.type() == .delete && message.user.isCurrentUser) ||
-                    ($0.type() == .reply) || 
-                    ($0.type() == .copy && message.type == .text)
-//                    ||
-//                    ($0.type() == .readBy && message.user.isCurrentUser
-//                     && isGroup && message.type == .text) //add more cases if needed
-                }
-                .map {
-                    menuButton(title: $0.title(), icon: $0.icon(), action: $0)
-                },
+            buttons: filteredMenuActions().map { action in
+                menuButton(title: action.title(), icon: action.icon(), action: action)
+            },
             isOpen: $isShowingMenu
         )
         .straight()
-        //.mainZStackAlignment(.top)
         .initialOpacity(0)
         .direction(direction)
         .alignment(alignment)
@@ -113,8 +106,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .animation(.linear(duration: 0.2))
         .menuButtonsSize($menuButtonsSize)
     }
-
-    func menuButton(title: String, icon: Image, action: ActionEnum) -> some View {
+    
+    private func menuButton(title: String, icon: Image, action: ActionEnum) -> some View {
         HStack(spacing: 0) {
             if alignment == .left {
                 Color.clear.viewSize(leadingPadding)
@@ -143,6 +136,23 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
 
             if alignment == .right {
                 Color.clear.viewSize(trailingPadding)
+            }
+        }
+    }
+    
+    private func filteredMenuActions() -> [ActionEnum] {
+        ActionEnum.allCases.filter { action in
+            switch action.type() {
+            case .edit:
+                return message.type == .text && message.user.isCurrentUser
+            case .delete:
+                return message.user.isCurrentUser
+            case .reply:
+                return true
+            case .copy:
+                return message.type == .text
+            default:
+                return false
             }
         }
     }
