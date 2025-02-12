@@ -150,7 +150,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             case .reply:
                 return true
             case .copy:
-                return message.type == .text
+                return message.type == .text || message.type == .url
             default:
                 return false
             }
