@@ -14,6 +14,7 @@ struct MessageTextView: View {
     let inbound: Bool
     let anyLinkColor: Color
     let darkLinkColor: Color
+    let isDeleted: Bool
     
     @State private var showLinkOptions: Bool = false
     @State private var linkOptions: [URL] = []
@@ -37,16 +38,19 @@ struct MessageTextView: View {
     @ViewBuilder
     private func textView(_ text: String) -> some View {
         if messageUseMarkdown {
-            // Use MarkdownProcessor to get the formatted text.
             let attributedText = MarkdownProcessor(text: text,
                                                    inbound: inbound,
                                                    anyLinkColor: anyLinkColor,
                                                    darkLinkColor: darkLinkColor)
                 .formattedAttributedString()
-            Text(attributedText)
-                .highPriorityGesture(TapGesture().onEnded {
-                    handleTap(on: text)
-                })
+            if isDeleted {
+                retractedMessage(attributedText: attributedText)
+            } else {
+                Text(attributedText)
+                    .highPriorityGesture(TapGesture().onEnded {
+                        handleTap(on: text)
+                    })
+            }
         } else {
             Text(text)
         }
@@ -55,7 +59,7 @@ struct MessageTextView: View {
     /// Handles tap gestures on the text.
     /// If one URL is found, it opens it directly; if multiple URLs are found, it presents a confirmation dialog.
     private func handleTap(on text: String) {
-        let processor = MarkdownProcessor(text: text,
+        let processor = URLProcessor(text: text,
                                           inbound: inbound,
                                           anyLinkColor: anyLinkColor,
                                           darkLinkColor: darkLinkColor)
@@ -65,6 +69,21 @@ struct MessageTextView: View {
         } else if urls.count > 1 {
             linkOptions = urls
             showLinkOptions = true
+        }
+    }
+}
+
+extension MessageTextView {
+    @ViewBuilder
+    private func retractedMessage(attributedText: AttributedString) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: "nosign")
+                .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
+                .font(.system(size: 12))
+                .fontWeight(.bold)
+            Text(attributedText)
+                .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
+                .lineLimit(2)
         }
     }
 }

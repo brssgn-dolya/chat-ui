@@ -194,7 +194,8 @@ struct MessageView: View {
                     messageUseMarkdown: messageUseMarkdown,
                     inbound: !message.user.isCurrentUser,
                     anyLinkColor: theme.colors.anyLink,
-                    darkLinkColor: theme.colors.darkLink
+                    darkLinkColor: theme.colors.darkLink,
+                    isDeleted: message.isDeleted
                 )
                     .padding(.horizontal, MessageView.horizontalTextPadding)
             }
@@ -259,7 +260,8 @@ struct MessageView: View {
             messageUseMarkdown: messageUseMarkdown,
             inbound: !message.user.isCurrentUser,
             anyLinkColor: theme.colors.anyLink,
-            darkLinkColor: theme.colors.darkLink
+            darkLinkColor: theme.colors.darkLink,
+            isDeleted: message.isDeleted
         )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)
