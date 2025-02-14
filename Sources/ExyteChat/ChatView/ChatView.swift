@@ -140,6 +140,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var needsScrollView = false
     @State private var readyToShowScrollView = false
     @State private var menuButtonsSize: CGSize = .zero
+    @State private var contentHeight: CGFloat = 0
+    @State private var menuButtonsCount: Int = 0
     @State private var tableContentHeight: CGFloat = 0
     @State private var inputViewSize = CGSize.zero
     @State private var cellFrames = [String: CGRect]()
@@ -389,9 +391,18 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         .ignoresSafeArea(.all)
 
                     if needsScrollView {
+                        let oneButtonMenuHeight = menuButtonsSize.height
+                        let buttonsCount = CGFloat(menuButtonsCount)
+                        let wholeMenu = oneButtonMenuHeight * buttonsCount
+                        
                         ScrollView {
-                            messageMenu(row)
+                            VStack {
+                                messageMenu(row)
+                            }
+                            .frame(minHeight: contentHeight)
+                            .padding(.bottom, wholeMenu)
                         }
+ 
                         .introspect(.scrollView, on: .iOS(.v16, .v17, .v18)) { scrollView in
                             DispatchQueue.main.async {
                                 self.menuScrollView = scrollView
@@ -464,6 +475,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         MessageMenu(
             isShowingMenu: $isShowingMenu,
             menuButtonsSize: $menuButtonsSize,
+            menuButtonsCount: $menuButtonsCount,
             message: row.message,
             isGroup: showAvatars,
             alignment: row.message.user.isCurrentUser ? .right : .left,
@@ -488,7 +500,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         hideMessageMenu()
                     }
             }
-            .frame(height: menuButtonsSize.height + (cellFrames[row.id]?.height ?? 0), alignment: .top)
+            .frame(height: max(menuButtonsSize.height, (cellFrames[row.id]?.height ?? 0)), alignment: .top)
             .opacity(menuCellOpacity)
     }
 
@@ -506,39 +518,59 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         }
         return { _ in }
     }
-
+    
     func showMessageMenu(_ cellFrame: CGRect) {
         DispatchQueue.main.async {
-            let wholeMenuHeight = menuButtonsSize.height + cellFrame.height
-            let needsScrollTemp = wholeMenuHeight > UIScreen.main.bounds.height - safeAreaInsets.top - safeAreaInsets.bottom
-            
-            menuDirection = cellFrame.maxY > UIScreen.main.bounds.midX ? .top : .bottom
-            menuCellPosition = CGPoint(x: cellFrame.midX, y: cellFrame.minY + wholeMenuHeight/2 - safeAreaInsets.top)
-            menuCellOpacity = 1
+            let screenHeight = UIScreen.main.bounds.height
+            let safeTop = safeAreaInsets.top
+            let safeBottom = safeAreaInsets.bottom
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                var finalCellPosition = menuCellPosition
-                
-                if needsScrollTemp ||
-                    cellFrame.minY + wholeMenuHeight + safeAreaInsets.bottom > UIScreen.main.bounds.height {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                let oneButtonMenuHeight = menuButtonsSize.height
+                let buttonsCount = menuButtonsCount
+                let wholeMenu = (oneButtonMenuHeight * CGFloat(buttonsCount)) + (CGFloat(buttonsCount) * 2)
+                let wholeMenuWithCell = wholeMenu + cellFrame.height
 
-                    finalCellPosition = CGPoint(x: cellFrame.midX, y: UIScreen.main.bounds.height - wholeMenuHeight/2 - safeAreaInsets.top - safeAreaInsets.bottom
-                    )
+                if wholeMenuWithCell > screenHeight / 2 {
+                    needsScrollView = true
+                } else {
+                    needsScrollView = false
                 }
+
+                contentHeight = wholeMenuWithCell
+
+                var finalCenterY: CGFloat
+                if !needsScrollView {
+                    let availableSpaceToBottom = (screenHeight - safeBottom) - cellFrame.minY
+                    switch wholeMenuWithCell {
+                    case let menuHeight where menuHeight >= screenHeight:
+                        finalCenterY = cellFrame.minY - (menuHeight - availableSpaceToBottom) - oneButtonMenuHeight
+                    case _ where cellFrame.minY <= safeTop + cellFrame.height:
+                        finalCenterY = safeTop + cellFrame.height - oneButtonMenuHeight
+                    case _ where wholeMenuWithCell >= screenHeight / 2:
+                        finalCenterY = screenHeight / 2
+                    case _ where availableSpaceToBottom >= wholeMenuWithCell:
+                        finalCenterY = cellFrame.minY - oneButtonMenuHeight
+                    default:
+                        finalCenterY = cellFrame.minY - (wholeMenuWithCell - availableSpaceToBottom) - oneButtonMenuHeight
+                    }
+                } else {
+                    finalCenterY = screenHeight / 2
+                }
+                
+                let finalPosition = CGPoint(x: cellFrame.midX, y: finalCenterY)
 
                 withAnimation(.linear(duration: 0.1)) {
                     menuBgOpacity = 0.9
-                    menuCellPosition = finalCellPosition
+                    menuCellPosition = finalPosition
+                    menuCellOpacity = 1
                     isShowingMenu = true
                 }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                needsScrollView = needsScrollTemp
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                readyToShowScrollView = true
-                if let menuScrollView = menuScrollView {
-                    menuScrollView.contentOffset = CGPoint(x: 0, y: menuScrollView.contentSize.height - menuScrollView.frame.height + safeAreaInsets.bottom)
+                
+                if needsScrollView {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        readyToShowScrollView = true
+                    }
                 }
             }
         }

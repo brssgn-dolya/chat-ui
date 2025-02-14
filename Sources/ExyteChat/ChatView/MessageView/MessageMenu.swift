@@ -9,7 +9,7 @@ import SwiftUI
 import FloatingButton
 import enum FloatingButton.Alignment
 
-public protocol MessageMenuAction: Equatable, CaseIterable {
+public protocol MessageMenuAction: Equatable, CaseIterable, Hashable {
     func title() -> String
     func icon() -> Image
     func type() -> MessageMenuActionType
@@ -68,6 +68,15 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
             return false
         }
     }
+    
+    public func hash(into hasher: inout Hasher) {
+         switch self {
+         case .reply:
+             hasher.combine("reply")
+         case .edit:
+             hasher.combine("edit")
+         }
+     }
 
     public static var allCases: [DefaultMessageMenuAction] = [
         .reply,
@@ -81,6 +90,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
 
     @Binding var isShowingMenu: Bool
     @Binding var menuButtonsSize: CGSize
+    @Binding var menuButtonsCount: Int
+    
     var message: Message
     var isGroup: Bool
     var alignment: Alignment
@@ -89,7 +100,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     var trailingPadding: CGFloat
     var onAction: (ActionEnum) -> ()
     var mainButton: () -> MainButton
-
+    
     var body: some View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
@@ -100,11 +111,15 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         )
         .straight()
         .initialOpacity(0)
-        .direction(direction)
+        .direction(.bottom)
         .alignment(alignment)
         .spacing(2)
         .animation(.linear(duration: 0.2))
         .menuButtonsSize($menuButtonsSize)
+        
+        .onAppear {
+            menuButtonsCount = filteredMenuActions().count
+        }
     }
     
     private func menuButton(title: String, icon: Image, action: ActionEnum) -> some View {
@@ -151,6 +166,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return true
             case .copy:
                 return message.type == .text || message.type == .url
+//            case .forward:
+//                return true
             default:
                 return false
             }
