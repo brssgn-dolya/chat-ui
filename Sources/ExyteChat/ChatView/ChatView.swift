@@ -415,10 +415,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     }
                 }
                 .onAppear {
-                    DispatchQueue.main.async {
-                        if let frame = cellFrames[row.id] {
-                            showMessageMenu(frame)
-                        }
+                    if let frame = cellFrames[row.id] {
+                        showMessageMenu(frame)
                     }
                 }
                 .onTapGesture {
@@ -482,28 +480,32 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             leadingPadding: (showAvatars ? avatarSize : 0.0) + MessageView.horizontalAvatarPadding * 2,
             trailingPadding: MessageView.statusViewSize + MessageView.horizontalStatusPadding,
             onAction: menuActionClosure(row.message)) {
-                ChatMessageView(
-                    viewModel: viewModel,
-                    messageBuilder: messageBuilder,
-                    row: row,
-                    chatType: type,
-                    avatarSize: avatarSize,
-                    tapAvatarClosure: nil,
-                    messageUseMarkdown: messageUseMarkdown,
-                    isDisplayingMessageMenu: true,
-                    showMessageTimeView: showMessageTimeView,
-                    showAvatar: showAvatars,
-                    messageFont: messageFont,
-                    tapDocumentClosure: nil)
                 
-                .shadow(color: Color(uiColor: UIColor { traitCollection in
-                    return traitCollection.userInterfaceStyle == .dark ? UIColor.systemGray3 : UIColor.systemGray
-                }).opacity(0.3), radius: 6, x: 0, y: 3)
-                .onTapGesture {
-                    hideMessageMenu()
+                VStack(spacing: 0) {
+                    ChatMessageView(
+                        viewModel: viewModel,
+                        messageBuilder: messageBuilder,
+                        row: row,
+                        chatType: type,
+                        avatarSize: avatarSize,
+                        tapAvatarClosure: nil,
+                        messageUseMarkdown: messageUseMarkdown,
+                        isDisplayingMessageMenu: true,
+                        showMessageTimeView: showMessageTimeView,
+                        showAvatar: showAvatars,
+                        messageFont: messageFont,
+                        tapDocumentClosure: nil)
+                    .shadow(color: Color(uiColor: UIColor { traitCollection in
+                        return traitCollection.userInterfaceStyle == .dark ? UIColor.systemGray3 : UIColor.systemGray
+                    }).opacity(0.3), radius: 6, x: 0, y: 3)
+                    .onTapGesture {
+                        hideMessageMenu()
+                    }
+                    Spacer().frame(height: 4)
                 }
+                
             }
-            .frame(height: max(menuButtonsSize.height, (cellFrames[row.id]?.height ?? 0)), alignment: .top)
+            .frame(height: max(menuButtonsSize.height * CGFloat(menuButtonsCount) + (cellFrames[row.id]?.height ?? 0), (cellFrames[row.id]?.height ?? 0)))
             .opacity(menuCellOpacity)
     }
 
@@ -523,51 +525,51 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     }
     
     func showMessageMenu(_ cellFrame: CGRect) {
-        DispatchQueue.main.async {
-            let screenHeight = UIScreen.main.bounds.height
-            let safeTop = safeAreaInsets.top
-            let safeBottom = safeAreaInsets.bottom
+        let screenHeight = UIScreen.main.bounds.height
+        let safeTop = safeAreaInsets.top
+        let safeBottom = safeAreaInsets.bottom
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                let oneButtonMenuHeight = menuButtonsSize.height
-                let buttonsCount = menuButtonsCount
-                let wholeMenu = (oneButtonMenuHeight * CGFloat(buttonsCount)) + (CGFloat(buttonsCount) * 2)
-                let wholeMenuWithCell = wholeMenu + cellFrame.height
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let oneButtonMenuHeight = menuButtonsSize.height
+            let buttonsCount = menuButtonsCount
+            let wholeMenu = (oneButtonMenuHeight * CGFloat(buttonsCount)) + (CGFloat(buttonsCount) * 2)
+            let wholeMenuWithCell = wholeMenu + cellFrame.height
 
-                needsScrollView = wholeMenuWithCell > screenHeight / 2 ? true : false
-                contentHeight = wholeMenuWithCell
+            needsScrollView = wholeMenuWithCell > screenHeight / 2
+            contentHeight = wholeMenuWithCell
+            
+            var finalCenterY: CGFloat
+            let extraSpace = 8.0
+            let availableSpaceToBottom = (screenHeight - safeBottom) - cellFrame.minY
 
-                var finalCenterY: CGFloat
-                if !needsScrollView {
-                    let availableSpaceToBottom = (screenHeight - safeBottom) - cellFrame.minY
-                    switch wholeMenuWithCell {
-                    case let menuHeight where menuHeight >= screenHeight:
-                        finalCenterY = cellFrame.minY - (menuHeight - availableSpaceToBottom) - oneButtonMenuHeight
-                    case _ where cellFrame.minY <= safeTop + cellFrame.height:
-                        finalCenterY = safeTop + cellFrame.height - oneButtonMenuHeight
-                    case _ where wholeMenuWithCell >= screenHeight / 2:
-                        finalCenterY = screenHeight / 2
-                    case _ where availableSpaceToBottom >= wholeMenuWithCell:
-                        finalCenterY = cellFrame.minY - oneButtonMenuHeight
-                    default:
-                        finalCenterY = cellFrame.minY - (wholeMenuWithCell - availableSpaceToBottom) - oneButtonMenuHeight
-                    }
-                } else {
+            if !needsScrollView {
+                switch wholeMenuWithCell {
+                case _ where cellFrame.minY <= safeTop + cellFrame.height:
+                    finalCenterY = safeTop + cellFrame.height / 2
+                case _ where wholeMenuWithCell >= screenHeight / 2:
                     finalCenterY = screenHeight / 2
+                case _ where availableSpaceToBottom >= wholeMenuWithCell:
+                    finalCenterY = cellFrame.height > wholeMenu
+                    ? cellFrame.minY
+                    : cellFrame.minY - cellFrame.height - extraSpace
+                default:
+                    finalCenterY = max(cellFrame.minY - (wholeMenuWithCell - availableSpaceToBottom) - safeBottom - extraSpace, safeTop)
                 }
-                
-                let finalPosition = CGPoint(x: cellFrame.midX, y: finalCenterY)
+            } else {
+                finalCenterY = screenHeight / 2
+            }
 
-                withAnimation(.linear(duration: 0.1)) {
-                    menuCellPosition = finalPosition
-                    menuCellOpacity = 1
-                    isShowingMenu = true
-                }
-                
-                if needsScrollView {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        readyToShowScrollView = true
-                    }
+            let finalPosition = CGPoint(x: cellFrame.midX, y: finalCenterY)
+            
+            withAnimation(.spring(response: 0.1, dampingFraction: 0.85, blendDuration: 0)) {
+                menuCellPosition = finalPosition
+                menuCellOpacity = 1
+                isShowingMenu = true
+            }
+            
+            if needsScrollView {
+                DispatchQueue.main.async {
+                    readyToShowScrollView = true
                 }
             }
         }
