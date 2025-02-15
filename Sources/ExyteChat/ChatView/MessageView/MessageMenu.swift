@@ -105,7 +105,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
             buttons: filteredMenuActions().map { action in
-                menuButton(title: action.title(), icon: action.icon(), action: action)
+                menuButton(title: action.title(), icon: action.icon(), action: action, isDestructive: action.type() == .delete ? true : false)
             },
             isOpen: $isShowingMenu
         )
@@ -122,23 +122,26 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         }
     }
     
-    private func menuButton(title: String, icon: Image, action: ActionEnum) -> some View {
+    private func menuButton(title: String, icon: Image, action: ActionEnum, isDestructive: Bool) -> some View {
         HStack(spacing: 0) {
             if alignment == .left {
                 Color.clear.viewSize(leadingPadding)
             }
 
             ZStack {
-                theme.colors.friendMessage
-                    .background(.ultraThinMaterial)
-                    .environment(\.colorScheme, .light)
-                    .opacity(0.5)
-                    .cornerRadius(12)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(uiColor: UIColor.tertiarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 2)
+
                 HStack {
                     Text(title)
-                        .foregroundColor(theme.colors.textLightContext)
+                        .foregroundColor(isDestructive ? .red : .primary)
+                        .font(.system(size: 17, weight: .regular))
+
                     Spacer()
+
                     icon
+                        .foregroundColor(isDestructive ? .red : .primary)
                 }
                 .padding(.vertical, 11)
                 .padding(.horizontal, 12)

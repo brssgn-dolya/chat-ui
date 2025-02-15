@@ -146,7 +146,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var inputViewSize = CGSize.zero
     @State private var cellFrames = [String: CGRect]()
     @State private var menuCellPosition: CGPoint = .zero
-    @State private var menuBgOpacity: CGFloat = 0
     @State private var menuCellOpacity: CGFloat = 0
     @State private var menuScrollView: UIScrollView?
     @State private var menuDirection: Direction = .bottom
@@ -386,9 +385,9 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         .transparentNonAnimatingFullScreenCover(item: $viewModel.messageMenuRow) {
             if let row = viewModel.messageMenuRow {
                 ZStack(alignment: .topLeading) {
-                    theme.colors.messageMenuBackground
-                        .opacity(menuBgOpacity)
-                        .ignoresSafeArea(.all)
+                    Color.clear
+                        .background(.ultraThinMaterial)
+                        .ignoresSafeArea()
 
                     if needsScrollView {
                         let oneButtonMenuHeight = menuButtonsSize.height
@@ -479,7 +478,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             message: row.message,
             isGroup: showAvatars,
             alignment: row.message.user.isCurrentUser ? .right : .left,
-            direction: menuDirection,
+            direction: .bottom,
             leadingPadding: (showAvatars ? avatarSize : 0.0) + MessageView.horizontalAvatarPadding * 2,
             trailingPadding: MessageView.statusViewSize + MessageView.horizontalStatusPadding,
             onAction: menuActionClosure(row.message)) {
@@ -490,15 +489,19 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     chatType: type,
                     avatarSize: avatarSize,
                     tapAvatarClosure: nil,
-                    messageUseMarkdown: messageUseMarkdown, 
+                    messageUseMarkdown: messageUseMarkdown,
                     isDisplayingMessageMenu: true,
-                    showMessageTimeView: showMessageTimeView, 
+                    showMessageTimeView: showMessageTimeView,
                     showAvatar: showAvatars,
                     messageFont: messageFont,
                     tapDocumentClosure: nil)
-                    .onTapGesture {
-                        hideMessageMenu()
-                    }
+                
+                .shadow(color: Color(uiColor: UIColor { traitCollection in
+                    return traitCollection.userInterfaceStyle == .dark ? UIColor.systemGray3 : UIColor.systemGray
+                }).opacity(0.3), radius: 6, x: 0, y: 3)
+                .onTapGesture {
+                    hideMessageMenu()
+                }
             }
             .frame(height: max(menuButtonsSize.height, (cellFrames[row.id]?.height ?? 0)), alignment: .top)
             .opacity(menuCellOpacity)
@@ -531,12 +534,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 let wholeMenu = (oneButtonMenuHeight * CGFloat(buttonsCount)) + (CGFloat(buttonsCount) * 2)
                 let wholeMenuWithCell = wholeMenu + cellFrame.height
 
-                if wholeMenuWithCell > screenHeight / 2 {
-                    needsScrollView = true
-                } else {
-                    needsScrollView = false
-                }
-
+                needsScrollView = wholeMenuWithCell > screenHeight / 2 ? true : false
                 contentHeight = wholeMenuWithCell
 
                 var finalCenterY: CGFloat
@@ -561,7 +559,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 let finalPosition = CGPoint(x: cellFrame.midX, y: finalCenterY)
 
                 withAnimation(.linear(duration: 0.1)) {
-                    menuBgOpacity = 0.9
                     menuCellPosition = finalPosition
                     menuCellOpacity = 1
                     isShowingMenu = true
@@ -580,7 +577,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         menuScrollView = nil
         withAnimation(.linear(duration: 0.1)) {
             menuCellOpacity = 0
-            menuBgOpacity = 0
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             viewModel.messageMenuRow = nil
