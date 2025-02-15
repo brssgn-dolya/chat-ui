@@ -570,7 +570,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     .background(MessageMenuPreferenceViewSetter(id: row.id))
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
                     .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {
-                        $0.gesture(LongPressGesture(minimumDuration: 0.15)
+                        $0.highPriorityGesture(LongPressGesture(minimumDuration: 0.15)
                             .onEnded({ _ in
                                 let generator = UIImpactFeedbackGenerator(style: .medium)
                                 generator.prepare()

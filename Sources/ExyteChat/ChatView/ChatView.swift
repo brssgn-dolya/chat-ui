@@ -390,22 +390,14 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         .ignoresSafeArea()
 
                     if needsScrollView {
-                        let oneButtonMenuHeight = menuButtonsSize.height
-                        let buttonsCount = CGFloat(menuButtonsCount)
-                        let wholeMenu = oneButtonMenuHeight * buttonsCount
-                        
+                        let wholeMenu = menuButtonsSize.height * CGFloat(menuButtonsCount)
+
                         ScrollView {
                             VStack {
                                 messageMenu(row)
                             }
                             .frame(minHeight: contentHeight)
                             .padding(.bottom, wholeMenu)
-                        }
- 
-                        .introspect(.scrollView, on: .iOS(.v16, .v17, .v18)) { scrollView in
-                            DispatchQueue.main.async {
-                                self.menuScrollView = scrollView
-                            }
                         }
                         .opacity(readyToShowScrollView ? 1 : 0)
                     }
@@ -530,9 +522,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         let safeBottom = safeAreaInsets.bottom
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            let oneButtonMenuHeight = menuButtonsSize.height
-            let buttonsCount = menuButtonsCount
-            let wholeMenu = (oneButtonMenuHeight * CGFloat(buttonsCount)) + (CGFloat(buttonsCount) * 2)
+            let wholeMenu = (menuButtonsSize.height * CGFloat(menuButtonsCount))
+            + (CGFloat(menuButtonsCount) * 2)
             let wholeMenuWithCell = wholeMenu + cellFrame.height
 
             needsScrollView = wholeMenuWithCell > screenHeight / 2
@@ -546,8 +537,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 switch wholeMenuWithCell {
                 case _ where cellFrame.minY <= safeTop + cellFrame.height:
                     finalCenterY = safeTop + cellFrame.height / 2
-                case _ where wholeMenuWithCell >= screenHeight / 2:
-                    finalCenterY = screenHeight / 2
                 case _ where availableSpaceToBottom >= wholeMenuWithCell:
                     finalCenterY = cellFrame.height > wholeMenu
                     ? cellFrame.minY
