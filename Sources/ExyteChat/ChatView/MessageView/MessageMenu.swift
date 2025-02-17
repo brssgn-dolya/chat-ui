@@ -129,10 +129,14 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             }
 
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(uiColor: UIColor.tertiarySystemBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 2)
-
+                if #available(iOS 17.0, *) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(uiColor: .label).opacity(0.2), lineWidth: 0.5)
+                        .fill(Color(uiColor: .systemGray6))
+                } else {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .systemGray6))
+                }
                 HStack {
                     Text(title)
                         .foregroundColor(isDestructive ? .red : .primary)
@@ -159,7 +163,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     }
     
     private func filteredMenuActions() -> [ActionEnum] {
-        ActionEnum.allCases.filter { action in
+        let actions = ActionEnum.allCases.filter { action in
             switch action.type() {
             case .edit:
                 return message.type == .text && message.user.isCurrentUser
@@ -175,5 +179,10 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return false
             }
         }
+        
+        let nonDestructive = actions.filter { $0.type() != .delete }
+        let destructive = actions.filter { $0.type() == .delete }
+        
+        return nonDestructive + destructive
     }
 }
