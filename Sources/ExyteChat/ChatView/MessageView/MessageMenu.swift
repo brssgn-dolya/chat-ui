@@ -105,7 +105,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
             buttons: filteredMenuActions().map { action in
-                menuButton(title: action.title(), icon: action.icon(), action: action, isDestructive: action.type() == .delete ? true : false)
+                menuButton(title: action.title(), icon: action.icon(), action: action,
+                           isDestructive: action.type() == .delete ? true : false)
             },
             isOpen: $isShowingMenu
         )
@@ -122,7 +123,10 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         }
     }
     
-    private func menuButton(title: String, icon: Image, action: ActionEnum, isDestructive: Bool) -> some View {
+    private func menuButton(title: String,
+                            icon: Image,
+                            action: ActionEnum,
+                            isDestructive: Bool) -> some View {
         HStack(spacing: 0) {
             if alignment == .left {
                 Color.clear.viewSize(leadingPadding)
