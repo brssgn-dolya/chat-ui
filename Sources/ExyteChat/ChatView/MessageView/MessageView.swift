@@ -163,9 +163,9 @@ struct MessageView: View {
             if message.type == .document {
                 VStack(alignment: .trailing, spacing: 8) {
                     documentView(message)
-                        .onTapGesture {
+                        .highPriorityGesture(TapGesture().onEnded {
                             tapDocumentClosure?(message.user, message.id)
-                        }
+                        })
                     messageTimeView()
                         .padding(.bottom, 8)
                         .padding(.trailing, 12)
