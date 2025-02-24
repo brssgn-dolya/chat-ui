@@ -163,9 +163,9 @@ struct MessageView: View {
             if message.type == .document {
                 VStack(alignment: .trailing, spacing: 8) {
                     documentView(message)
-                        .onTapGesture {
+                        .highPriorityGesture(TapGesture().onEnded {
                             tapDocumentClosure?(message.user, message.id)
-                        }
+                        })
                     messageTimeView()
                         .padding(.bottom, 8)
                         .padding(.trailing, 12)
@@ -194,7 +194,8 @@ struct MessageView: View {
                     messageUseMarkdown: messageUseMarkdown,
                     inbound: !message.user.isCurrentUser,
                     anyLinkColor: theme.colors.anyLink,
-                    darkLinkColor: theme.colors.darkLink
+                    darkLinkColor: theme.colors.darkLink,
+                    isDeleted: message.isDeleted
                 )
                     .padding(.horizontal, MessageView.horizontalTextPadding)
             }
@@ -259,7 +260,8 @@ struct MessageView: View {
             messageUseMarkdown: messageUseMarkdown,
             inbound: !message.user.isCurrentUser,
             anyLinkColor: theme.colors.anyLink,
-            darkLinkColor: theme.colors.darkLink
+            darkLinkColor: theme.colors.darkLink,
+            isDeleted: message.isDeleted
         )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)

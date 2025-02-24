@@ -9,25 +9,28 @@ import SwiftUI
 import FloatingButton
 import enum FloatingButton.Alignment
 
-public protocol MessageMenuAction: Equatable, CaseIterable {
+public protocol MessageMenuAction: Equatable, CaseIterable, Hashable {
     func title() -> String
     func icon() -> Image
     func type() -> MessageMenuActionType
+
+    static func menuItems(for message: Message) -> [Self]
+}
+
+public extension MessageMenuAction {
+    public static func menuItems(for message:Message) -> [Self] {
+        Self.allCases.map { $0 }
+    }
 }
 
 public enum MessageMenuActionType: Equatable {
-    case edit
-    case delete
-    case reply
-    case copy
-    case readBy
+    case edit, delete, reply, copy, readBy, forward
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
-
     case reply
-    case edit(saveClosure: (String)->Void)
-
+    case edit(saveClosure: (String) -> Void)
+    
     public func title() -> String {
         switch self {
         case .reply:
@@ -36,7 +39,7 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
             "Edit"
         }
     }
-
+    
     public func icon() -> Image {
         switch self {
         case .reply:
@@ -56,17 +59,28 @@ public enum DefaultMessageMenuAction: MessageMenuAction {
     }
 
     public static func == (lhs: DefaultMessageMenuAction, rhs: DefaultMessageMenuAction) -> Bool {
-        if case .reply = lhs, case .reply = rhs {
+        switch (lhs, rhs) {
+        case (.reply, .reply):
             return true
-        }
-        if case .edit(_) = lhs, case .edit(_) = rhs {
+        case (.edit, .edit):
             return true
+        default:
+            return false
         }
-        return false
     }
+    
+    public func hash(into hasher: inout Hasher) {
+         switch self {
+         case .reply:
+             hasher.combine("reply")
+         case .edit:
+             hasher.combine("edit")
+         }
+     }
 
     public static var allCases: [DefaultMessageMenuAction] = [
-        .reply, .edit(saveClosure: {_ in})
+        .reply,
+        .edit(saveClosure: { _ in })
     ]
 }
 
@@ -76,6 +90,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
 
     @Binding var isShowingMenu: Bool
     @Binding var menuButtonsSize: CGSize
+    @Binding var menuButtonsCount: Int
+    
     var message: Message
     var isGroup: Bool
     var alignment: Alignment
@@ -84,52 +100,56 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     var trailingPadding: CGFloat
     var onAction: (ActionEnum) -> ()
     var mainButton: () -> MainButton
-
+    
     var body: some View {
         FloatingButton(
             mainButtonView: mainButton().allowsHitTesting(false),
-            buttons: ActionEnum.allCases
-                .filter {
-                    ($0.type() == .edit && message.type == .text && message.user.isCurrentUser) ||
-                    ($0.type() == .delete && message.user.isCurrentUser) ||
-                    ($0.type() == .reply) || 
-                    ($0.type() == .copy && message.type == .text)
-//                    ||
-//                    ($0.type() == .readBy && message.user.isCurrentUser
-//                     && isGroup && message.type == .text) //add more cases if needed
-                }
-                .map {
-                    menuButton(title: $0.title(), icon: $0.icon(), action: $0)
-                },
+            buttons: filteredMenuActions().map { action in
+                menuButton(title: action.title(), icon: action.icon(), action: action,
+                           isDestructive: action.type() == .delete ? true : false)
+            },
             isOpen: $isShowingMenu
         )
         .straight()
-        //.mainZStackAlignment(.top)
         .initialOpacity(0)
-        .direction(direction)
+        .direction(.bottom)
         .alignment(alignment)
         .spacing(2)
         .animation(.linear(duration: 0.2))
         .menuButtonsSize($menuButtonsSize)
+        
+        .onAppear {
+            menuButtonsCount = filteredMenuActions().count
+        }
     }
-
-    func menuButton(title: String, icon: Image, action: ActionEnum) -> some View {
+    
+    private func menuButton(title: String,
+                            icon: Image,
+                            action: ActionEnum,
+                            isDestructive: Bool) -> some View {
         HStack(spacing: 0) {
             if alignment == .left {
                 Color.clear.viewSize(leadingPadding)
             }
 
             ZStack {
-                theme.colors.friendMessage
-                    .background(.ultraThinMaterial)
-                    .environment(\.colorScheme, .light)
-                    .opacity(0.5)
-                    .cornerRadius(12)
+                if #available(iOS 17.0, *) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(uiColor: .label).opacity(0.2), lineWidth: 0.5)
+                        .fill(Color(uiColor: .systemGray6))
+                } else {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .systemGray6))
+                }
                 HStack {
                     Text(title)
-                        .foregroundColor(theme.colors.textLightContext)
+                        .foregroundColor(isDestructive ? .red : .primary)
+                        .font(.system(size: 17, weight: .regular))
+
                     Spacer()
+
                     icon
+                        .foregroundColor(isDestructive ? .red : .primary)
                 }
                 .padding(.vertical, 11)
                 .padding(.horizontal, 12)
@@ -144,5 +164,29 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 Color.clear.viewSize(trailingPadding)
             }
         }
+    }
+    
+    private func filteredMenuActions() -> [ActionEnum] {
+        let actions = ActionEnum.allCases.filter { action in
+            switch action.type() {
+            case .edit:
+                return message.type == .text && message.user.isCurrentUser
+            case .delete:
+                return message.user.isCurrentUser
+            case .reply:
+                return true
+            case .copy:
+                return message.type == .text || message.type == .url
+//            case .forward:
+//                return true
+            default:
+                return false
+            }
+        }
+        
+        let nonDestructive = actions.filter { $0.type() != .delete }
+        let destructive = actions.filter { $0.type() == .delete }
+        
+        return nonDestructive + destructive
     }
 }

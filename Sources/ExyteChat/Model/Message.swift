@@ -59,7 +59,7 @@ public struct Message: Identifiable, Hashable {
     public var recording: Recording?
     public var replyMessage: ReplyMessage?
     public var isEncrypted: Bool
-
+    public var isDeleted: Bool
     public var triggerRedraw: UUID?
     
     public var type: MessageType
@@ -73,7 +73,8 @@ public struct Message: Identifiable, Hashable {
                 recording: Recording? = nil,
                 replyMessage: ReplyMessage? = nil,
                 type: MessageType = .text,
-                isEncrypted: Bool = false) {
+                isEncrypted: Bool = false,
+                isDeleted: Bool = false) {
 
         self.id = id
         self.user = user
@@ -85,6 +86,7 @@ public struct Message: Identifiable, Hashable {
         self.replyMessage = replyMessage
         self.type = type
         self.isEncrypted = isEncrypted
+        self.isDeleted = isDeleted
     }
 
     public static func makeMessage(

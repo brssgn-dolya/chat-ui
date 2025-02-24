@@ -30,8 +30,7 @@ struct AttachmentCell: View {
                     }
             }
         }
-        .contentShape(Rectangle())
-        .simultaneousGesture(TapGesture().onEnded { _ in
+        .highPriorityGesture(TapGesture().onEnded {
             onTap(attachment)
         })
     }

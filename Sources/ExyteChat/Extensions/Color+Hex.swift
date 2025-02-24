@@ -29,3 +29,9 @@ extension Color {
         )
     }
 }
+
+extension Color {    
+    var uiColor: UIColor {
+        return UIColor(self)
+    }
+}

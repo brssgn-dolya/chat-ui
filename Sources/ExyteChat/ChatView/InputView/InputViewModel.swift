@@ -177,9 +177,12 @@ private extension InputViewModel {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             guard state != .editing else { return } // special case
-            if !self.text.isEmpty || !self.attachments.medias.isEmpty {
+
+            let trimmedText = self.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if !trimmedText.isEmpty || !self.attachments.medias.isEmpty {
                 self.state = .hasTextOrMedia
-            } else if self.text.isEmpty,
+            } else if trimmedText.isEmpty,
                       self.attachments.medias.isEmpty,
                       self.attachments.recording == nil {
                 self.state = .empty
@@ -252,11 +255,12 @@ private extension InputViewModel {
     }
 
     func sendMessage() -> AnyCancellable {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         showActivityIndicator = true
         return mapAttachmentsForSend()
             .compactMap { [attachments] _ in
                 DraftMessage(
-                    text: self.text,
+                    text: trimmedText,
                     medias: attachments.medias,
                     recording: attachments.recording,
                     replyMessage: attachments.replyMessage,
