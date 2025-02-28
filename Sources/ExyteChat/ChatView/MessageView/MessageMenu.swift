@@ -177,8 +177,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return true
             case .copy:
                 return message.type == .text || message.type == .url
-//            case .forward:
-//                return true
+            case .forward:
+                return true
             default:
                 return false
             }
