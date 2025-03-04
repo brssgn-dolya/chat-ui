@@ -150,7 +150,9 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var menuScrollView: UIScrollView?
     @State private var menuDirection: Direction = .bottom
     @State private var showAttachmentSavedAlert: Bool = false
-
+    @State private var isUploading: Bool = false
+    @State private var retryCount = 0
+    
     public init(
         messages: [Message],
         chatType: ChatType = .conversation,
@@ -172,6 +174,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     }
 
     public var body: some View {
+        ZStack {
         mainView
             .background(theme.colors.mainBackground)
             .environmentObject(keyboardState)
@@ -283,6 +286,17 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     globalFocusState.focus = nil
                 }
             }
+            
+            if isUploading {
+                ActivityIndicator()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .uploadStarted)) { _ in
+            isUploading = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .uploadFinished)) { _ in
+            isUploading = false
+        }
     }
 
     var mainView: some View {
@@ -718,5 +732,31 @@ public extension ChatView {
         var view = self
         view.availablelInput = type
         return view
+    }
+}
+
+private extension ChatView {
+    private func attemptToShowLoader() {
+        guard !isUploading else { return }
+        
+        if isAnyAlertPresented() {
+            if retryCount < 3 {
+                retryCount += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    attemptToShowLoader()
+                }
+            }
+        } else {
+            isUploading = true
+            retryCount = 0
+        }
+    }
+
+    private func isAnyAlertPresented() -> Bool {
+        guard let rootVC = UIApplication.shared.connectedScenes
+            .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController })
+            .first else { return false }
+        
+        return rootVC.presentedViewController != nil
     }
 }
