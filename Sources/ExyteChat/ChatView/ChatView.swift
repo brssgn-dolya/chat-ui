@@ -288,7 +288,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             }
             
             if isUploading {
-                ActivityIndicator()
+                ActivityIndicator(showBackground: false)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .uploadStarted)) { _ in
