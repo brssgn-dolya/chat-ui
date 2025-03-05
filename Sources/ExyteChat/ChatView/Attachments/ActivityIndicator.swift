@@ -8,13 +8,18 @@
 import SwiftUI
 import ActivityIndicatorView
 
-struct ActivityIndicator: View {
+public struct ActivityIndicator: View {
 
-    @Environment(\.chatTheme) var theme
-    var size: CGFloat = 50
-    var showBackground = true
+    @Environment(\.chatTheme) public var theme
+    public var size: CGFloat
+    public var showBackground: Bool
 
-    var body: some View {
+    public init(size: CGFloat = 50, showBackground: Bool = true) {
+        self.size = size
+        self.showBackground = showBackground
+    }
+
+    public var body: some View {
         ZStack {
             if showBackground {
                 Color.black.opacity(0.8)
