@@ -12,7 +12,10 @@ public extension Notification.Name {
     static let audioPlaybackStarted = Notification.Name("audioPlaybackStarted")
     static let recordingStarted = Notification.Name("recordingStarted")
     static let recordingStopped = Notification.Name("recordingStopped")
-    
+    static let uploadStarted = Notification.Name("uploadStarted")
+    static let uploadFinished = Notification.Name("uploadFinished")
+    static let startSharing = Notification.Name("startSharing")
+    static let stopSharing = Notification.Name("stopSharing")
 }
 
 struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
