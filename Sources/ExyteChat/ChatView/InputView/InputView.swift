@@ -120,6 +120,8 @@ struct InputView: View {
     var body: some View {
         VStack {
             viewOnTop
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.25), value: viewModel.attachments.replyMessage)
             HStack(alignment: .bottom, spacing: 10) {
                 if style == .message {
                     HStack(alignment: .bottom, spacing: 0) {
@@ -329,7 +331,9 @@ struct InputView: View {
 
                     theme.images.reply.cancelReply
                         .onTapGesture {
-                            viewModel.attachments.replyMessage = nil
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                viewModel.attachments.replyMessage = nil
+                            }
                         }
                 }
                 .padding(.horizontal, 26)
