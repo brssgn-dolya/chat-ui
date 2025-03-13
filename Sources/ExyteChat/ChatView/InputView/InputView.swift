@@ -225,10 +225,7 @@ struct InputView: View {
             }
             
             Button {
-                if !viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    viewModel.text = viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    onAction(.saveEdit)
-                }
+                onAction(.saveEdit)
             } label: {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.white)
