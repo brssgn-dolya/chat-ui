@@ -41,7 +41,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     tapAvatarClosure: tapAvatarClosure,
                     messageUseMarkdown: messageUseMarkdown,
                     isDisplayingMessageMenu: isDisplayingMessageMenu,
-                    showMessageTimeView: showMessageTimeView, 
+                    showMessageTimeView: showMessageTimeView,
                     isGroup: showAvatar,
                     tapDocumentClosure: tapDocumentClosure,
                     font: messageFont)
@@ -61,7 +61,7 @@ struct ChatMessageView<MessageContent: View>: View {
         .id(row.message.id)
         .contentShape(Rectangle())
         .applyIf(row.message.type != .call && row.message.type != .status) {
-            $0.onReplyGesture(replySymbolColor: theme.colors.myMessage.opacity(0.7)) {
+            $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
                 viewModel.messageMenuActionInternal(message: row.message, action: DefaultMessageMenuAction.reply)
             }
         }

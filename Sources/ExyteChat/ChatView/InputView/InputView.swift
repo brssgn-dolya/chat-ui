@@ -120,6 +120,8 @@ struct InputView: View {
     var body: some View {
         VStack {
             viewOnTop
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.25), value: viewModel.attachments.replyMessage)
             HStack(alignment: .bottom, spacing: 10) {
                 if style == .message {
                     HStack(alignment: .bottom, spacing: 0) {
@@ -223,10 +225,7 @@ struct InputView: View {
             }
             
             Button {
-                if !viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    viewModel.text = viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    onAction(.saveEdit)
-                }
+                onAction(.saveEdit)
             } label: {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.white)
@@ -329,7 +328,9 @@ struct InputView: View {
 
                     theme.images.reply.cancelReply
                         .onTapGesture {
-                            viewModel.attachments.replyMessage = nil
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                viewModel.attachments.replyMessage = nil
+                            }
                         }
                 }
                 .padding(.horizontal, 26)
