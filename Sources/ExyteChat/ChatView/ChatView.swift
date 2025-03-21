@@ -287,6 +287,10 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 }
             }
             
+            .onChange(of: isUploading) { uploading in
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+            
             if isUploading {
                 ActivityIndicator(showBackground: false)
             }
