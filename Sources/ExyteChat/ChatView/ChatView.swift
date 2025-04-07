@@ -130,7 +130,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @StateObject private var viewModel = ChatViewModel()
     @StateObject private var inputViewModel = InputViewModel()
     @StateObject private var globalFocusState = GlobalFocusState()
-    @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var keyboardState = KeyboardState()
 
     @State private var isScrolledToBottom: Bool = true
