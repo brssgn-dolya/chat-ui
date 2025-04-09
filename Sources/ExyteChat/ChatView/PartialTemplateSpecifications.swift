@@ -13,9 +13,12 @@ public extension ChatView where MessageContent == EmptyView {
          showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
+         draft: String,
          didSendMessage: @escaping (DraftMessage) -> Void,
          inputViewBuilder: @escaping InputViewBuilderClosure,
-         messageMenuAction: MessageMenuActionClosure?) {
+         messageMenuAction: MessageMenuActionClosure?,
+         didChangeDraft: @escaping (String) -> Void
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
@@ -23,6 +26,8 @@ public extension ChatView where MessageContent == EmptyView {
         self.inputViewBuilder = inputViewBuilder
         self.messageMenuAction = messageMenuAction
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -34,7 +39,10 @@ public extension ChatView where InputViewContent == EmptyView {
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure,
-         messageMenuAction: MessageMenuActionClosure?) {
+         messageMenuAction: MessageMenuActionClosure?,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
@@ -42,6 +50,8 @@ public extension ChatView where InputViewContent == EmptyView {
         self.messageBuilder = messageBuilder
         self.messageMenuAction = messageMenuAction
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -53,7 +63,10 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure,
-         inputViewBuilder: @escaping InputViewBuilderClosure) {
+         inputViewBuilder: @escaping InputViewBuilderClosure,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
@@ -61,6 +74,8 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
         self.messageBuilder = messageBuilder
         self.inputViewBuilder = inputViewBuilder
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -71,13 +86,18 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
-         messageMenuAction: MessageMenuActionClosure?) {
+         messageMenuAction: MessageMenuActionClosure?,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
         self.ids = messages.map { $0.id }
         self.messageMenuAction = messageMenuAction
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -88,13 +108,18 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
-         messageBuilder: @escaping MessageBuilderClosure) {
+         messageBuilder: @escaping MessageBuilderClosure,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
         self.ids = messages.map { $0.id }
         self.messageBuilder = messageBuilder
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -105,13 +130,18 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
-         inputViewBuilder: @escaping InputViewBuilderClosure) {
+         inputViewBuilder: @escaping InputViewBuilderClosure,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
         self.ids = messages.map { $0.id }
         self.inputViewBuilder = inputViewBuilder
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }
 
@@ -121,11 +151,16 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          showAvatars: Bool = true,
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
-         didSendMessage: @escaping (DraftMessage) -> Void) {
+         didSendMessage: @escaping (DraftMessage) -> Void,
+         didChangeDraft: @escaping (String) -> Void,
+         draft: String
+    ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
         self.sections = ChatView.mapMessages(messages, chatType: chatType, replyMode: replyMode)
         self.ids = messages.map { $0.id }
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 }

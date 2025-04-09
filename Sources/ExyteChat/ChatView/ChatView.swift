@@ -86,6 +86,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     let sections: [MessagesSection]
     let ids: [String]
     let didSendMessage: (DraftMessage) -> Void
+    let draft: String
+    let didChangeDraft: (String) -> Void
 
     // MARK: - View builders
 
@@ -160,7 +162,9 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         didSendMessage: @escaping (DraftMessage) -> Void,
         messageBuilder: @escaping MessageBuilderClosure,
         inputViewBuilder: @escaping InputViewBuilderClosure,
-        messageMenuAction: MessageMenuActionClosure?
+        messageMenuAction: MessageMenuActionClosure?,
+        draft: String = "",
+        didChangeDraft: @escaping (String) -> Void
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -170,6 +174,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         self.inputViewBuilder = inputViewBuilder
         self.messageMenuAction = messageMenuAction
         self.showAvatars = showAvatars
+        self.draft = draft
+        self.didChangeDraft = didChangeDraft
     }
 
     public var body: some View {
@@ -288,6 +294,10 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             
             .onChange(of: isUploading) { uploading in
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+            
+            .onChange(of: inputViewModel.text) { draft in
+                didChangeDraft(draft)
             }
             
             if isUploading {
@@ -430,6 +440,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     }
                 }
             }
+            inputViewModel.text = draft
         }
     }
 
