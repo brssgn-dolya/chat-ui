@@ -130,7 +130,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @StateObject private var viewModel = ChatViewModel()
     @StateObject private var inputViewModel = InputViewModel()
     @StateObject private var globalFocusState = GlobalFocusState()
-    @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var keyboardState = KeyboardState()
 
     @State private var isScrolledToBottom: Bool = true
@@ -305,9 +304,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     var mainView: some View {
         VStack {
-            if !networkMonitor.isConnected, !networkMonitor.isConnected {
-                waitingForNetwork
-            }
 
             if isListAboveInputView {
                 listWithButton
@@ -323,25 +319,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 listWithButton
             }
         }
-    }
-
-    var waitingForNetwork: some View {
-        VStack {
-            Rectangle()
-                .foregroundColor(.black.opacity(0.12))
-                .frame(height: 1)
-            HStack {
-                Spacer()
-                Image("waiting", bundle: .current)
-                Text("Waiting for network")
-                Spacer()
-            }
-            .padding(.top, 6)
-            Rectangle()
-                .foregroundColor(.black.opacity(0.12))
-                .frame(height: 1)
-        }
-        .padding(.top, 8)
     }
 
     @ViewBuilder

@@ -60,7 +60,7 @@ struct ChatMessageView<MessageContent: View>: View {
         }
         .id(row.message.id)
         .contentShape(Rectangle())
-        .applyIf(row.message.type != .call && row.message.type != .status) {
+        .applyIf(row.message.type != .call && row.message.type != .status && !row.message.isDeleted) {
             $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
                 viewModel.messageMenuActionInternal(message: row.message, action: DefaultMessageMenuAction.reply)
             }

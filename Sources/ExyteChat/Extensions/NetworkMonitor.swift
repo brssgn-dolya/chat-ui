@@ -8,20 +8,26 @@
 import Foundation
 import Network
 
-class NetworkMonitor: ObservableObject {
+public final class NetworkMonitor: ObservableObject {
     private let networkMonitor = NWPathMonitor()
-    private let workerQueue = DispatchQueue(label: "Monitor")
-    var isConnected = false
+    private let workerQueue = DispatchQueue(label: "com.sonata.network.monitor")
+    
+    @Published public private(set) var isConnected: Bool = false
 
-    init() {
-        networkMonitor.pathUpdateHandler = { path in
-            self.isConnected = path.status == .satisfied
-            Task {
-                await MainActor.run {
-                    self.objectWillChange.send()
+    public init() {
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            guard let self else { return }
+            let newStatus = path.status == .satisfied
+            if self.isConnected != newStatus {
+                DispatchQueue.main.async {
+                    self.isConnected = newStatus
                 }
             }
         }
         networkMonitor.start(queue: workerQueue)
+    }
+    
+    deinit {
+        networkMonitor.cancel()
     }
 }
