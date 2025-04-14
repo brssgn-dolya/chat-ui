@@ -23,6 +23,7 @@ struct FullscreenMediaPages: View {
 
             // Main fullscreen content
             VStack {
+                // This solution is NOT compatible with our needs - [TabView x video]
                 TabView(selection: $viewModel.index) {
                     ForEach(viewModel.attachments.enumerated().map({ $0 }), id: \.offset) { (index, attachment) in
                         AttachmentsPage(attachment: attachment)
@@ -104,7 +105,10 @@ struct FullscreenMediaPages: View {
 
                     HStack {
                         // Close button
-                        Button(action: onClose) {
+                        Button(action: {
+                            performMediumHaptic()
+                            onClose()
+                        }) {
                             theme.images.mediaPicker.cross
                                 .padding(5)
                         }
@@ -154,6 +158,7 @@ struct FullscreenMediaPages: View {
                                 .padding(5)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
+                                    performMediumHaptic()
                                     onSave(viewModel.index)
                                 }
                         }
@@ -164,6 +169,10 @@ struct FullscreenMediaPages: View {
                 }
             }
         }
+    }
+    
+    func performMediumHaptic() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
     
     func handleDragChanged(_ value: DragGesture.Value) {
