@@ -16,6 +16,7 @@ struct FullscreenMediaPages: View {
     var onSave: (Int) -> Void
 
     var body: some View {
+        // Drag gesture for closing the fullscreen viewer
         let closeGesture = DragGesture()
             .onChanged { viewModel.offset = closeSize(from: $0.translation) }
             .onEnded {
@@ -28,8 +29,11 @@ struct FullscreenMediaPages: View {
             }
 
         ZStack {
+            // Background dimming based on drag offset
             Color.black
                 .opacity(max((200.0 - viewModel.offset.height) / 200.0, 0.5))
+
+            // Main fullscreen content
             VStack {
                 TabView(selection: $viewModel.index) {
                     ForEach(viewModel.attachments.enumerated().map({ $0 }), id: \.offset) { (index, attachment) in
@@ -68,6 +72,7 @@ struct FullscreenMediaPages: View {
                 }
             }
 
+            // Bottom thumbnails view
             VStack {
                 Spacer()
                 ScrollViewReader { proxy in
@@ -113,68 +118,80 @@ struct FullscreenMediaPages: View {
         .ignoresSafeArea()
         .overlay(alignment: .top) {
             if viewModel.showMinis {
-                Text("\(viewModel.index + 1)/\(viewModel.attachments.count)")
-                    .foregroundColor(.white)
-                    .offset(y: safeAreaInsets.top)
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if viewModel.showMinis {
-                Button(action: onClose) {
-                    theme.images.mediaPicker.cross
-                        .padding(5)
-                }
-                .tint(.white)
-                .padding(.leading, 15)
-                .offset(y: safeAreaInsets.top - 5)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if viewModel.showMinis {
-                HStack(spacing: 20) {
-                    if viewModel.attachments[viewModel.index].type == .video {
-                        (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .padding(5)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.toggleVideoPlaying()
+                ZStack {
+                    // Top blurred background with shadow
+                    Color.black.opacity(0.4)
+                        .frame(height: 40 + safeAreaInsets.top)
+                        .edgesIgnoringSafeArea(.top)
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                    HStack {
+                        // Close button
+                        Button(action: onClose) {
+                            theme.images.mediaPicker.cross
+                                .padding(5)
+                        }
+                        .tint(.white)
+                        .padding(.leading, 15)
+
+                        Spacer()
+
+                        // Current page indicator
+                        Text("\(viewModel.index + 1)/\(viewModel.attachments.count)")
+                            .foregroundColor(.white)
+
+                        Spacer()
+
+                        // Right side action buttons
+                        HStack(spacing: 20) {
+                            if viewModel.attachments[viewModel.index].type == .video {
+                                (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(5)
+                                    .foregroundColor(.white)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.toggleVideoPlaying()
+                                    }
+
+                                (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundColor(.white)
+                                    .frame(width: 24, height: 24)
+                                    .padding(5)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.toggleVideoMuted()
+                                    }
                             }
 
-                        (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .padding(5)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.toggleVideoMuted()
-                            }
-                    }
-                    
-                    theme.images.messageMenu.save
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(.white)
-                        .frame(width: 24, height: 24)
-                        .padding(5)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onSave(viewModel.index)
+                            theme.images.messageMenu.save
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundColor(.white)
+                                .frame(width: 24, height: 24)
+                                .padding(5)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    onSave(viewModel.index)
+                                }
                         }
+                        .padding(.trailing, 10)
+                    }
+                    .padding(.top, safeAreaInsets.top)
+                    .frame(height: 60)
                 }
-                .foregroundColor(.white)
-                .padding(.trailing, 10)
-                .offset(y: safeAreaInsets.top - 5)
             }
         }
     }
 }
 
 private extension FullscreenMediaPages {
+    // Helper to calculate vertical drag offset
     func closeSize(from size: CGSize) -> CGSize {
         CGSize(width: 0, height: max(size.height, 0))
     }
