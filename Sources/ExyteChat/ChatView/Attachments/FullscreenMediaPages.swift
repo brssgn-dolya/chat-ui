@@ -40,14 +40,28 @@ struct FullscreenMediaPages: View {
                             .ignoresSafeArea()
                             .addPinchZoom()
                     }
-                    .ignoresSafeArea()
                 }
                 .environmentObject(viewModel)
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .offset(viewModel.offset)
-            //.gesture(closeGesture)
-            //.simultaneousGesture(closeGesture)
+            .gesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { gesture in
+                        guard abs(gesture.translation.height) > abs(gesture.translation.width) else { return }
+                        viewModel.offset = closeSize(from: gesture.translation)
+                    }
+                    .onEnded { gesture in
+                        if gesture.translation.height > 100 {
+                            onClose()
+                        } else {
+                            withAnimation(.spring()) {
+                                viewModel.offset = .zero
+                            }
+                        }
+                    }
+            )
             .onTapGesture {
                 withAnimation {
                     viewModel.showMinis.toggle()
