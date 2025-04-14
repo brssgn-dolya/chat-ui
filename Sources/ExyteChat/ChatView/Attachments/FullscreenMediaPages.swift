@@ -16,18 +16,6 @@ struct FullscreenMediaPages: View {
     var onSave: (Int) -> Void
 
     var body: some View {
-        // Drag gesture for closing the fullscreen viewer
-        let closeGesture = DragGesture()
-            .onChanged { viewModel.offset = closeSize(from: $0.translation) }
-            .onEnded {
-                withAnimation {
-                    viewModel.offset = .zero
-                }
-                if $0.translation.height >= 100 {
-                    onClose()
-                }
-            }
-
         ZStack {
             // Background dimming based on drag offset
             Color.black
@@ -52,19 +40,8 @@ struct FullscreenMediaPages: View {
             .offset(viewModel.offset)
             .gesture(
                 DragGesture(minimumDistance: 10)
-                    .onChanged { gesture in
-                        guard abs(gesture.translation.height) > abs(gesture.translation.width) else { return }
-                        viewModel.offset = closeSize(from: gesture.translation)
-                    }
-                    .onEnded { gesture in
-                        if gesture.translation.height > 100 {
-                            onClose()
-                        } else {
-                            withAnimation(.spring()) {
-                                viewModel.offset = .zero
-                            }
-                        }
-                    }
+                    .onChanged(handleDragChanged)
+                    .onEnded(handleDragEnded)
             )
             .onTapGesture {
                 withAnimation {
@@ -188,6 +165,26 @@ struct FullscreenMediaPages: View {
             }
         }
     }
+    
+    func handleDragChanged(_ value: DragGesture.Value) {
+        guard abs(value.translation.height) > abs(value.translation.width) * 1.2 else { return }
+        if viewModel.showMinis {
+            viewModel.showMinis = false
+        }
+        viewModel.offset = closeSize(from: value.translation)
+    }
+    
+    func handleDragEnded(_ value: DragGesture.Value) {
+        if value.translation.height >= 100 {
+            onClose()
+        } else {
+            withAnimation(.spring()) {
+                viewModel.showMinis = true
+                viewModel.offset = .zero
+            }
+        }
+    }
+    
 }
 
 private extension FullscreenMediaPages {
