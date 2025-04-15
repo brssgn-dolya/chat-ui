@@ -6,21 +6,22 @@ import Foundation
 import SwiftUI
 
 struct FullscreenMediaPages: View {
-
+    
     @Environment(\.chatTheme) private var theme
     @Environment(\.mediaPickerTheme) var pickerTheme
-
+    
     @StateObject var viewModel: FullscreenMediaPagesViewModel
+    
     var safeAreaInsets: EdgeInsets
     var onClose: () -> Void
     var onSave: (Int) -> Void
-
+    
     var body: some View {
         ZStack {
             // Background dimming based on drag offset
             Color.black
                 .opacity(max((200.0 - viewModel.offset.height) / 200.0, 0.5))
-
+            
             // Main fullscreen content
             VStack {
                 // This solution is NOT compatible with our needs - [TabView x video]
@@ -49,13 +50,14 @@ struct FullscreenMediaPages: View {
                     viewModel.showMinis.toggle()
                 }
             }
-
+            
             // Bottom thumbnails view
-            VStack {
+            VStack(spacing: 0) {
                 Spacer()
-                ScrollViewReader { proxy in
-                    if viewModel.showMinis {
-                        ScrollView(.horizontal) {
+                
+                if viewModel.showMinis {
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 2) {
                                 ForEach(viewModel.attachments.enumerated().map({ $0 }), id: \.offset) { (index, attachment) in
                                     AttachmentCell(attachment: attachment) { _ in
@@ -76,9 +78,9 @@ struct FullscreenMediaPages: View {
                                     .padding(.vertical, 1)
                                 }
                             }
+                            .padding([.top, .horizontal], 12)
+                            .padding(.bottom, safeAreaInsets.bottom + 12)
                         }
-                        .padding([.top, .horizontal], 12)
-                        .background(Color.black)
                         .onAppear {
                             proxy.scrollTo(viewModel.index)
                         }
@@ -88,41 +90,50 @@ struct FullscreenMediaPages: View {
                             }
                         }
                     }
+                    .background(
+                        Rectangle()
+                            .fill(.ultraThickMaterial)
+                            .ignoresSafeArea(edges: .bottom)
+                    )
                 }
-                .offset(y: -safeAreaInsets.bottom)
             }
             .offset(viewModel.offset)
         }
         .ignoresSafeArea()
+        
         .overlay(alignment: .top) {
             if viewModel.showMinis {
                 ZStack {
                     // Top blurred background with shadow
-                    Color.black.opacity(0.4)
+                    Rectangle()
+                        .fill(.ultraThickMaterial)
                         .frame(height: 40 + safeAreaInsets.top)
                         .edgesIgnoringSafeArea(.top)
                         .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
-
+                    
                     HStack {
                         // Close button
                         Button(action: {
                             performMediumHaptic()
                             onClose()
                         }) {
-                            theme.images.mediaPicker.cross
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
                                 .padding(5)
+                                .foregroundColor(.primary)
                         }
-                        .tint(.white)
                         .padding(.leading, 15)
-
+                        
                         Spacer()
-
+                        
                         // Current page indicator
                         Text("\(viewModel.index + 1)/\(viewModel.attachments.count)")
-                            .foregroundColor(.white)
-
+                            .foregroundColor(.primary)
+                        
                         Spacer()
-
+                        
                         // Right side action buttons
                         HStack(spacing: 20) {
                             if viewModel.attachments[viewModel.index].type == .video {
@@ -131,16 +142,16 @@ struct FullscreenMediaPages: View {
                                     .scaledToFit()
                                     .frame(width: 24, height: 24)
                                     .padding(5)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         viewModel.toggleVideoPlaying()
                                     }
-
+                                
                                 (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
                                     .resizable()
                                     .scaledToFit()
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .frame(width: 24, height: 24)
                                     .padding(5)
                                     .contentShape(Rectangle())
@@ -148,12 +159,12 @@ struct FullscreenMediaPages: View {
                                         viewModel.toggleVideoMuted()
                                     }
                             }
-
+                            
                             theme.images.messageMenu.save
                                 .renderingMode(.template)
                                 .resizable()
                                 .scaledToFit()
-                                .foregroundColor(.white)
+                                .foregroundColor(.primary)
                                 .frame(width: 24, height: 24)
                                 .padding(5)
                                 .contentShape(Rectangle())
@@ -193,7 +204,6 @@ struct FullscreenMediaPages: View {
             }
         }
     }
-    
 }
 
 private extension FullscreenMediaPages {
