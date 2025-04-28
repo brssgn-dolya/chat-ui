@@ -30,6 +30,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
 
     @State private var seleсtedMedias: [Media] = []
     @State private var currentFullscreenMedia: Media?
+    @Binding var mediaPickerMode: MediaPickerMode
 
     var showingAlbums: Bool {
         inputViewModel.mediaPickerMode == .albums
@@ -78,7 +79,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
             .currentFullscreenMedia($currentFullscreenMedia)
             .showLiveCameraCell()
             .setSelectionParameters(mediaPickerSelectionParameters)
-            .pickerMode($inputViewModel.mediaPickerMode)
+            .pickerMode($mediaPickerMode)
             .orientationHandler(orientationHandler)
             .padding(.top)
             .background(pickerTheme.main.albumSelectionBackground)

@@ -6,31 +6,25 @@ import Foundation
 import SwiftUI
 
 struct FullscreenMediaPages: View {
-
+    
     @Environment(\.chatTheme) private var theme
     @Environment(\.mediaPickerTheme) var pickerTheme
-
+    
     @StateObject var viewModel: FullscreenMediaPagesViewModel
+    
     var safeAreaInsets: EdgeInsets
     var onClose: () -> Void
     var onSave: (Int) -> Void
-
+    
     var body: some View {
-        let closeGesture = DragGesture()
-            .onChanged { viewModel.offset = closeSize(from: $0.translation) }
-            .onEnded {
-                withAnimation {
-                    viewModel.offset = .zero
-                }
-                if $0.translation.height >= 100 {
-                    onClose()
-                }
-            }
-
         ZStack {
+            // Background dimming based on drag offset
             Color.black
                 .opacity(max((200.0 - viewModel.offset.height) / 200.0, 0.5))
+            
+            // Main fullscreen content
             VStack {
+                // This solution is NOT compatible with our needs - [TabView x video]
                 TabView(selection: $viewModel.index) {
                     ForEach(viewModel.attachments.enumerated().map({ $0 }), id: \.offset) { (index, attachment) in
                         AttachmentsPage(attachment: attachment)
@@ -40,25 +34,30 @@ struct FullscreenMediaPages: View {
                             .ignoresSafeArea()
                             .addPinchZoom()
                     }
-                    .ignoresSafeArea()
                 }
                 .environmentObject(viewModel)
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .offset(viewModel.offset)
-            //.gesture(closeGesture)
-            //.simultaneousGesture(closeGesture)
+            .gesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged(handleDragChanged)
+                    .onEnded(handleDragEnded)
+            )
             .onTapGesture {
                 withAnimation {
                     viewModel.showMinis.toggle()
                 }
             }
-
-            VStack {
+            
+            // Bottom thumbnails view
+            VStack(spacing: 0) {
                 Spacer()
-                ScrollViewReader { proxy in
-                    if viewModel.showMinis {
-                        ScrollView(.horizontal) {
+                
+                if viewModel.showMinis {
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 2) {
                                 ForEach(viewModel.attachments.enumerated().map({ $0 }), id: \.offset) { (index, attachment) in
                                     AttachmentCell(attachment: attachment) { _ in
@@ -79,9 +78,9 @@ struct FullscreenMediaPages: View {
                                     .padding(.vertical, 1)
                                 }
                             }
+                            .padding([.top, .horizontal], 12)
+                            .padding(.bottom, safeAreaInsets.bottom + 12)
                         }
-                        .padding([.top, .horizontal], 12)
-                        .background(Color.black)
                         .onAppear {
                             proxy.scrollTo(viewModel.index)
                         }
@@ -91,76 +90,124 @@ struct FullscreenMediaPages: View {
                             }
                         }
                     }
+                    .background(
+                        Rectangle()
+                            .fill(.ultraThickMaterial)
+                            .ignoresSafeArea(edges: .bottom)
+                    )
                 }
-                .offset(y: -safeAreaInsets.bottom)
             }
             .offset(viewModel.offset)
         }
         .ignoresSafeArea()
+        
         .overlay(alignment: .top) {
             if viewModel.showMinis {
-                Text("\(viewModel.index + 1)/\(viewModel.attachments.count)")
-                    .foregroundColor(.white)
-                    .offset(y: safeAreaInsets.top)
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if viewModel.showMinis {
-                Button(action: onClose) {
-                    theme.images.mediaPicker.cross
-                        .padding(5)
-                }
-                .tint(.white)
-                .padding(.leading, 15)
-                .offset(y: safeAreaInsets.top - 5)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if viewModel.showMinis {
-                HStack(spacing: 20) {
-                    if viewModel.attachments[viewModel.index].type == .video {
-                        (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .padding(5)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.toggleVideoPlaying()
-                            }
-
-                        (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .padding(5)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.toggleVideoMuted()
-                            }
-                    }
+                ZStack {
+                    // Top blurred background with shadow
+                    Rectangle()
+                        .fill(.ultraThickMaterial)
+                        .frame(height: 40 + safeAreaInsets.top)
+                        .edgesIgnoringSafeArea(.top)
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
                     
-                    theme.images.messageMenu.save
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(.white)
-                        .frame(width: 24, height: 24)
-                        .padding(5)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onSave(viewModel.index)
+                    HStack {
+                        // Close button
+                        Button(action: {
+                            performMediumHaptic()
+                            onClose()
+                        }) {
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .padding(5)
+                                .foregroundColor(.primary)
                         }
+                        .padding(.leading, 15)
+                        
+                        Spacer()
+                        
+                        // Current page indicator
+                        Text("\(viewModel.index + 1)/\(viewModel.attachments.count)")
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        // Right side action buttons
+                        HStack(spacing: 20) {
+                            if viewModel.attachments[viewModel.index].type == .video {
+                                (viewModel.videoPlaying ? theme.images.fullscreenMedia.pause : theme.images.fullscreenMedia.play)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(5)
+                                    .foregroundColor(.primary)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.toggleVideoPlaying()
+                                    }
+                                
+                                (viewModel.videoMuted ? theme.images.fullscreenMedia.mute : theme.images.fullscreenMedia.unmute)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundColor(.primary)
+                                    .frame(width: 24, height: 24)
+                                    .padding(5)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.toggleVideoMuted()
+                                    }
+                            }
+                            
+                            theme.images.messageMenu.save
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundColor(.primary)
+                                .frame(width: 24, height: 24)
+                                .padding(5)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    performMediumHaptic()
+                                    onSave(viewModel.index)
+                                }
+                        }
+                        .padding(.trailing, 10)
+                    }
+                    .padding(.top, safeAreaInsets.top)
+                    .frame(height: 60)
                 }
-                .foregroundColor(.white)
-                .padding(.trailing, 10)
-                .offset(y: safeAreaInsets.top - 5)
+            }
+        }
+    }
+    
+    func performMediumHaptic() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+    
+    func handleDragChanged(_ value: DragGesture.Value) {
+        guard abs(value.translation.height) > abs(value.translation.width) * 1.2 else { return }
+        if viewModel.showMinis {
+            viewModel.showMinis = false
+        }
+        viewModel.offset = closeSize(from: value.translation)
+    }
+    
+    func handleDragEnded(_ value: DragGesture.Value) {
+        if value.translation.height >= 100 {
+            onClose()
+        } else {
+            withAnimation(.spring()) {
+                viewModel.showMinis = true
+                viewModel.offset = .zero
             }
         }
     }
 }
 
 private extension FullscreenMediaPages {
+    // Helper to calculate vertical drag offset
     func closeSize(from size: CGSize) -> CGSize {
         CGSize(width: 0, height: max(size.height, 0))
     }

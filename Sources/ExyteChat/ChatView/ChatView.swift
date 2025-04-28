@@ -229,6 +229,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     Button(action.title) {
                         switch action {
                         case .gallery:
+                            inputViewModel.mediaPickerMode = .photos
                             inputViewModel.showPicker = true
                         case .file:
                             inputViewModel.showFilePicker = true
@@ -246,8 +247,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             }
 
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
-                AttachmentsEditor(inputViewModel: inputViewModel, inputViewBuilder: inputViewBuilder, chatTitle: chatTitle, messageUseMarkdown: messageUseMarkdown, orientationHandler: orientationHandler, mediaPickerSelectionParameters: mediaPickerSelectionParameters, availableInput: availablelInput)
-                    .environmentObject(globalFocusState)
+                makeAttachmentsEditor()
             }
         
             .alert("Медіа-файл успішно збережено", isPresented: $showAttachmentSavedAlert) {
@@ -310,6 +310,21 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         .onReceive(NotificationCenter.default.publisher(for: .uploadFinished)) { _ in
             isUploading = false
         }
+    }
+    
+    @ViewBuilder
+    func makeAttachmentsEditor() -> some View {
+        AttachmentsEditor(
+            inputViewModel: inputViewModel,
+            inputViewBuilder: inputViewBuilder,
+            chatTitle: chatTitle,
+            messageUseMarkdown: messageUseMarkdown,
+            orientationHandler: orientationHandler,
+            mediaPickerSelectionParameters: mediaPickerSelectionParameters,
+            availableInput: availablelInput,
+            mediaPickerMode: $inputViewModel.mediaPickerMode
+        )
+        .environmentObject(globalFocusState)
     }
 
     var mainView: some View {
