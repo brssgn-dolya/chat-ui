@@ -179,6 +179,9 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return message.type == .text || message.type == .url
             case .forward:
                 return true
+                // Remove this when MUC markers will be ready to release 
+//            case .readBy:
+//                return message.user.isCurrentUser && isGroup
             default:
                 return false
             }
