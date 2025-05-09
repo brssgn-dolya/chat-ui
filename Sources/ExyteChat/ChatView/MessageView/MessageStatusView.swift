@@ -10,12 +10,33 @@ public struct MessageStatusView: View {
 
     let status: Message.Status
     let onRetry: () -> Void
+    let colorSet: MessageStatusColorSet?
 
-    public init(status: Message.Status, onRetry: @escaping () -> Void) {
+    public init(
+        status: Message.Status,
+        colorSet: MessageStatusColorSet? = nil,
+        onRetry: @escaping () -> Void
+    ) {
         self.status = status
         self.onRetry = onRetry
+        self.colorSet = colorSet
     }
-    
+
+    private var resolvedColor: Color {
+        switch status {
+        case .sending:
+            return colorSet?.sending ?? theme.colors.grayStatus
+        case .sent:
+            return colorSet?.sent ?? theme.colors.grayStatus
+        case .received:
+            return colorSet?.received ?? theme.colors.grayStatus
+        case .read:
+            return colorSet?.read ?? theme.colors.myMessage
+        case .error:
+            return colorSet?.error ?? theme.colors.errorStatus
+        }
+    }
+
     public var body: some View {
         Group {
             switch status {
@@ -23,28 +44,28 @@ public struct MessageStatusView: View {
                 theme.images.message.sending
                     .resizable()
                     .rotationEffect(.degrees(90))
-                    .foregroundColor(theme.colors.grayStatus)
+                    .foregroundColor(resolvedColor)
             case .sent:
                 theme.images.message.checkmark
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(theme.colors.grayStatus)
+                    .foregroundColor(resolvedColor)
             case .received:
                 theme.images.message.checkmarks
                     .resizable()
-                    .foregroundColor(theme.colors.grayStatus)
+                    .foregroundColor(resolvedColor)
             case .read:
                 theme.images.message.checkmarks
                     .resizable()
-                    .foregroundColor(theme.colors.myMessage)
+                    .foregroundColor(resolvedColor)
             case .error:
                 Button {
                     onRetry()
                 } label: {
                     theme.images.message.error
                         .resizable()
+                        .foregroundColor(resolvedColor)
                 }
-                .foregroundColor(theme.colors.errorStatus)
             }
         }
         .viewSize(MessageView.statusViewSize)
@@ -52,12 +73,24 @@ public struct MessageStatusView: View {
     }
 }
 
-struct SwiftUIView_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack {
-            MessageStatusView(status: .sending, onRetry: {})
-            MessageStatusView(status: .sent, onRetry: {})
-            MessageStatusView(status: .read, onRetry: {})
-        }
+public struct MessageStatusColorSet {
+    public var sending: Color?
+    public var sent: Color?
+    public var received: Color?
+    public var read: Color?
+    public var error: Color?
+
+    public init(
+        sending: Color? = nil,
+        sent: Color? = nil,
+        received: Color? = nil,
+        read: Color? = nil,
+        error: Color? = nil
+    ) {
+        self.sending = sending
+        self.sent = sent
+        self.received = received
+        self.read = read
+        self.error = error
     }
 }
