@@ -24,7 +24,7 @@ public extension MessageMenuAction {
 }
 
 public enum MessageMenuActionType: Equatable {
-    case edit, delete, reply, copy, readBy, forward
+    case edit, delete, reply, copy, information, forward
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
@@ -179,9 +179,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return message.type == .text || message.type == .url
             case .forward:
                 return true
-                // Remove this when MUC markers will be ready to release 
-//            case .readBy:
-//                return message.user.isCurrentUser && isGroup
+            case .information:
+                return message.user.isCurrentUser && isGroup
             default:
                 return false
             }
