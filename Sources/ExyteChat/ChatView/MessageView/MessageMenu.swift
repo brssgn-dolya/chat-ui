@@ -157,6 +157,9 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             .frame(width: 208)
             .fixedSize()
             .onTapGesture {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.prepare()
+                generator.impactOccurred()
                 onAction(action)
             }
 
