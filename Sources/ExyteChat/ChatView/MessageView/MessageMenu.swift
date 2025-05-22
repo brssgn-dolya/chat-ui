@@ -183,9 +183,11 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             case .forward:
                 return true
             case .information:
-                return message.user.isCurrentUser &&
-                isGroup &&
-                [.sent, .received, .read].contains(message.status)
+                // Remove this when MUC markers will be ready to release
+                return false
+//                return message.user.isCurrentUser &&
+//                isGroup &&
+//                [.sent, .received, .read].contains(message.status)
             default:
                 return false
             }
