@@ -24,7 +24,7 @@ public extension MessageMenuAction {
 }
 
 public enum MessageMenuActionType: Equatable {
-    case edit, delete, reply, copy, readBy, forward
+    case edit, delete, reply, copy, information, forward
 }
 
 public enum DefaultMessageMenuAction: MessageMenuAction {
@@ -157,6 +157,9 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             .frame(width: 208)
             .fixedSize()
             .onTapGesture {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.prepare()
+                generator.impactOccurred()
                 onAction(action)
             }
 
@@ -179,9 +182,10 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return message.type == .text || message.type == .url
             case .forward:
                 return true
-                // Remove this when MUC markers will be ready to release 
-//            case .readBy:
-//                return message.user.isCurrentUser && isGroup
+            case .information:
+                return message.user.isCurrentUser &&
+                isGroup &&
+                [.sent, .received, .read].contains(message.status)
             default:
                 return false
             }
