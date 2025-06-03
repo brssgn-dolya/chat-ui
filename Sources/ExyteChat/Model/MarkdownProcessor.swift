@@ -7,35 +7,37 @@
 
 import SwiftUI
 
-// MARK: - MarkdownProcessor (Handles Markdown Formatting)
 public struct MarkdownProcessor {
     public let text: String
     public let inbound: Bool
     public let anyLinkColor: Color
     public let darkLinkColor: Color
+    public let baseFont: UIFont
 
     public init(
         text: String,
         inbound: Bool = false,
         anyLinkColor: Color = .blue,
-        darkLinkColor: Color = .gray
+        darkLinkColor: Color = .gray,
+        baseFont: UIFont = .systemFont(ofSize: 17)
     ) {
         self.text = text
         self.inbound = inbound
         self.anyLinkColor = anyLinkColor
         self.darkLinkColor = darkLinkColor
+        self.baseFont = baseFont
     }
 
-    /// Returns an `AttributedString` with markdown formatting applied.
     public func formattedAttributedString() -> AttributedString {
-        let mutableAttributed = NSMutableAttributedString(string: text)
-
+        let mutableAttributed = NSMutableAttributedString(string: text, attributes: [
+            .font: baseFont
+        ])
+        
         processMarkdownStyle(for: .inlineCode, in: mutableAttributed)
         processMarkdownStyle(for: .strikethrough, in: mutableAttributed)
         processMarkdownStyle(for: .bold, in: mutableAttributed)
         processMarkdownStyle(for: .italic, in: mutableAttributed)
 
-        // Apply URL formatting
         let urlProcessor = URLProcessor(
             text: text,
             inbound: inbound,
@@ -43,16 +45,14 @@ public struct MarkdownProcessor {
             darkLinkColor: darkLinkColor
         )
         urlProcessor.formatURLs(in: mutableAttributed)
-        
+
         return AttributedString(mutableAttributed)
     }
 
-    // MARK: - Markdown Processing
     private enum MarkdownStyle {
         case inlineCode, strikethrough, bold, italic
     }
 
-    /// Processes markdown formatting based on the given style.
     private func processMarkdownStyle(for style: MarkdownStyle, in attributed: NSMutableAttributedString) {
         let pattern: String
         let attributeClosure: (NSRange, String, NSMutableAttributedString) -> Void
@@ -63,51 +63,55 @@ public struct MarkdownProcessor {
             attributeClosure = { fullRange, innerText, attributed in
                 attributed.replaceCharacters(in: fullRange, with: innerText)
                 let newRange = NSRange(location: fullRange.location, length: (innerText as NSString).length)
-                attributed.addAttribute(.font,
-                                        value: UIFont.monospacedSystemFont(ofSize: UIFont.systemFontSize, weight: .regular),
-                                        range: newRange)
+                attributed.addAttribute(
+                    .font,
+                    value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),
+                    range: newRange
+                )
             }
+
         case .strikethrough:
             pattern = "~([^~]+)~"
             attributeClosure = { fullRange, innerText, attributed in
                 attributed.replaceCharacters(in: fullRange, with: innerText)
                 let newRange = NSRange(location: fullRange.location, length: (innerText as NSString).length)
-                attributed.addAttribute(.strikethroughStyle,
-                                        value: NSUnderlineStyle.single.rawValue,
-                                        range: newRange)
+                attributed.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: newRange)
             }
+
         case .bold:
             pattern = "\\*([^*]+)\\*"
             attributeClosure = { fullRange, innerText, attributed in
                 attributed.replaceCharacters(in: fullRange, with: innerText)
                 let newRange = NSRange(location: fullRange.location, length: (innerText as NSString).length)
-                attributed.addAttribute(.font,
-                                        value: UIFont.boldSystemFont(ofSize: UIFont.systemFontSize),
-                                        range: newRange)
+                attributed.addAttribute(
+                    .font,
+                    value: UIFont.systemFont(ofSize: baseFont.pointSize, weight: .bold),
+                    range: newRange
+                )
             }
+
         case .italic:
             pattern = "_([^_]+)_"
             attributeClosure = { fullRange, innerText, attributed in
                 attributed.replaceCharacters(in: fullRange, with: innerText)
                 let newRange = NSRange(location: fullRange.location, length: (innerText as NSString).length)
-                attributed.addAttribute(.font,
-                                        value: UIFont.italicSystemFont(ofSize: UIFont.systemFontSize),
-                                        range: newRange)
+                attributed.addAttribute(
+                    .font,
+                    value: UIFont.italicSystemFont(ofSize: baseFont.pointSize),
+                    range: newRange
+                )
             }
         }
 
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        let regex = try! NSRegularExpression(pattern: pattern)
         let nsString = attributed.string as NSString
-        let matches = regex.matches(in: attributed.string, options: [], range: NSRange(location: 0, length: nsString.length))
+        let matches = regex.matches(in: attributed.string, range: NSRange(location: 0, length: nsString.length))
 
-        // Process matches in reverse order to maintain correct indexing.
         for match in matches.reversed() {
-            let fullRange = match.range
-            guard fullRange.length >= 2 else { continue }
-            let innerRange = NSRange(location: fullRange.location + 1, length: fullRange.length - 2)
+            guard match.range.length >= 2 else { continue }
+            let innerRange = NSRange(location: match.range.location + 1, length: match.range.length - 2)
             let innerText = nsString.substring(with: innerRange)
-            attributeClosure(fullRange, innerText, attributed)
+            attributeClosure(match.range, innerText, attributed)
         }
     }
 }
-

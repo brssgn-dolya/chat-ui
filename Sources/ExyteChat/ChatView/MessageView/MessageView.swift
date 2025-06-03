@@ -265,10 +265,10 @@ struct MessageView: View {
         )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)
-
+        
         let timeView = messageTimeView()
             .padding(.trailing, 12)
-
+        
         Group {
             switch dateArrangement {
             case .hstack:
@@ -280,6 +280,7 @@ struct MessageView: View {
                     timeView
                 }
                 .padding(.vertical, 8)
+                
             case .vstack:
                 VStack(alignment: .leading, spacing: 4) {
                     messageView
@@ -289,12 +290,15 @@ struct MessageView: View {
                     }
                 }
                 .padding(.vertical, 8)
+                
             case .overlay:
                 messageView
                     .padding(.vertical, 8)
+                    .padding(.trailing, 32)
                     .overlay(alignment: .bottomTrailing) {
                         timeView
                             .padding(.vertical, 8)
+                            .padding(.trailing, 12)
                     }
             }
         }
