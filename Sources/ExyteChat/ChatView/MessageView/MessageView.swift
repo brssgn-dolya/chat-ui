@@ -255,13 +255,15 @@ struct MessageView: View {
 
     @ViewBuilder
     func textWithTimeView(_ message: Message) -> some View {
+        let isDeleted = message.isDeleted
+        
         let messageView = MessageTextView(
             text: message.text,
             messageUseMarkdown: messageUseMarkdown,
             inbound: !message.user.isCurrentUser,
             anyLinkColor: theme.colors.anyLink,
             darkLinkColor: theme.colors.darkLink,
-            isDeleted: message.isDeleted
+            isDeleted: isDeleted
         )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)
@@ -269,37 +271,44 @@ struct MessageView: View {
         let timeView = messageTimeView()
             .padding(.trailing, 12)
         
-        Group {
-            switch dateArrangement {
-            case .hstack:
-                HStack(alignment: .lastTextBaseline, spacing: 12) {
-                    messageView
-                    if !message.attachments.isEmpty {
-                        Spacer()
-                    }
-                    timeView
-                }
-                .padding(.vertical, 8)
-                
-            case .vstack:
-                VStack(alignment: .leading, spacing: 4) {
-                    messageView
-                    HStack(spacing: 0) {
-                        Spacer()
-                        timeView
-                    }
-                }
-                .padding(.vertical, 8)
-                
-            case .overlay:
+        if isDeleted {
+            HStack(alignment: .center, spacing: 6) {
                 messageView
-                    .padding(.vertical, 8)
-                    .padding(.trailing, 32)
-                    .overlay(alignment: .bottomTrailing) {
+                timeView
+            }
+            .padding(.vertical, 8)
+        } else {
+            Group {
+                switch dateArrangement {
+                case .hstack:
+                    HStack(alignment: .lastTextBaseline, spacing: 12) {
+                        messageView
+                        if !message.attachments.isEmpty {
+                            Spacer()
+                        }
                         timeView
-                            .padding(.vertical, 8)
-                            .padding(.trailing, 12)
                     }
+                    .padding(.vertical, 8)
+                    
+                case .vstack:
+                    VStack(alignment: .leading, spacing: 4) {
+                        messageView
+                        HStack(spacing: 0) {
+                            Spacer()
+                            timeView
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    
+                case .overlay:
+                    HStack(alignment: .bottom, spacing: 4) {
+                        messageView
+                            .padding(.vertical, 8)
+                        
+                        timeView
+                            .padding(.bottom, 8)
+                    }
+                }
             }
         }
     }

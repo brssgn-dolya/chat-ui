@@ -38,7 +38,7 @@ struct MessageTextView: View {
     @ViewBuilder
     private func textView(_ text: String) -> some View {
         let baseUIFont: UIFont = isDeleted
-            ? .systemFont(ofSize: 14)
+            ? .systemFont(ofSize: 15)
             : .systemFont(ofSize: 17)
 
         if messageUseMarkdown {
@@ -93,8 +93,8 @@ extension MessageTextView {
                 .font(.system(size: 14, weight: .semibold))
             
             Text(attributedText)
-                .font(.system(size: 14))
                 .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
+                .font(.system(size: 15, weight: .semibold))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .background(Color.clear)
