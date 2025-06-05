@@ -34,25 +34,36 @@ struct MessageTextView: View {
                 }
         }
     }
-    
+
     @ViewBuilder
     private func textView(_ text: String) -> some View {
+        let baseUIFont: UIFont = isDeleted
+            ? .systemFont(ofSize: 15)
+            : .systemFont(ofSize: 17)
+
         if messageUseMarkdown {
-            let attributedText = MarkdownProcessor(text: text,
-                                                   inbound: inbound,
-                                                   anyLinkColor: anyLinkColor,
-                                                   darkLinkColor: darkLinkColor)
-                .formattedAttributedString()
-            if isDeleted {
-                retractedMessage(attributedText: attributedText)
-            } else {
-                Text(attributedText)
-                    .highPriorityGesture(TapGesture().onEnded {
-                        handleTap(on: text)
-                    })
+            let attributedText = MarkdownProcessor(
+                text: text,
+                inbound: inbound,
+                anyLinkColor: anyLinkColor,
+                darkLinkColor: darkLinkColor,
+                baseFont: baseUIFont
+            ).formattedAttributedString()
+
+            Group {
+                if isDeleted {
+                    retractedMessage(attributedText: attributedText)
+                } else {
+                    Text(attributedText)
+                        .font(.system(size: baseUIFont.pointSize))
+                        .highPriorityGesture(TapGesture().onEnded {
+                            handleTap(on: text)
+                        })
+                }
             }
         } else {
             Text(text)
+                .font(.system(size: baseUIFont.pointSize))
         }
     }
     
@@ -76,15 +87,17 @@ struct MessageTextView: View {
 extension MessageTextView {
     @ViewBuilder
     private func retractedMessage(attributedText: AttributedString) -> some View {
-        HStack(spacing: 2) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: "nosign")
                 .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
-                .font(.system(size: 12))
-                .fontWeight(.bold)
+                .font(.system(size: 14, weight: .semibold))
+            
             Text(attributedText)
                 .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
-                .lineLimit(2)
+                .font(.system(size: 15, weight: .semibold))
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .background(Color.clear)
     }
 }
 
