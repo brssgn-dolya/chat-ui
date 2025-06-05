@@ -467,6 +467,13 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             self.ids = ids
             self.mainBackgroundColor = mainBackgroundColor
             self.paginationTargetIndexPath = paginationTargetIndexPath
+             
+            if self.paginationTargetIndexPath == nil, let lastSection = sections.last {
+                self.paginationTargetIndexPath = IndexPath(
+                    row: lastSection.rows.count - 1,
+                    section: sections.count - 1
+                )
+            }
         }
 
         /// call pagination handler when this row is reached
@@ -600,8 +607,11 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            isScrolledToBottom = scrollView.contentOffset.y <= 0
-            isScrolledToTop = scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.height - 1
+            let contentOffsetY = scrollView.contentOffset.y.rounded(.down)
+            let contentSizeHeight = scrollView.contentSize.height.rounded(.down)
+            let scrollViewHeight = scrollView.frame.height.rounded(.down)
+            isScrolledToBottom = contentOffsetY <= 0
+            isScrolledToTop = contentOffsetY >= contentSizeHeight - scrollViewHeight - 100
         }
     }
 
