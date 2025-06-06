@@ -37,9 +37,12 @@ struct MessageTextView: View {
 
     @ViewBuilder
     private func textView(_ text: String) -> some View {
-        let baseUIFont: UIFont = isDeleted
-            ? .systemFont(ofSize: 15)
-            : .systemFont(ofSize: 17)
+        let baseUIFont: UIFont = {
+            let base = isDeleted
+                ? UIFont.systemFont(ofSize: 15)
+                : UIFont.systemFont(ofSize: 17)
+            return UIFontMetrics(forTextStyle: .body).scaledFont(for: base)
+        }()
 
         if messageUseMarkdown {
             let attributedText = MarkdownProcessor(
