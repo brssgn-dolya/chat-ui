@@ -123,7 +123,7 @@ struct InputView: View {
             viewOnTop
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut(duration: 0.25), value: viewModel.attachments.replyMessage)
-            viewMentionsOverlay
+//            viewMentionsOverlay
             HStack(alignment: .bottom, spacing: 10) {
                 if style == .message {
                     HStack(alignment: .bottom, spacing: 0) {

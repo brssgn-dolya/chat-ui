@@ -38,7 +38,7 @@ public struct MarkdownProcessor {
         processMarkdownStyle(for: .strikethrough, in: mutableAttributed)
         processMarkdownStyle(for: .bold, in: mutableAttributed)
         processMarkdownStyle(for: .italic, in: mutableAttributed)
-        processMentions(in: mutableAttributed)
+//        processMentions(in: mutableAttributed)
         
         let urlProcessor = URLProcessor(
             text: text,
@@ -131,26 +131,5 @@ public struct MarkdownProcessor {
                 attributed.addAttribute(.link, value: url, range: newRange)
             }
         }
-    }
-
-    // MARK: - NSAttributedString variant
-
-    public func formattedNSAttributedString() -> NSAttributedString {
-        let mutable = NSMutableAttributedString(string: text, attributes: [.font: baseFont])
-        processMarkdownStyle(for: .inlineCode, in: mutable)
-        processMarkdownStyle(for: .strikethrough, in: mutable)
-        processMarkdownStyle(for: .bold, in: mutable)
-        processMarkdownStyle(for: .italic, in: mutable)
-        processMentions(in: mutable)
-
-        let urlProcessor = URLProcessor(
-            text: text,
-            inbound: inbound,
-            anyLinkColor: anyLinkColor,
-            darkLinkColor: darkLinkColor
-        )
-        urlProcessor.formatURLs(in: mutable)
-
-        return mutable
     }
 }
