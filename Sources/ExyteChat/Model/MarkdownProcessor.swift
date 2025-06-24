@@ -13,19 +13,22 @@ public struct MarkdownProcessor {
     public let anyLinkColor: Color
     public let darkLinkColor: Color
     public let baseFont: UIFont
-
+    public let shouldAddLinks: Bool
+    
     public init(
         text: String,
         inbound: Bool = false,
         anyLinkColor: Color = .blue,
         darkLinkColor: Color = .gray,
-        baseFont: UIFont = .systemFont(ofSize: 17)
+        baseFont: UIFont = .systemFont(ofSize: 17),
+        shouldAddLinks: Bool = true
     ) {
         self.text = text
         self.inbound = inbound
         self.anyLinkColor = anyLinkColor
         self.darkLinkColor = darkLinkColor
         self.baseFont = baseFont
+        self.shouldAddLinks = shouldAddLinks
     }
 
     public func formattedAttributedString() -> AttributedString {
@@ -41,7 +44,8 @@ public struct MarkdownProcessor {
             text: text,
             inbound: inbound,
             anyLinkColor: anyLinkColor,
-            darkLinkColor: darkLinkColor
+            darkLinkColor: darkLinkColor,
+            shouldAddLinks: shouldAddLinks
         )
         urlProcessor.formatURLs(in: mutableAttributed)
 
@@ -116,14 +120,16 @@ public struct MarkdownProcessor {
             let id = nsString.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespaces)
             
             let display = "@\(name)"
-            let url = URL(string: "mention://\(id)")!
-            
             attributed.replaceCharacters(in: fullRange, with: display)
             let newRange = NSRange(location: fullRange.location, length: display.count)
             
-            attributed.addAttribute(.link, value: url, range: newRange)
-            attributed.addAttribute(.foregroundColor, value: (inbound ? darkLinkColor : anyLinkColor).uiColor, range: newRange)
             attributed.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: baseFont.pointSize), range: newRange)
+            attributed.addAttribute(.foregroundColor, value: (inbound ? darkLinkColor : anyLinkColor).uiColor, range: newRange)
+
+            if shouldAddLinks {
+                let url = URL(string: "mention://\(id)")!
+                attributed.addAttribute(.link, value: url, range: newRange)
+            }
         }
     }
 
