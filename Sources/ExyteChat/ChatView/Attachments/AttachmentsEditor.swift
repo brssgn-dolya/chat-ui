@@ -20,7 +20,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     @EnvironmentObject private var globalFocusState: GlobalFocusState
 
     @ObservedObject var inputViewModel: InputViewModel
-
+    @ObservedObject private var mentionsViewModel = MentionsSuggestionsViewModel()
+    
     var inputViewBuilder: InputViewBuilderClosure?
     var chatTitle: String?
     var messageUseMarkdown: Bool
@@ -113,11 +114,18 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     var inputView: some View {
         Group {
             if let inputViewBuilder = inputViewBuilder {
-                inputViewBuilder($inputViewModel.text, inputViewModel.attachments, inputViewModel.state, .signature, inputViewModel.inputViewAction()) {
+                inputViewBuilder(
+                    $inputViewModel.text,
+                    inputViewModel.attachments,
+                    inputViewModel.state,
+                    .signature,
+                    inputViewModel.inputViewAction()
+                ) {
                     globalFocusState.focus = nil
                 }
             } else {
                 InputView(
+                    mentionsViewModel: mentionsViewModel,
                     viewModel: inputViewModel,
                     inputFieldId: UUID(),
                     style: .signature,

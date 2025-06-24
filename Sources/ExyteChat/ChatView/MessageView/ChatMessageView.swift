@@ -27,6 +27,7 @@ struct ChatMessageView<MessageContent: View>: View {
     let showAvatar: Bool
     let messageFont: UIFont
     let tapDocumentClosure: ChatView.TapDocumentClosure?
+    let groupUsers: [User]
     
     var body: some View {
         Group {
@@ -44,6 +45,7 @@ struct ChatMessageView<MessageContent: View>: View {
                     showMessageTimeView: showMessageTimeView,
                     isGroup: showAvatar,
                     tapDocumentClosure: tapDocumentClosure,
+                    groupUsers: groupUsers,
                     font: messageFont)
             case .call, .status:
                 if let messageBuilder = messageBuilder {

@@ -90,6 +90,7 @@ struct InputView: View {
     @Environment(\.chatTheme) private var theme
     @Environment(\.mediaPickerTheme) private var pickerTheme
 
+    @ObservedObject var mentionsViewModel: MentionsSuggestionsViewModel
     @ObservedObject var viewModel: InputViewModel
     var inputFieldId: UUID
     var style: InputViewStyle
@@ -118,10 +119,11 @@ struct InputView: View {
     private let tapDelay = 0.2
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             viewOnTop
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut(duration: 0.25), value: viewModel.attachments.replyMessage)
+            viewMentionsOverlay
             HStack(alignment: .bottom, spacing: 10) {
                 if style == .message {
                     HStack(alignment: .bottom, spacing: 0) {
@@ -143,11 +145,11 @@ struct InputView: View {
             .padding(.vertical, 8)
         }
         .background(backgroundColor)
+        .animation(.easeInOut(duration: 0.25), value: mentionsViewModel.isVisible)
         .onAppear {
             viewModel.recordingPlayer = recordingPlayer
             viewModel.bindToRecordingPlayerState()
         }
-        
         .onDisappear {
             viewModel.unbindRecordingPlayer()
         }
@@ -184,7 +186,22 @@ struct InputView: View {
             case .isRecordingTap:
                 recordingInProgress
             default:
-                TextInputView(text: $viewModel.text, inputFieldId: inputFieldId, style: style, availableInput: availableInput)
+                TextInputView(
+                    text: $viewModel.text,
+                    inputFieldId: inputFieldId,
+                    style: style,
+                    availableInput: availableInput
+                )
+                .onChange(of: viewModel.text) { newText in
+                    if let match = newText.range(of: #"@[\w]{0,}$"#, options: .regularExpression) {
+                        let partial = String(newText[match].dropFirst())
+                        mentionsViewModel.updateSuggestions(for: partial)
+                    } else {
+                        mentionsViewModel.reset()
+                    }
+                    
+                    viewModel.onTextChanged(newText)
+                }
             }
         }
         .frame(minHeight: 48)
@@ -601,5 +618,39 @@ struct InputView: View {
                 }
                 dragStart = nil
             }
+    }
+}
+
+// MARK: - Mentions
+extension InputView {
+    func insertMention(_ user: User) {
+        let name = user.name
+        let mentionText = "@\(name) "
+
+        if let match = viewModel.text.range(of: #"@[\w]{0,}$"#, options: .regularExpression) {
+            let utf16Start = viewModel.text.utf16.distance(from: viewModel.text.utf16.startIndex, to: match.lowerBound)
+            let range = NSRange(location: utf16Start, length: mentionText.count - 1)
+
+            viewModel.text.replaceSubrange(match, with: mentionText)
+
+            let mentioned = MentionedUser(id: user.id, displayName: name)
+            viewModel.addMention(mentioned)
+        }
+
+        mentionsViewModel.reset()
+    }
+
+    @ViewBuilder
+    var viewMentionsOverlay: some View {
+        if mentionsViewModel.isVisible {
+            MentionsSuggestionsView(
+                suggestions: mentionsViewModel.suggestions,
+                onSelect: { user in
+                    insertMention(user)
+                }, mentionsViewModel: mentionsViewModel
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .animation(.easeInOut(duration: 0.2), value: mentionsViewModel.isVisible)
+        }
     }
 }

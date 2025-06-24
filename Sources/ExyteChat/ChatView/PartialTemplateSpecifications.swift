@@ -17,7 +17,8 @@ public extension ChatView where MessageContent == EmptyView {
          didSendMessage: @escaping (DraftMessage) -> Void,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?,
-         didChangeDraft: @escaping (String) -> Void
+         didChangeDraft: @escaping (String) -> Void,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -28,6 +29,7 @@ public extension ChatView where MessageContent == EmptyView {
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -41,7 +43,8 @@ public extension ChatView where InputViewContent == EmptyView {
          messageBuilder: @escaping MessageBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -52,6 +55,7 @@ public extension ChatView where InputViewContent == EmptyView {
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -65,7 +69,8 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
          messageBuilder: @escaping MessageBuilderClosure,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -76,6 +81,7 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -88,7 +94,8 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageMenuAction: MessageMenuActionClosure?,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -98,6 +105,7 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -110,7 +118,8 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
          didSendMessage: @escaping (DraftMessage) -> Void,
          messageBuilder: @escaping MessageBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -120,6 +129,7 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -132,7 +142,8 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
          didSendMessage: @escaping (DraftMessage) -> Void,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -142,6 +153,7 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
 
@@ -153,7 +165,8 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
          didChangeDraft: @escaping (String) -> Void,
-         draft: String
+         draft: String,
+         groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -162,5 +175,6 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 }
