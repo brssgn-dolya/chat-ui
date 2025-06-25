@@ -125,6 +125,7 @@ public struct MarkdownProcessor {
             
             attributed.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: baseFont.pointSize), range: newRange)
             attributed.addAttribute(.foregroundColor, value: (inbound ? darkLinkColor : anyLinkColor).uiColor, range: newRange)
+            attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: newRange)
 
             if shouldAddLinks {
                 let url = URL(string: "mention://\(id)")!
