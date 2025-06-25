@@ -16,25 +16,37 @@ struct MentionsSuggestionsView: View {
     private let rowHeight: CGFloat = 48
     private let maxVisibleRows: Int = 4
     
+    private var filteredUsers: [User] {
+        suggestions.filter(\.isInRoster)
+    }
+    
+    private var indexedUsers: [(offset: Int, element: User)] {
+        Array(filteredUsers.enumerated())
+    }
+    
+    private var viewHeight: CGFloat {
+        CGFloat(min(indexedUsers.count, maxVisibleRows)) * rowHeight
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                ForEach(suggestions.indices, id: \.self) { index in
-                    mentionRow(suggestions[index])
-                    if index < suggestions.count - 1 {
+                ForEach(indexedUsers, id: \.element.id) { index, user in
+                    mentionRow(user)
+                    
+                    if index < indexedUsers.count - 1 {
                         Divider().padding(.leading, 48)
                     }
                 }
-                
             }
+            .animation(.default, value: indexedUsers.map(\.element.id))
         }
-        .frame(height: CGFloat(min(suggestions.count, maxVisibleRows)) * rowHeight)
+        .frame(height: viewHeight)
         .background(.ultraThinMaterial)
         .cornerRadius(12)
         .shadow(radius: 4)
         .padding(.horizontal)
         .padding(.bottom, 4)
-        .animation(.default, value: suggestions.map(\.id))
     }
     
     @ViewBuilder
