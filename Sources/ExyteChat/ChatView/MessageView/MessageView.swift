@@ -24,7 +24,8 @@ struct MessageView: View {
     let showMessageTimeView: Bool
     let isGroup: Bool
     let tapDocumentClosure: ChatView.TapDocumentClosure?
-
+    let groupUsers: [User]
+    
     @State var avatarViewSize: CGSize = .zero
     @State var statusSize: CGSize = .zero
     @State var timeSize: CGSize = .zero
@@ -195,9 +196,16 @@ struct MessageView: View {
                     inbound: !message.user.isCurrentUser,
                     anyLinkColor: theme.colors.anyLink,
                     darkLinkColor: theme.colors.darkLink,
-                    isDeleted: message.isDeleted
+                    isDeleted: message.isDeleted,
+                    onMentionTap: { id in
+                        if let user = groupUsers.first(where: {
+                            $0.id.components(separatedBy: "@").first == id
+                        }) {
+                            tapAvatarClosure?(user, message.id)
+                        }
+                    }
                 )
-                    .padding(.horizontal, MessageView.horizontalTextPadding)
+                .padding(.horizontal, MessageView.horizontalTextPadding)
             }
 
             if let recording = message.recording {
@@ -263,7 +271,14 @@ struct MessageView: View {
             inbound: !message.user.isCurrentUser,
             anyLinkColor: theme.colors.anyLink,
             darkLinkColor: theme.colors.darkLink,
-            isDeleted: isDeleted
+            isDeleted: isDeleted,
+            onMentionTap: { id in
+                if let user = groupUsers.first(where: {
+                    $0.id.components(separatedBy: "@").first == id
+                }) {
+                    tapAvatarClosure?(user, message.id)
+                }
+            }
         )
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageView.horizontalTextPadding)

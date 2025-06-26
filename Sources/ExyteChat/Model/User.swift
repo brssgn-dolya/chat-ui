@@ -11,13 +11,25 @@ public struct User: Codable, Identifiable, Hashable {
     public let avatarURL: URL?
     public let avatarCachedImage: UIImage?
     public let isCurrentUser: Bool
+    public let role: String?
+    public let isInRoster: Bool
 
-    public init(id: String, name: String, avatarURL: URL?, avatarCachedImage: UIImage?, isCurrentUser: Bool) {
+    public init(
+        id: String,
+        name: String,
+        avatarURL: URL?,
+        avatarCachedImage: UIImage?,
+        isCurrentUser: Bool,
+        role: String? = nil,
+        isInRoster: Bool = false
+    ) {
         self.id = id
         self.name = name
         self.avatarURL = avatarURL
         self.avatarCachedImage = avatarCachedImage
         self.isCurrentUser = isCurrentUser
+        self.role = role
+        self.isInRoster = isInRoster
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -26,6 +38,8 @@ public struct User: Codable, Identifiable, Hashable {
         case avatarURL
         case avatarCachedImageData
         case isCurrentUser
+        case role
+        case isInRoster
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -34,6 +48,8 @@ public struct User: Codable, Identifiable, Hashable {
         try container.encode(name, forKey: .name)
         try container.encode(avatarURL, forKey: .avatarURL)
         try container.encode(isCurrentUser, forKey: .isCurrentUser)
+        try container.encode(role, forKey: .role)
+        try container.encode(isInRoster, forKey: .isInRoster)
         let imageData = avatarCachedImage?.pngData()
         try container.encode(imageData, forKey: .avatarCachedImageData)
     }
@@ -44,10 +60,10 @@ public struct User: Codable, Identifiable, Hashable {
         name = try container.decode(String.self, forKey: .name)
         avatarURL = try container.decode(URL?.self, forKey: .avatarURL)
         isCurrentUser = try container.decode(Bool.self, forKey: .isCurrentUser)
-        if let imageData = try container.decodeIfPresent(Data.self, forKey: .avatarCachedImageData) {
-            avatarCachedImage = UIImage(data: imageData)
-        } else {
-            avatarCachedImage = nil
-        }
+        role = try container.decodeIfPresent(String.self, forKey: .role)
+        isInRoster = try container.decodeIfPresent(Bool.self, forKey: .isInRoster) ?? true
+        
+        let imageData = try container.decodeIfPresent(Data.self, forKey: .avatarCachedImageData)
+        avatarCachedImage = imageData.flatMap { UIImage(data: $0) }
     }
 }

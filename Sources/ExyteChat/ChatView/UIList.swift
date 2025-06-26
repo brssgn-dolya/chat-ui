@@ -41,6 +41,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
     let isScrollEnabled: Bool
     let avatarSize: CGFloat
     let showAvatars: Bool
+    let groupUsers: [User]
     let showMessageMenuOnLongPress: Bool
     let tapAvatarClosure: ChatView.TapAvatarClosure?
     let tapDocumentClosure: ChatView.TapDocumentClosure?
@@ -381,7 +382,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
     // MARK: - Coordinator
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(viewModel: viewModel, inputViewModel: inputViewModel, isScrolledToBottom: $isScrolledToBottom, isScrolledToTop: $isScrolledToTop, messageBuilder: messageBuilder, mainHeaderBuilder: mainHeaderBuilder, headerBuilder: headerBuilder, chatTheme: theme, type: type, showDateHeaders: showDateHeaders, avatarSize: avatarSize, showAvatars: showAvatars, showMessageMenuOnLongPress: showMessageMenuOnLongPress, tapAvatarClosure: tapAvatarClosure, tapDocumentClosure: tapDocumentClosure, paginationHandler: paginationHandler, messageUseMarkdown: messageUseMarkdown, showMessageTimeView: showMessageTimeView, messageFont: messageFont, sections: sections, ids: ids, mainBackgroundColor: theme.colors.mainBackground)
+        Coordinator(viewModel: viewModel, inputViewModel: inputViewModel, isScrolledToBottom: $isScrolledToBottom, isScrolledToTop: $isScrolledToTop, messageBuilder: messageBuilder, mainHeaderBuilder: mainHeaderBuilder, headerBuilder: headerBuilder, chatTheme: theme, type: type, showDateHeaders: showDateHeaders, avatarSize: avatarSize, showAvatars: showAvatars, groupUsers: groupUsers, showMessageMenuOnLongPress: showMessageMenuOnLongPress, tapAvatarClosure: tapAvatarClosure, tapDocumentClosure: tapDocumentClosure, paginationHandler: paginationHandler, messageUseMarkdown: messageUseMarkdown, showMessageTimeView: showMessageTimeView, messageFont: messageFont, sections: sections, ids: ids, mainBackgroundColor: theme.colors.mainBackground)
     }
 
     class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
@@ -401,6 +402,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         let showDateHeaders: Bool
         let avatarSize: CGFloat
         let showAvatars: Bool
+        let groupUsers: [User]
         let showMessageMenuOnLongPress: Bool
         let tapAvatarClosure: ChatView.TapAvatarClosure?
         let tapDocumentClosure: ChatView.TapDocumentClosure?
@@ -431,6 +433,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             showDateHeaders: Bool,
             avatarSize: CGFloat,
             showAvatars: Bool,
+            groupUsers: [User],
             showMessageMenuOnLongPress: Bool,
             tapAvatarClosure: ChatView.TapAvatarClosure?,
             tapDocumentClosure: ChatView.TapDocumentClosure?,
@@ -456,6 +459,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             self.showDateHeaders = showDateHeaders
             self.avatarSize = avatarSize
             self.showAvatars = showAvatars
+            self.groupUsers = groupUsers
             self.showMessageMenuOnLongPress = showMessageMenuOnLongPress
             self.tapAvatarClosure = tapAvatarClosure
             self.tapDocumentClosure = tapDocumentClosure
@@ -575,7 +579,8 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     showMessageTimeView: showMessageTimeView, 
                     showAvatar: showAvatars,
                     messageFont: messageFont,
-                    tapDocumentClosure: tapDocumentClosure)
+                    tapDocumentClosure: tapDocumentClosure,
+                    groupUsers: groupUsers)
                     .transition(.scale)
                     .background(MessageMenuPreferenceViewSetter(id: row.id))
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))

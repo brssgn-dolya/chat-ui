@@ -131,6 +131,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     @StateObject private var viewModel = ChatViewModel()
     @StateObject private var inputViewModel = InputViewModel()
+    @StateObject private var mentionsViewModel = MentionsSuggestionsViewModel()
     @StateObject private var globalFocusState = GlobalFocusState()
     @StateObject private var keyboardState = KeyboardState()
 
@@ -153,7 +154,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var showAttachmentSavedAlert: Bool = false
     @State private var isUploading: Bool = false
     @State private var retryCount = 0
-    
+    let groupUsers: [User]
+
     public init(
         messages: [Message],
         chatType: ChatType = .conversation,
@@ -164,7 +166,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         inputViewBuilder: @escaping InputViewBuilderClosure,
         messageMenuAction: MessageMenuActionClosure?,
         draft: String = "",
-        didChangeDraft: @escaping (String) -> Void
+        didChangeDraft: @escaping (String) -> Void,
+        groupUsers: [User]
     ) {
         self.type = chatType
         self.didSendMessage = didSendMessage
@@ -176,6 +179,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         self.showAvatars = showAvatars
         self.draft = draft
         self.didChangeDraft = didChangeDraft
+        self.groupUsers = groupUsers
     }
 
     public var body: some View {
@@ -386,6 +390,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                isScrollEnabled: isScrollEnabled,
                avatarSize: avatarSize,
                showAvatars: showAvatars,
+               groupUsers: groupUsers,
                showMessageMenuOnLongPress: showMessageMenuOnLongPress,
                tapAvatarClosure: tapAvatarClosure,
                tapDocumentClosure: tapDocumentClosure,
@@ -462,11 +467,18 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var inputView: some View {
         Group {
             if let inputViewBuilder = inputViewBuilder {
-                inputViewBuilder($inputViewModel.text, inputViewModel.attachments, inputViewModel.state, .message, inputViewModel.inputViewAction()) {
+                inputViewBuilder(
+                    $inputViewModel.text,
+                    inputViewModel.attachments,
+                    inputViewModel.state,
+                    .message,
+                    inputViewModel.inputViewAction()
+                ) {
                     globalFocusState.focus = nil
                 }
             } else {
                 InputView(
+                    mentionsViewModel: preparedMentionsViewModel(),
                     viewModel: inputViewModel,
                     inputFieldId: viewModel.inputFieldId,
                     style: .message,
@@ -507,7 +519,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         showMessageTimeView: showMessageTimeView,
                         showAvatar: showAvatars,
                         messageFont: messageFont,
-                        tapDocumentClosure: nil)
+                        tapDocumentClosure: nil,
+                        groupUsers: groupUsers)
                     .shadow(color: Color(uiColor: UIColor { traitCollection in
                         return traitCollection.userInterfaceStyle == .dark ? UIColor.systemGray3 : UIColor.systemGray
                     }).opacity(0.3), radius: 6, x: 0, y: 3)
@@ -765,5 +778,12 @@ private extension ChatView {
             .first else { return false }
         
         return rootVC.presentedViewController != nil
+    }
+}
+
+extension ChatView {
+    private func preparedMentionsViewModel() -> MentionsSuggestionsViewModel {
+        mentionsViewModel.setContext(users: groupUsers, isGroup: showAvatars)
+        return mentionsViewModel
     }
 }

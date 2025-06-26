@@ -8,82 +8,150 @@
 import SwiftUI
 
 struct MessageTextView: View {
-    
     let text: String?
     let messageUseMarkdown: Bool
     let inbound: Bool
     let anyLinkColor: Color
     let darkLinkColor: Color
     let isDeleted: Bool
-    
-    @State private var showLinkOptions: Bool = false
-    @State private var linkOptions: [URL] = []
-    
+    let onMentionTap: ((String) -> Void)?
+
+    @State private var showLinkOptions = false
+    @State private var linkOptions: [LinkOption] = []
+    @State private var attributedText: AttributedString = AttributedString("")
+
+    private var baseUIFont: UIFont {
+        let base = isDeleted
+            ? UIFont.systemFont(ofSize: 15)
+            : UIFont.systemFont(ofSize: 17)
+        return UIFontMetrics(forTextStyle: .body).scaledFont(for: base)
+    }
+
     var body: some View {
-        if let text = text, !text.isEmpty {
-            textView(text)
-                .confirmationDialog("Оберіть посилання",
-                                    isPresented: $showLinkOptions,
-                                    titleVisibility: .visible) {
-                    ForEach(linkOptions, id: \.self) { url in
-                        Button(url.absoluteString) {
-                            UIApplication.shared.open(url)
+        Group {
+            if let text = text, !text.isEmpty {
+                contentView(for: text)
+                    .confirmationDialog(
+                        dialogTitle(),
+                        isPresented: $showLinkOptions,
+                        titleVisibility: .visible
+                    ) {
+                        ForEach(linkOptions) { option in
+                            Button(option.displayName) {
+                                _ = handleLinkTap(option.url)
+                            }
+                        }
+                        Button("Скасувати", role: .cancel) { }
+                    }
+                    .task {
+                        if messageUseMarkdown {
+                            attributedText = generateAttributedText(from: text)
                         }
                     }
-                    Button("Скасувати", role: .cancel) { }
-                }
+            }
         }
     }
 
     @ViewBuilder
-    private func textView(_ text: String) -> some View {
-        let baseUIFont: UIFont = {
-            let base = isDeleted
-                ? UIFont.systemFont(ofSize: 15)
-                : UIFont.systemFont(ofSize: 17)
-            return UIFontMetrics(forTextStyle: .body).scaledFont(for: base)
-        }()
-
+    private func contentView(for text: String) -> some View {
         if messageUseMarkdown {
-            let attributedText = MarkdownProcessor(
-                text: text,
-                inbound: inbound,
-                anyLinkColor: anyLinkColor,
-                darkLinkColor: darkLinkColor,
-                baseFont: baseUIFont
-            ).formattedAttributedString()
-
-            Group {
-                if isDeleted {
-                    retractedMessage(attributedText: attributedText)
-                } else {
-                    Text(attributedText)
-                        .font(.system(size: baseUIFont.pointSize))
-                        .highPriorityGesture(TapGesture().onEnded {
-                            handleTap(on: text)
-                        })
-                }
+            if isDeleted {
+                retractedMessage(attributedText: attributedText)
+            } else {
+                Text(attributedText)
+                    .font(.system(size: baseUIFont.pointSize))
+                    .highPriorityGesture(
+                        TapGesture().onEnded {
+                            handleTap(in: attributedText)
+                        }
+                    )
+//                    .environment(\.openURL, OpenURLAction { url in
+//                        handleLinkTap(url)
+//                    })
             }
         } else {
             Text(text)
                 .font(.system(size: baseUIFont.pointSize))
         }
     }
-    
-    /// Handles tap gestures on the text.
-    /// If one URL is found, it opens it directly; if multiple URLs are found, it presents a confirmation dialog.
-    private func handleTap(on text: String) {
-        let processor = URLProcessor(text: text,
-                                          inbound: inbound,
-                                          anyLinkColor: anyLinkColor,
-                                          darkLinkColor: darkLinkColor)
-        let urls = processor.extractURLs()
-        if urls.count == 1, let url = urls.first {
+
+    private func generateAttributedText(from text: String) -> AttributedString {
+        var _ = [LinkOption]()
+        let processor = MarkdownProcessor(
+            text: text,
+            inbound: inbound,
+            anyLinkColor: anyLinkColor,
+            darkLinkColor: darkLinkColor,
+            baseFont: baseUIFont
+        )
+        return processor.formattedAttributedString()
+    }
+
+    @discardableResult
+    private func handleLinkTap(_ url: URL) -> OpenURLAction.Result {
+        if url.scheme == "mention", let userID = url.host {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                onMentionTap?(userID)
+            }
+            return .handled
+        } else if let scheme = url.scheme, ["http", "https"].contains(scheme) {
             UIApplication.shared.open(url)
-        } else if urls.count > 1 {
-            linkOptions = urls
-            showLinkOptions = true
+            return .handled
+        } else {
+            return .systemAction
         }
+    }
+
+    private func handleTap(in attributed: AttributedString) {
+        let options: [LinkOption] = attributed.runs.compactMap { run in
+            guard let url = run.link else { return nil }
+            let display = String(attributed[run.range].characters)
+            let type: LinkOption.LinkType = url.scheme == "mention"
+                ? .mention(id: url.host ?? "")
+                : .url
+            return LinkOption(displayName: display, url: url, type: type)
+        }
+
+        if options.count == 1 {
+            _ = handleLinkTap(options[0].url)
+        } else if options.count > 1 {
+            self.linkOptions = options
+            self.showLinkOptions = true
+        }
+    }
+
+    private func dialogTitle() -> String {
+        if linkOptions.allSatisfy({ $0.type.isMention }) {
+            return "Оберіть користувача:"
+        } else {
+            return "Оберіть посилання:"
+        }
+    }
+}
+
+// MARK: - LinkOption
+
+struct LinkOption: Identifiable, Hashable, Equatable {
+    enum LinkType: Hashable {
+        case mention(id: String)
+        case url
+
+        var isMention: Bool {
+            if case .mention = self { return true }
+            return false
+        }
+    }
+
+    let id = UUID()
+    let displayName: String
+    let url: URL
+    let type: LinkType
+
+    var userID: String? {
+        if case .mention(let id) = type {
+            return id
+        }
+        return nil
     }
 }
 

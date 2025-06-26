@@ -22,6 +22,8 @@ final class InputViewModel: ObservableObject {
     @Published var showLocationPicker: Bool = false
 
     @Published var showActivityIndicator = false
+    @Published var mentions: [MentionedUser] = []
+    @Published var caretPosition: Int = 0
 
     var recordingPlayer: RecordingPlayer?
     var didSendMessage: ((DraftMessage) -> Void)?
@@ -256,11 +258,14 @@ private extension InputViewModel {
 
     func sendMessage() -> AnyCancellable {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let formattedText = applyMentionTags(to: trimmedText)
+        
         showActivityIndicator = true
+        
         return mapAttachmentsForSend()
             .compactMap { [attachments] _ in
                 DraftMessage(
-                    text: trimmedText,
+                    text: formattedText,
                     medias: attachments.medias,
                     recording: attachments.recording,
                     replyMessage: attachments.replyMessage,
@@ -308,5 +313,78 @@ extension InputViewModel {
         return location.latitude.isFinite && location.longitude.isFinite &&
         (-90...90).contains(location.latitude) &&
         (-180...180).contains(location.longitude)
+    }
+}
+
+private extension InputViewModel {
+    func applyMentionTags(to originalText: String) -> String {
+        var result = originalText
+        for mention in mentions {
+            let mentionTag = "<mention>\(mention.snapshot) (\(mention.id))</mention>"
+            result = result.replacingOccurrences(of: mention.snapshot, with: mentionTag)
+        }
+        return result
+    }
+}
+
+extension InputViewModel {
+    func addMention(_ mention: MentionedUser) {
+        if !mentions.contains(mention) {
+            mentions.append(mention)
+        }
+    }
+
+    func onTextChanged(_ newText: String) {
+        var updatedText = newText
+        var updatedMentions: [MentionedUser] = []
+
+        for mention in mentions {
+            let snapshot = mention.snapshot
+
+            if updatedText.contains(snapshot) {
+                updatedMentions.append(mention)
+            } else {
+                updatedText = removeMentionText(snapshot, from: updatedText)
+            }
+        }
+
+        if updatedText != text || updatedMentions != mentions {
+            self.text = updatedText
+            self.mentions = updatedMentions
+        }
+    }
+
+    private func removeMentionText(_ snapshot: String, from text: String) -> String {
+        var result = text
+
+        for (index, char) in text.enumerated() where char == "@" {
+            let startIndex = text.index(text.startIndex, offsetBy: index)
+            let afterAt = text[startIndex...]
+
+            var matchLength = 0
+            for i in stride(from: snapshot.count, through: 2, by: -1) {
+                let prefix = String(snapshot.prefix(i))
+                if afterAt.hasPrefix(prefix) {
+                    matchLength = i
+                    break
+                }
+            }
+
+            guard matchLength > 0 else { continue }
+
+            let endIndex = text.index(startIndex, offsetBy: matchLength, limitedBy: text.endIndex) ?? text.endIndex
+            let deleteRange = startIndex..<endIndex
+
+            result.removeSubrange(deleteRange)
+            result = result.replacingOccurrences(of: "  ", with: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            break
+        }
+
+        return result
+    }
+    
+    var formattedText: String {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return applyMentionTags(to: trimmedText)
     }
 }
