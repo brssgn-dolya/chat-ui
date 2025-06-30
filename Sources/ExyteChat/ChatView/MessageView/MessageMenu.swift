@@ -18,7 +18,7 @@ public protocol MessageMenuAction: Equatable, CaseIterable, Hashable {
 }
 
 public extension MessageMenuAction {
-    public static func menuItems(for message:Message) -> [Self] {
+    static func menuItems(for message:Message) -> [Self] {
         Self.allCases.map { $0 }
     }
 }
