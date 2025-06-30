@@ -61,7 +61,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                     inputView
                         .padding(.bottom, g.safeAreaInsets.bottom)
                 }
-                .background(pickerTheme.main.albumSelectionBackground)
+                .background(pickerTheme.main.pickerBackground)
                 .ignoresSafeArea()
             } cameraSelectionBuilder: { _, cancelClosure, cameraSelectionView in
                 VStack {
@@ -83,12 +83,12 @@ struct AttachmentsEditor<InputViewContent: View>: View {
             .pickerMode($mediaPickerMode)
             .orientationHandler(orientationHandler)
             .padding(.top)
-            .background(pickerTheme.main.albumSelectionBackground)
+            .background(pickerTheme.main.pickerBackground)
             .ignoresSafeArea(.all)
-            .onChange(of: currentFullscreenMedia) { newValue in
+            .onChange(of: currentFullscreenMedia) { _, newValue in
                 assembleSelectedMedia()
             }
-            .onChange(of: inputViewModel.showPicker) { _ in
+            .onChange(of: inputViewModel.showPicker) {
                 let showFullscreenPreview = mediaPickerSelectionParameters?.showFullscreenPreview ?? true
                 let selectionLimit = mediaPickerSelectionParameters?.selectionLimit ?? 1
 

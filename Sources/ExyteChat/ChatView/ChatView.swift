@@ -272,35 +272,35 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 }
             )
         
-            .onChange(of: inputViewModel.showAttachmentsSheet) {
-                if $0 {
+            .onChange(of: inputViewModel.showAttachmentsSheet) { _, newValue in
+                if newValue {
                     globalFocusState.focus = nil
                 }
             }
         
-            .onChange(of: inputViewModel.showLocationPicker) {
-                if $0 {
+            .onChange(of: inputViewModel.showLocationPicker) { _, newValue in
+                if newValue {
                     globalFocusState.focus = nil
                 }
             }
 
-            .onChange(of: inputViewModel.showPicker) {
-                if $0 {
+            .onChange(of: inputViewModel.showPicker) { _, newValue in
+                if newValue {
                     globalFocusState.focus = nil
                 }
             }
         
-            .onChange(of: inputViewModel.showFilePicker) {
-                if $0 {
+            .onChange(of: inputViewModel.showFilePicker) { _, newValue in
+                if newValue {
                     globalFocusState.focus = nil
                 }
             }
             
-            .onChange(of: isUploading) { uploading in
+            .onChange(of: isUploading) { _, uploading in
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             
-            .onChange(of: inputViewModel.text) { draft in
+            .onChange(of: inputViewModel.text) { _, draft in
                 didChangeDraft(draft)
             }
             

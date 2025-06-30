@@ -162,8 +162,6 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
             case .authorizedWhenInUse, .authorizedAlways:
                 self.isLocationDenied = false
                 self.locationManager.startUpdatingLocation()
-            case .notDetermined:
-                self.isLocationDenied = false
             @unknown default:
                 break
             }

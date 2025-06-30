@@ -192,7 +192,7 @@ struct InputView: View {
                     style: style,
                     availableInput: availableInput
                 )
-                .onChange(of: viewModel.text) { newText in
+                .onChange(of: viewModel.text) { _, newText in
                     if let match = newText.range(of: #"@[\w]{0,}$"#, options: .regularExpression) {
                         let partial = String(newText[match].dropFirst())
                         mentionsViewModel.updateSuggestions(for: partial)
@@ -567,7 +567,7 @@ struct InputView: View {
         case .message:
             return theme.colors.mainBackground
         case .signature:
-            return pickerTheme.main.albumSelectionBackground
+            return pickerTheme.main.pickerBackground
         }
     }
 
@@ -629,7 +629,7 @@ extension InputView {
 
         if let match = viewModel.text.range(of: #"@[\w]{0,}$"#, options: .regularExpression) {
             let utf16Start = viewModel.text.utf16.distance(from: viewModel.text.utf16.startIndex, to: match.lowerBound)
-            let range = NSRange(location: utf16Start, length: mentionText.count - 1)
+            _ = NSRange(location: utf16Start, length: mentionText.count - 1)
 
             viewModel.text.replaceSubrange(match, with: mentionText)
 

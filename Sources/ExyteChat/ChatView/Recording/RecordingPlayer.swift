@@ -145,13 +145,9 @@ final class RecordingPlayer: ObservableObject {
     
     private func play() {
         guard !playing else { return }
-        do {
-            player?.play()
-            playing = true
-            NotificationCenter.default.post(name: .audioPlaybackStarted, object: self)
-        } catch {
-            print("Failed to activate audio session: \(error.localizedDescription)")
-        }
+        player?.play()
+        playing = true
+        NotificationCenter.default.post(name: .audioPlaybackStarted, object: self)
     }
 
 }
@@ -179,7 +175,7 @@ private extension RecordingPlayer {
             queue: .main
         ) { [weak self] notification in
             guard let self else { return }
-            if let sender = notification.object as? Recorder, self.playing {
+            if notification.object is Recorder, self.playing {
                 self.reset()
             }
         }

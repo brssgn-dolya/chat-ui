@@ -84,7 +84,7 @@ struct FullscreenMediaPages: View {
                         .onAppear {
                             proxy.scrollTo(viewModel.index)
                         }
-                        .onChange(of: viewModel.index) { newValue in
+                        .onChange(of: viewModel.index) { _, newValue in
                             withAnimation {
                                 proxy.scrollTo(newValue, anchor: .center)
                             }

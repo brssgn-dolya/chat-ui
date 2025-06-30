@@ -186,7 +186,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 return message.user.isCurrentUser &&
                 isGroup &&
                 [.sent, .received, .read].contains(message.status)
-            default:
+            @unknown default:
                 return false
             }
         }
