@@ -38,7 +38,7 @@ public struct MarkdownProcessor {
         processMarkdownStyle(for: .strikethrough, in: mutableAttributed)
         processMarkdownStyle(for: .bold, in: mutableAttributed)
         processMarkdownStyle(for: .italic, in: mutableAttributed)
-//        processMentions(in: mutableAttributed)
+        processMentions(in: mutableAttributed)
         
         let urlProcessor = URLProcessor(
             text: text,
