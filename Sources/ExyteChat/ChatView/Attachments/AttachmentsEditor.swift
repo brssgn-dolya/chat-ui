@@ -143,19 +143,19 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                     seleсtedMedias = []
                     inputViewModel.showPicker = false
                 } label: {
-                    Text("Cancel")
-                        .foregroundColor(.white.opacity(0.7))
+                    Text("Скасувати") // localized "Cancel"
+                        .foregroundColor(Color.primary.opacity(0.7))
                 }
 
                 Spacer()
             }
 
             HStack {
-                Text("Recents")
+                Text("Останні") // localized "Recents"
                 Image(systemName: "chevron.down")
                     .rotationEffect(Angle(radians: showingAlbums ? .pi : 0))
             }
-            .foregroundColor(.white)
+            .foregroundColor(.primary)
             .onTapGesture {
                 withAnimation {
                     inputViewModel.mediaPickerMode = showingAlbums ? .photos : .albums
