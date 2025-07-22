@@ -124,5 +124,5 @@ public extension View {
 }
 
 extension Color {
-    static let dolyaBlue = Color(red: 0.2, green: 0.4, blue: 0.8)
+    static let dolyaBlue = Color("dolyaBlue")
 }
