@@ -11,7 +11,8 @@ struct FullscreenMediaPages: View {
     @Environment(\.mediaPickerTheme) var pickerTheme
     
     @StateObject var viewModel: FullscreenMediaPagesViewModel
-    
+    @State private var isSaving = false
+
     var safeAreaInsets: EdgeInsets
     var onClose: () -> Void
     var onSave: (Int) -> Void
@@ -160,18 +161,28 @@ struct FullscreenMediaPages: View {
                                     }
                             }
                             
-                            theme.images.messageMenu.save
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .foregroundColor(.primary)
-                                .frame(width: 24, height: 24)
-                                .padding(5)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    performMediumHaptic()
-                                    onSave(viewModel.index)
+                            Group {
+                                if isSaving {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .gray))
+                                        .frame(width: 24, height: 24)
+                                        .padding(5)
+                                } else {
+                                    theme.images.messageMenu.save
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .foregroundColor(.primary)
+                                        .frame(width: 24, height: 24)
+                                        .padding(5)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            performMediumHaptic()
+                                            isSaving = true
+                                            onSave(viewModel.index)
+                                        }
                                 }
+                            }
                         }
                         .padding(.trailing, 10)
                     }

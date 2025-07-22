@@ -204,22 +204,16 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         },
                         onSave: { index in
                             let attachment = attachments[index]
-                            
-                            var image: UIImage?
-                            
-                            if let imageData = attachment.thumbnailData {
-                                image = UIImage(data: imageData)
-                            } else if let data = try? Data(contentsOf: attachment.full) {
-                                image = UIImage(data: data)
-                            }
-                            
-                            guard let image else { return }
-                            
-                            DispatchQueue.main.async {
-                                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    showAttachmentSavedAlert = true
+                            // Save attachment to user's photo library
+                            AttachmentSaver.saveToPhotoLibrary(attachment: attachment) { success in
+                                if success {
+                                    // Show success alert after small delay
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        showAttachmentSavedAlert = true
+                                    }
+                                } else {
+                                    // Saving failed
+                                    print("[❌ Save Failed] Could not save attachment.")
                                 }
                             }
                         }
