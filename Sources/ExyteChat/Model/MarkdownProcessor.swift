@@ -51,6 +51,27 @@ public struct MarkdownProcessor {
 
         return AttributedString(mutableAttributed)
     }
+    
+    public func formattedNSAttributedString() -> NSAttributedString {
+        let mutableAttributed = NSMutableAttributedString(string: text, attributes: [.font: baseFont])
+
+        processMarkdownStyle(for: .inlineCode, in: mutableAttributed)
+        processMarkdownStyle(for: .strikethrough, in: mutableAttributed)
+        processMarkdownStyle(for: .bold, in: mutableAttributed)
+        processMarkdownStyle(for: .italic, in: mutableAttributed)
+        processMentions(in: mutableAttributed)
+
+        let urlProcessor = URLProcessor(
+            text: text,
+            inbound: inbound,
+            anyLinkColor: anyLinkColor,
+            darkLinkColor: darkLinkColor,
+            shouldAddLinks: shouldAddLinks
+        )
+        urlProcessor.formatURLs(in: mutableAttributed)
+
+        return mutableAttributed
+    }
 
     // MARK: - MARKDOWN STYLES
 

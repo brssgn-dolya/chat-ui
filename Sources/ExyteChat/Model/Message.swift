@@ -214,3 +214,9 @@ public extension Message {
         ReplyMessage(id: id, user: user, createdAt: createdAt, text: text, attachments: attachments, recording: recording)
     }
 }
+
+public extension Message {
+    var isDeliverableStatus: Bool {
+        return [.sent, .received, .read].contains(status)
+    }
+}
