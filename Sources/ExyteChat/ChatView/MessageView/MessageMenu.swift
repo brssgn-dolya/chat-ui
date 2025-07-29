@@ -170,30 +170,43 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     }
     
     private func filteredMenuActions() -> [ActionEnum] {
-        let actions = ActionEnum.allCases.filter { action in
-            switch action.type() {
+        let validActions = ActionEnum.allCases.filter { action in
+            let type = action.type()
+            switch type {
             case .edit:
                 return message.type == .text && message.user.isCurrentUser
             case .delete:
-                return message.user.isCurrentUser
-            case .reply:
+                return message.user.isCurrentUser && message.isDeliverableStatus
+            case .reply, .forward:
                 return true
             case .copy:
                 return message.type == .text || message.type == .url
-            case .forward:
-                return true
             case .information:
                 return message.user.isCurrentUser &&
                 isGroup &&
-                [.sent, .received, .read].contains(message.status)
+                message.isDeliverableStatus
             @unknown default:
                 return false
             }
         }
         
-        let nonDestructive = actions.filter { $0.type() != .delete }
-        let destructive = actions.filter { $0.type() == .delete }
-        
+        // Separate actions into non-destructive and destructive (delete)
+        let (destructive, nonDestructive) = validActions.partitioned { $0.type() == .delete }
         return nonDestructive + destructive
+    }
+}
+
+extension Sequence {
+    func partitioned(by predicate: (Element) -> Bool) -> (matching: [Element], nonMatching: [Element]) {
+        var matching: [Element] = []
+        var nonMatching: [Element] = []
+        for element in self {
+            if predicate(element) {
+                matching.append(element)
+            } else {
+                nonMatching.append(element)
+            }
+        }
+        return (matching, nonMatching)
     }
 }
