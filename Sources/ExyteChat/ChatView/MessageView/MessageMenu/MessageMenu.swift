@@ -473,6 +473,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 )
                 .maxHeightGetter($reactionSelectionHeight)
                 .padding(.bottom, reactionSelectionBottomPadding)
+                .padding(.leading, (alignment == .left && !isGroup) ? -32 : 0)
                 .transition(defaultTransition)
                 .zIndex(2)
             }
@@ -510,28 +511,53 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     @ViewBuilder
     func menuView() -> some View {
         let buttons = filteredMenuActions().enumerated().map { MenuButton(id: $0, action: $1) }
-
+        
         HStack {
-            if alignment == .right { Spacer() }
-            
-            VStack(spacing: 4) {
-                ForEach(buttons) { button in
-                    menuButton(
-                        title: button.action.title(),
-                        icon: button.action.icon(),
-                        action: button.action,
-                        isDestructive: button.action.type() == .delete ? true : false
-                    )
-                }
+            if alignment == .right {
+                Spacer() // outgoing message — spacer on the left
             }
-            .menuContainer(menuStyle)
 
-            if alignment == .left { Spacer() }
+            if alignment == .left && !isGroup {
+                // incoming private message — spacer on the right, with extra leading padding
+                menuContent(buttons)
+                    .padding(.leading, 16)
+                Spacer()
+            } else if alignment == .left && isGroup {
+                // incoming group message — spacer on the right
+                menuContent(buttons)
+                Spacer()
+            } else if alignment == .right {
+                // outgoing message — menu comes after spacer
+                menuContent(buttons)
+            }
         }
-        .padding(alignment == .right ? .trailing : .leading, alignment == .right ? trailingPadding : leadingPadding)
+
+        .padding(
+            alignment == .right || (alignment == .left && !isGroup)
+                ? .trailing
+                : .leading,
+            alignment == .right || (alignment == .left && !isGroup)
+                ? trailingPadding
+                : leadingPadding
+        )
         .padding(.top, 8)
         .maxHeightGetter($menuHeight)
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func menuContent(_ buttons: [MenuButton]) -> some View {
+        VStack(spacing: 4) {
+            ForEach(buttons) { button in
+                menuButton(
+                    title: button.action.title(),
+                    icon: button.action.icon(),
+                    action: button.action,
+                    isDestructive: button.action.type() == .delete
+                )
+            }
+        }
+        .menuContainer(menuStyle)
     }
     
     private func filteredMenuActions() -> [ActionEnum] {

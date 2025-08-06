@@ -1283,7 +1283,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 .transition(.scale)
                 .background(MessageMenuPreferenceViewSetter(id: row.id))
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
-                .applyIf(showMessageMenuOnLongPress) {
+                .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {
                     $0.simultaneousGesture(
                         TapGesture().onEnded { } // add empty tap to prevent iOS17 scroll breaking bug (drag on cells stops working)
                     )
@@ -1301,27 +1301,11 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             return tableViewCell
         }
 
-//        func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-//            guard let paginationHandler = self.paginationHandler, let paginationTargetIndexPath, indexPath == paginationTargetIndexPath else {
-//                return
-//            }
-//
-//            let row = self.sections[indexPath.section].rows[indexPath.row]
-//            Task.detached {
-//                await paginationHandler.handleClosure(row.message)
-//            }
-//        }
         func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-            print("➡️ willDisplay called for indexPath: \(indexPath)")
-            print("🎯 paginationTargetIndexPath: \(paginationTargetIndexPath?.description ?? "nil")")
-
-            guard let paginationHandler = self.paginationHandler,
-                  let paginationTargetIndexPath,
-                  indexPath == paginationTargetIndexPath else {
+            guard let paginationHandler = self.paginationHandler, let paginationTargetIndexPath, indexPath == paginationTargetIndexPath else {
                 return
             }
 
-            print("🟢 pagination triggered at indexPath: \(indexPath)")
             let row = self.sections[indexPath.section].rows[indexPath.row]
             Task.detached {
                 await paginationHandler.handleClosure(row.message)
