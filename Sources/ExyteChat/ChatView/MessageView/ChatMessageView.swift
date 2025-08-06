@@ -46,26 +46,41 @@ struct ChatMessageView<MessageContent: View>: View {
                     isGroup: showAvatar,
                     tapDocumentClosure: tapDocumentClosure,
                     groupUsers: groupUsers,
-                    font: messageFont)
+                    font: messageFont
+                )
+                .id(row.message.id)
+                .applyIf(shouldEnableReplyGesture(for: row.message)) {
+                    $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
+                        viewModel.messageMenuActionInternal(
+                            message: row.message,
+                            action: DefaultMessageMenuAction.reply
+                        )
+                    }
+                }
+                
             case .call, .status:
-                if let messageBuilder = messageBuilder {
+                if let messageBuilder {
                     messageBuilder(
                         row.message,
                         row.positionInUserGroup,
+                        row.positionInMessagesSection,
                         row.commentsPosition,
                         { viewModel.messageMenuRow = row },
-                        viewModel.messageMenuAction()) { attachment in
-                            self.viewModel.presentAttachmentFullScreen(attachment)
-                        }
+                        viewModel.messageMenuAction()
+                    ) { attachment in
+                        viewModel.presentAttachmentFullScreen(attachment)
+                    }
+                    .id(row.message.id)
+                } else {
+                    EmptyView().id(row.message.id)
                 }
             }
         }
-        .id(row.message.id)
-        .contentShape(Rectangle())
-        .applyIf(row.message.type != .call && row.message.type != .status && !row.message.isDeleted) {
-            $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
-                viewModel.messageMenuActionInternal(message: row.message, action: DefaultMessageMenuAction.reply)
-            }
-        }
+    }
+    
+    private func shouldEnableReplyGesture(for message: Message) -> Bool {
+        message.type != .call &&
+        message.type != .status &&
+        !message.isDeleted
     }
 }

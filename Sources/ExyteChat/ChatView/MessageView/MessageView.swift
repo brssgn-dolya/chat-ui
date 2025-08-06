@@ -29,7 +29,7 @@ struct MessageView: View {
     @State var avatarViewSize: CGSize = .zero
     @State var statusSize: CGSize = .zero
     @State var timeSize: CGSize = .zero
-
+    @State var bubbleSize: CGSize = .zero
     static let widthWithMedia: CGFloat = 204
     static let horizontalNoAvatarPadding: CGFloat = 8
     static let horizontalAvatarPadding: CGFloat = 8

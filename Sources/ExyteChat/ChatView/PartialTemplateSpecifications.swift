@@ -15,6 +15,7 @@ public extension ChatView where MessageContent == EmptyView {
          replyMode: ReplyMode = .quote,
          draft: String,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?,
          didChangeDraft: @escaping (String) -> Void,
@@ -30,6 +31,7 @@ public extension ChatView where MessageContent == EmptyView {
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -40,6 +42,7 @@ public extension ChatView where InputViewContent == EmptyView {
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          messageBuilder: @escaping MessageBuilderClosure,
          messageMenuAction: MessageMenuActionClosure?,
          didChangeDraft: @escaping (String) -> Void,
@@ -56,6 +59,7 @@ public extension ChatView where InputViewContent == EmptyView {
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -66,6 +70,7 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          messageBuilder: @escaping MessageBuilderClosure,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
@@ -82,6 +87,7 @@ public extension ChatView where MenuAction == DefaultMessageMenuAction {
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -92,6 +98,7 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          messageMenuAction: MessageMenuActionClosure?,
          didChangeDraft: @escaping (String) -> Void,
          draft: String,
@@ -106,6 +113,7 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -116,6 +124,7 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          messageBuilder: @escaping MessageBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
          draft: String,
@@ -130,6 +139,7 @@ public extension ChatView where InputViewContent == EmptyView, MenuAction == Def
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -140,6 +150,7 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          inputViewBuilder: @escaping InputViewBuilderClosure,
          didChangeDraft: @escaping (String) -> Void,
          draft: String,
@@ -154,6 +165,7 @@ public extension ChatView where MessageContent == EmptyView, MenuAction == Defau
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }
 
@@ -164,6 +176,7 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
          chatType: ChatType = .conversation,
          replyMode: ReplyMode = .quote,
          didSendMessage: @escaping (DraftMessage) -> Void,
+         reactionDelegate: ReactionDelegate? = nil,
          didChangeDraft: @escaping (String) -> Void,
          draft: String,
          groupUsers: [User]
@@ -176,5 +189,6 @@ public extension ChatView where MessageContent == EmptyView, InputViewContent ==
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 }

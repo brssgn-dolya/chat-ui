@@ -6,13 +6,21 @@ import Foundation
 import Combine
 import UIKit
 
+@MainActor
 final class ChatViewModel: ObservableObject {
 
     @Published private(set) var fullscreenAttachmentItem: Optional<Attachment> = nil
     @Published var fullscreenAttachmentPresented = false
 
     @Published var messageMenuRow: MessageRow?
-
+    
+    /// The messages frame that is currently being rendered in the Message Menu
+    /// - Note: Used to further refine a messages frame (instead of using the cell boundary), mainly used for positioning reactions
+    @Published var messageFrame: CGRect = .zero
+    
+    /// Provides a mechanism to issue haptic feedback to the user
+    /// - Note: Used when launching the MessageMenu
+    
     let inputFieldId = UUID()
 
     var didSendMessage: (DraftMessage) -> Void = {_ in}
@@ -41,7 +49,6 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    @MainActor
     func messageMenuActionInternal(message: Message, action: DefaultMessageMenuAction) {
         switch action {
         case .reply:
@@ -51,15 +58,6 @@ final class ChatViewModel: ObservableObject {
             inputViewModel?.text = message.text
             inputViewModel?.edit(saveClosure)
             globalFocusState?.focus = .uuid(inputFieldId)
-        }
-    }
-    
-    // Completion handler for saving image
-    @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
-        if let error = error {
-            // Handle error
-            print("Error saving image: \(error.localizedDescription)")
-        } else {
         }
     }
 }

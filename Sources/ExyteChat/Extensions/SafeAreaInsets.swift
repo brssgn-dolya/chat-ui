@@ -20,6 +20,10 @@ extension UIApplication {
                 $0.isKeyWindow
             }
     }
+
+    static var safeArea: EdgeInsets {
+        UIApplication.shared.keyWindow?.safeAreaInsets.swiftUiInsets ?? EdgeInsets()
+    }
 }
 
 private struct SafeAreaInsetsKey: EnvironmentKey {
