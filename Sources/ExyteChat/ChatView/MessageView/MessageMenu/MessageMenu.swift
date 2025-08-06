@@ -459,7 +459,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             if reactionSelectionIsVisible {
                 ReactionSelectionView(
                     viewModel: viewModel,
-                    backgroundColor: theme.colors.friendMessage,
+                    backgroundColor: Color(UIColor.systemGray6),
                     selectedColor: theme.colors.myMessage,
                     animation: .bouncy(duration: animationDuration),
                     animationDuration: animationDuration,
