@@ -705,6 +705,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         tableView.estimatedSectionHeaderHeight = 1
         tableView.estimatedSectionFooterHeight = UITableView.automaticDimension
 //        tableView.backgroundColor = UIColor(theme.colors.mainBG)
+        tableView.backgroundColor = UIColor(theme.colors.mainBackground)
         tableView.scrollsToTop = false
         tableView.isScrollEnabled = isScrollEnabled
 
@@ -734,7 +735,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 row: lastSection.rows.count - 1,
                 section: coordinator.sections.count - 1
             )
-            print("✅ paginationTargetIndexPath updated to \(coordinator.paginationTargetIndexPath!)")
         }
     }
 
@@ -909,7 +909,10 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         case .insert(let section, let row):
             tableView.insertRows(at: [IndexPath(row: row, section: section)], with: animation)
         case .edit(let section, let row):
-//            tableView.reconfigureRows(at: [IndexPath(row: row, section: section)])
+            // tableView.reconfigureRows(at: [IndexPath(row: row, section: section)])
+            // ⚠️ This only works if the cell uses `contentConfiguration` (e.g., UIListContentConfiguration or a custom UIContentConfiguration).
+            // It does NOT trigger `cellForRow(at:)`, nor will it update views added manually via subviews or custom layout code.
+            // Use `reloadRows(at:with:)` instead if the cell is configured manually or does not rely on contentConfiguration.
             tableView.reloadRows(at: [IndexPath(row: row, section: section)], with: .automatic)
         case .swap(let section, let rowFrom, let rowTo):
             tableView.deleteRows(at: [IndexPath(row: rowFrom, section: section)], with: animation)
