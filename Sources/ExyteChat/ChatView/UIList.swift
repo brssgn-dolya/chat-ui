@@ -18,6 +18,7 @@ public extension Notification.Name {
     static let stopSharing = Notification.Name("stopSharing")
 }
 
+// MARK: - Old version remove if new is better
 //struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
 //
 //    typealias MessageBuilderClosure = ChatView<MessageContent, InputView, DefaultMessageMenuAction>.MessageBuilderClosure
@@ -408,8 +409,8 @@ public extension Notification.Name {
 //        let tapDocumentClosure: ChatView.TapDocumentClosure?
 //        let paginationHandler: PaginationHandler?
 //        let messageUseMarkdown: Bool
-//let showAvatars: Bool
-//let groupUsers: [User]
+////let showAvatars: Bool
+////let groupUsers: [User]
 //        let showMessageTimeView: Bool
 //        let messageFont: UIFont
 //        var sections: [MessagesSection] {
@@ -642,12 +643,13 @@ public extension Notification.Name {
 //        return res
 //    }
 //}
-//
+
+// MARK: - New verison of UIList ExyteChat
 //  UIList.swift
 //
 //
 //  Created by Alisa Mylnikova on 24.02.2023.
-//
+
 
 import SwiftUI
 
@@ -1090,17 +1092,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         private let impactGenerator = UIImpactFeedbackGenerator(style: .heavy)
 
         init(
-//            viewModel: ChatViewModel, inputViewModel: InputViewModel,
-//            isScrolledToBottom: Binding<Bool>, isScrolledToTop: Binding<Bool>,
-//            messageBuilder: MessageBuilderClosure?, mainHeaderBuilder: (() -> AnyView)?,
-//            headerBuilder: ((Date) -> AnyView)?, type: ChatType, showDateHeaders: Bool,
-//            avatarSize: CGFloat, showMessageMenuOnLongPress: Bool,
-//            tapAvatarClosure: ChatView.TapAvatarClosure?, tapDocumentClosure: ChatView.TapDocumentClosure?, paginationHandler: PaginationHandler?,
-//            messageStyler: @escaping (String) -> AttributedString,
-//            shouldShowLinkPreview: @escaping (URL) -> Bool, showMessageTimeView: Bool,
-//            messageLinkPreviewLimit: Int, messageFont: UIFont, sections: [MessagesSection],
-//            ids: [String], showAvatars: Bool, groupUsers: [User], messageUseMarkdown: Bool, paginationTargetIndexPath: IndexPath? = nil,
-//            listSwipeActions: ListSwipeActions
             viewModel: ChatViewModel, inputViewModel: InputViewModel,
             isScrolledToBottom: Binding<Bool>, isScrolledToTop: Binding<Bool>,
             messageBuilder: MessageBuilderClosure?, mainHeaderBuilder: (() -> AnyView)?,
@@ -1280,7 +1271,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     messageFont: messageFont,
                     tapDocumentClosure: tapDocumentClosure,
                     groupUsers: groupUsers)
-                .transition(.scale)
+//                .transition(.scale)
                 .background(MessageMenuPreferenceViewSetter(id: row.id))
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
                 .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {

@@ -134,66 +134,30 @@ struct MessageView: View {
         .frame(maxWidth: UIScreen.main.bounds.width, alignment: message.user.isCurrentUser ? .trailing : .leading)
     }
 
-//    @ViewBuilder
-//    func bubbleView(_ message: Message) -> some View {
-//        VStack(alignment: .leading, spacing: 0) {
-//            if !message.attachments.isEmpty {
-//                attachmentsView(message)
-//            }
-//            
-//            if message.type == .geo {
-//                VStack(alignment: .trailing, spacing: 8) {
-//                    locationView(message)
-//                }
-//            }
-//
-//            if !message.text.isEmpty && message.type != .document && message.type != .geo {
-//                textWithTimeView(message)
-//                    .font(Font(font))
-//            }
-//
-//            if let recording = message.recording {
-//                VStack(alignment: .trailing, spacing: 8) {
-//                    recordingView(recording)
-//                    messageTimeView()
-//                        .padding(.bottom, 8)
-//                        .padding(.trailing, 12)
-//                }
-//            }
-//            
-//            if message.type == .document {
-//                VStack(alignment: .trailing, spacing: 8) {
-//                    documentView(message)
-//                        .highPriorityGesture(TapGesture().onEnded {
-//                            tapDocumentClosure?(message.user, message.id)
-//                        })
-//                    messageTimeView()
-//                        .padding(.bottom, 8)
-//                        .padding(.trailing, 12)
-//                }
-//            }
-//        }
-//        .bubbleBackground(message, theme: theme)
-//    }
     @ViewBuilder
     func bubbleView(_ message: Message) -> some View {
         VStack(
             alignment: message.user.isCurrentUser ? .leading : .trailing,
             spacing: -bubbleSize.height / 3
         ) {
+            
             if !isDisplayingMessageMenu && !message.reactions.isEmpty {
                 reactionsView(message)
                     .zIndex(1)
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                
-                
                 if !message.attachments.isEmpty {
                     attachmentsView(message)
                 }
                 
-                if !message.text.isEmpty {
+                if message.type == .geo {
+                    VStack(alignment: .trailing, spacing: 8) {
+                        locationView(message)
+                    }
+                }
+                
+                if !message.text.isEmpty && message.type != .document && message.type != .geo {
                     textWithTimeView(message)
                         .font(Font(font))
                 }
@@ -206,6 +170,19 @@ struct MessageView: View {
                             .padding(.trailing, 12)
                     }
                 }
+                
+                if message.type == .document {
+                    VStack(alignment: .trailing, spacing: 8) {
+                        documentView(message)
+                            .highPriorityGesture(TapGesture().onEnded {
+                                tapDocumentClosure?(message.user, message.id)
+                            })
+                        messageTimeView()
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 12)
+                    }
+                }
+                    
             }
             .bubbleBackground(message, theme: theme)
             .zIndex(0)
@@ -213,8 +190,9 @@ struct MessageView: View {
         .applyIf(isDisplayingMessageMenu) {
             $0.frameGetter($viewModel.messageFrame)
         }
+     
     }
-
+    
     @ViewBuilder
     func replyBubbleView(_ message: Message) -> some View {
         VStack(alignment: .leading, spacing: 0) {
