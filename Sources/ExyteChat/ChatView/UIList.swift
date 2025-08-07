@@ -878,7 +878,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         case delete(Int, Int) // delete with animation
         case insert(Int, Int) // insert with animation
         case swap(Int, Int, Int) // delete first with animation, then insert it into new position with animation. do not do anything with the second for now
-        case edit(Int, Int) // reload the element without animation
+        case edit(Int, Int, Bool) // reload the element without animation and if content edit - with animation
 
         var description: String {
             switch self {
@@ -892,8 +892,8 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 return "insert section \(int) row \(int2)"
             case .swap(let int, let int2, let int3):
                 return "swap section \(int) rowFrom \(int2) rowTo \(int3)"
-            case .edit(let int, let int2):
-                return "edit section \(int) row \(int2)"
+            case .edit(let int, let int2, let bool):
+                return "edit section \(int) row \(int2) isContentEdit \(bool)"
             }
         }
     }
@@ -910,12 +910,13 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             tableView.deleteRows(at: [IndexPath(row: row, section: section)], with: animation)
         case .insert(let section, let row):
             tableView.insertRows(at: [IndexPath(row: row, section: section)], with: animation)
-        case .edit(let section, let row):
-            // tableView.reconfigureRows(at: [IndexPath(row: row, section: section)])
-            // ⚠️ This only works if the cell uses `contentConfiguration` (e.g., UIListContentConfiguration or a custom UIContentConfiguration).
-            // It does NOT trigger `cellForRow(at:)`, nor will it update views added manually via subviews or custom layout code.
-            // Use `reloadRows(at:with:)` instead if the cell is configured manually or does not rely on contentConfiguration.
-            tableView.reloadRows(at: [IndexPath(row: row, section: section)], with: .automatic)
+        case .edit(let section, let row, let isContentEdit):
+            let indexPath = IndexPath(row: row, section: section)
+            if isContentEdit {
+                tableView.reloadRows(at: [indexPath], with: .none)
+            } else {
+                tableView.reconfigureRows(at: [indexPath])
+            }
         case .swap(let section, let rowFrom, let rowTo):
             tableView.deleteRows(at: [IndexPath(row: rowFrom, section: section)], with: animation)
             tableView.insertRows(at: [IndexPath(row: rowTo, section: section)], with: animation)
@@ -1000,7 +1001,11 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                         }
                     }
                 } else if oldRow != newRow { // same ids om same positions but something changed - reload rows without animation
-                    editOperations.append(.edit(oldIndex, i))
+                     let oldMsg = oldRow.message
+                     let newMsg = newRow.message
+                     let isContentEdit =
+                         oldMsg.text != newMsg.text
+                     editOperations.append(.edit(oldIndex, i, isContentEdit))
                 }
             }
 
@@ -1251,13 +1256,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
 
             let row = sections[indexPath.section].rows[indexPath.row]
             tableViewCell.contentConfiguration = UIHostingConfiguration {
-//                ChatMessageView(
-//                    viewModel: viewModel, messageBuilder: messageBuilder, row: row, chatType: type,
-//                    avatarSize: avatarSize, tapAvatarClosure: tapAvatarClosure,
-//                    messageStyler: messageStyler, shouldShowLinkPreview: shouldShowLinkPreview,
-//                    isDisplayingMessageMenu: false, showMessageTimeView: showMessageTimeView,
-//                    messageLinkPreviewLimit: messageLinkPreviewLimit, messageFont: messageFont
-//                )
                 ChatMessageView(
                     viewModel: viewModel,
                     messageBuilder: messageBuilder,
@@ -1271,7 +1269,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     messageFont: messageFont,
                     tapDocumentClosure: tapDocumentClosure,
                     groupUsers: groupUsers)
-//                .transition(.scale)
+                .transition(.scale)
                 .background(MessageMenuPreferenceViewSetter(id: row.id))
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
                 .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {

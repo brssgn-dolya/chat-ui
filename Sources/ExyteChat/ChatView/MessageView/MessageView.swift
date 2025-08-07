@@ -16,6 +16,7 @@ struct MessageView: View {
 
     let message: Message
     let positionInUserGroup: PositionInUserGroup
+    let positionInMessagesSection: PositionInMessagesSection
     let chatType: ChatType
     let avatarSize: CGFloat
     let tapAvatarClosure: ChatView.TapAvatarClosure?
@@ -80,12 +81,12 @@ struct MessageView: View {
 
     var topPadding: CGFloat {
         if chatType == .comments { return 0 }
-        return positionInUserGroup == .single || positionInUserGroup == .first ? 8 : 4
+        return positionInUserGroup.isTop && !positionInMessagesSection.isTop ? 8 : 4
     }
 
     var bottomPadding: CGFloat {
         if chatType == .conversation { return 0 }
-        return positionInUserGroup == .single || positionInUserGroup == .first ? 8 : 4
+        return positionInUserGroup.isTop ? 8 : 4
     }
 
     var body: some View {
@@ -190,7 +191,6 @@ struct MessageView: View {
         .applyIf(isDisplayingMessageMenu) {
             $0.frameGetter($viewModel.messageFrame)
         }
-     
     }
     
     @ViewBuilder
