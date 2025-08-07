@@ -173,37 +173,55 @@ struct ReactionSelectionView: View {
             .offset(x: -(bubbleDiameter / 3), y: -(bubbleDiameter / 1.5))
     }
     
+//    @ViewBuilder
+//    func leadingPaddingView() -> some View {
+//        if alignment == .left {
+//            Color.clear.viewWidth(max(1, leadingPadding - 8))
+//            Spacer()
+//        } else {
+//            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - trailingPadding)
+//            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
+//        }
+//    }
     @ViewBuilder
     func leadingPaddingView() -> some View {
-        if alignment == .left {
-            Color.clear.viewWidth(max(1, leadingPadding - 8))
-            Spacer()
-        } else {
-            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - trailingPadding)
-            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
-        }
+        Spacer(minLength: 32) //for group 32
     }
-    
-    @ViewBuilder
+
     func trailingPaddingView() -> some View {
-        if alignment == .right {
-            Spacer()
-            Color.clear.viewWidth(trailingPadding)
-        } else {
-            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - leadingPadding)
-            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
-        }
+        Spacer(minLength: 32) //for group 32
     }
+//    @ViewBuilder
+//    func trailingPaddingView() -> some View {
+//        if alignment == .right {
+//            Spacer()
+//            Color.clear.viewWidth(trailingPadding)
+//        } else {
+//            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - leadingPadding)
+//            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
+//        }
+//    }
     
     private func calcMaxSelectionRowWidth() -> CGFloat {
-        var emojiCount = emojis.count + 1
+        var emojiCount = emojis.count
         if allowEmojiSearch { emojiCount += 1 }
-        let maxWidth = min(
-            CGFloat(emojiCount) * (bubbleDiameter + horizontalPadding) + horizontalPadding * 3,
-            ReactionSelectionView.maxSelectionRowWidth
-        )
-        return maxWidth
+
+        let contentWidth = CGFloat(emojiCount) * (bubbleDiameter + horizontalPadding) + horizontalPadding * 2
+        let screenWidth = UIScreen.main.bounds.width
+        let maxAllowedWidth = screenWidth * 0.8
+
+        return min(contentWidth, maxAllowedWidth)
     }
+
+//    private func calcMaxSelectionRowWidth() -> CGFloat {
+//        var emojiCount = emojis.count + 1
+//        if allowEmojiSearch { emojiCount += 1 }
+//        let maxWidth = min(
+//            CGFloat(emojiCount) * (bubbleDiameter + horizontalPadding) + horizontalPadding * 3,
+//            ReactionSelectionView.maxSelectionRowWidth
+//        )
+//        return maxWidth
+//    }
     
     private func transitionToViewState(_ state:ViewState) {
         guard state != viewState else { return }

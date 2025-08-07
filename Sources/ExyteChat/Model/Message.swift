@@ -131,6 +131,7 @@ extension Message: Equatable {
         lhs.createdAt == rhs.createdAt &&
         lhs.text == rhs.text &&
         lhs.attachments == rhs.attachments &&
+        lhs.reactions == rhs.reactions &&
         lhs.recording == rhs.recording &&
         lhs.replyMessage == rhs.replyMessage
     }
@@ -237,6 +238,13 @@ public enum ReactionType: Codable, Equatable, Hashable, Sendable {
             return emoji
         }
     }
+    
+    public var stringValue: String {
+        switch self {
+        case .emoji(let emoji):
+            return emoji
+        }
+    }
 }
 
 public struct Reaction: Codable, Identifiable, Hashable, Sendable {
@@ -269,6 +277,13 @@ extension Reaction {
         case error(DraftReaction)
     }
 }
+
+extension Reaction {
+    func isCurrentUser(myJid: String) -> Bool {
+        user.id == myJid
+    }
+}
+
 
 public struct DraftReaction: Codable, Identifiable, Hashable, Sendable {
     public let id: String

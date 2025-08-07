@@ -447,7 +447,6 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     func messageMenuView() -> some View {
         VStack(spacing: verticalSpacing) {
             if reactionOverviewIsVisible, case .scrollView = messageMenuStyle {
-//                ReactionOverview(viewModel: viewModel, message: message, width: reactionOverviewWidth, backgroundColor: theme.colors.messageFriendBG, inScrollView: true)
                 ReactionOverview(viewModel: viewModel, message: message, width: reactionOverviewWidth, backgroundColor: theme.colors.friendMessage, inScrollView: true)
                     .frame(width: reactionOverviewWidth)
                     .maxHeightGetter($reactionOverviewHeight)
