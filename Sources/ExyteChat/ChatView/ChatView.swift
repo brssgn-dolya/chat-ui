@@ -380,32 +380,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     @ViewBuilder
     var list: some View {
-        // MARK: - Old version remove if new is better
-//        UIList(viewModel: viewModel,
-//                  inputViewModel: inputViewModel,
-//                  isScrolledToBottom: $isScrolledToBottom,
-//                  shouldScrollToTop: $shouldScrollToTop,
-//                  tableContentHeight: $tableContentHeight,
-//                  messageBuilder: messageBuilder,
-//                  mainHeaderBuilder: mainHeaderBuilder,
-//                  headerBuilder: headerBuilder,
-//                  inputView: inputView,
-//                  type: type,
-//                  showDateHeaders: showDateHeaders,
-//                  isScrollEnabled: isScrollEnabled,
-//                  avatarSize: avatarSize,
-//                  showAvatars: showAvatars,
-//                  groupUsers: groupUsers,
-//                  showMessageMenuOnLongPress: showMessageMenuOnLongPress,
-//                  tapAvatarClosure: tapAvatarClosure,
-//                  tapDocumentClosure: tapDocumentClosure,
-//                  paginationHandler: paginationHandler,
-//                  messageUseMarkdown: messageUseMarkdown,
-//                  showMessageTimeView: showMessageTimeView,
-//                  messageFont: messageFont,
-//                  sections: sections,
-//                  ids: ids)
-        // MARK: - NEW version 
         UIList(
             viewModel: viewModel,
             inputViewModel: inputViewModel,
@@ -434,7 +408,6 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             messageUseMarkdown: messageUseMarkdown,
             showAvatars: showAvatars,
             groupUsers: groupUsers
-            
 //            listSwipeActions: listSwipeActions
         )
         .applyIf(!isScrollEnabled) {

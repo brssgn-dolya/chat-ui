@@ -142,7 +142,7 @@ struct MessageView: View {
             spacing: -bubbleSize.height / 3
         ) {
             
-            if !isDisplayingMessageMenu && !message.reactions.isEmpty {
+            if !isDisplayingMessageMenu && !message.reactions.isEmpty && !message.isDeleted {
                 reactionsView(message)
                     .zIndex(1)
             }
