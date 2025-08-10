@@ -7,49 +7,97 @@
 
 import SwiftUI
 
+private struct ContentWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+extension View {
+    // Helper to conditionally apply a modifier
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition { transform(self) } else { self }
+    }
+}
+
 struct ReactionOverview: View {
     
     @StateObject var viewModel: ChatViewModel
     
     let message: Message
+    /// Available width from parent (e.g. screen width)
     let width: CGFloat
     let backgroundColor: Color
-    let padding: CGFloat = 16
+    let padding: CGFloat = 24
     let inScrollView: Bool
-    
-    struct SortedReaction:Identifiable {
+
+    @State private var contentWidth: CGFloat = 0
+
+    struct SortedReaction: Identifiable {
         var id: String { reaction.toString }
         let reaction: ReactionType
         let users: [User]
     }
-    
+
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: padding) {
-                Spacer()
-                ForEach( sortReactions() ) { reaction in
+        // Max visible bubble width inside outer .padding(padding)
+        let maxContainerWidth = max(0, width - padding * 2)
+
+        // Intrinsic content width (measured below) + horizontal insets
+        let intrinsicWithInsets = contentWidth + padding * 2
+
+        // Visible bubble width: either as much as content needs, or max allowed
+        let targetWidth = min(intrinsicWithInsets, maxContainerWidth)
+
+        // If content does not fit — enable scrolling, otherwise center it
+        let needsScroll = intrinsicWithInsets > maxContainerWidth
+
+        ScrollView(.horizontal, showsIndicators: false) {
+            // Natural content width without spacers
+            let row = HStack(spacing: padding) {
+                ForEach(sortReactions()) { reaction in
                     reactionUserView(reaction: reaction)
                         .padding(padding / 2)
                 }
-                Spacer()
             }
-            .frame(minWidth: width - (padding * 2))
+            // Measure content width
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: ContentWidthKey.self, value: proxy.size.width)
+                }
+            )
+            .padding(.horizontal, padding) // Same inner horizontal insets
+
+            // If it fits — expand to targetWidth and center
+            row
+                .if(!needsScroll) { view in
+                    view.frame(width: targetWidth, alignment: .center)
+                }
         }
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
+        // Set bubble width based on target calculation
+        .frame(width: targetWidth)
+        // Apply background color
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(backgroundColor)
+                .fill(.ultraThickMaterial)
         )
+        // Clip to rounded rectangle shape
         .clipShape(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
+        // Now allow it to be centered within the full width
+        .frame(maxWidth: .infinity, alignment: .center)
+        // Keep outer padding to preserve same height as first version
         .padding(padding)
         .offset(x: horizontalOffset)
+        // Update measured content width
+        .onPreferenceChange(ContentWidthKey.self) { contentWidth = $0 }
     }
     
     @ViewBuilder
-    func reactionUserView(reaction:SortedReaction) -> some View {
+    func reactionUserView(reaction: SortedReaction) -> some View {
         VStack {
             Text(reaction.reaction.toString)
                 .font(.title3)
@@ -60,7 +108,7 @@ struct ReactionOverview: View {
                 )
                 .padding(.top, 8)
                 .padding(.bottom)
-                                         
+            
             HStack(spacing: -14) {
                 ForEach(reaction.users) { user in
                     AvatarView(url: user.avatarURL, cachedImage: user.avatarCachedImage, avatarSize: 32)
