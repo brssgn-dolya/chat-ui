@@ -9,39 +9,43 @@ extension MessageView {
     
     @ViewBuilder
     func reactionsView(_ message: Message, maxReactions: Int = 4) -> some View {
-        let preparedReactions = prepareReactions(message: message, maxReactions: maxReactions)
-        let overflowBubbleText = "+\(message.reactions.count - maxReactions + 1)"
-        
+        // If text has a single character, cap at 3; otherwise keep provided max
+        let adjustedMaxReactions = (message.text.count == 1) ? 3 : maxReactions
+
+        let prepared = prepareReactions(message: message, maxReactions: adjustedMaxReactions)
+        // "+N" equals hidden count: total - visibleCount
+        let visibleCount = prepared.reactions.count
+        let hiddenCount = max(0, message.reactions.count - visibleCount)
+        let overflowText = message.user.isCurrentUser ? " +\(hiddenCount)" : "+\(hiddenCount) "
+
         HStack(spacing: -bubbleSize.width / 4) {
             if !message.user.isCurrentUser {
                 overflowBubbleView(
                     leadingSpacer: true,
-                    needsOverflowBubble: preparedReactions.needsOverflowBubble,
-                    text: overflowBubbleText,
-                    containsReactionFromCurrentUser: preparedReactions.overflowContainsCurrentUser
+                    needsOverflowBubble: prepared.needsOverflowBubble,
+                    text: overflowText,
+                    containsReactionFromCurrentUser: prepared.overflowContainsCurrentUser
                 )
             }
-            
-            ForEach(Array(preparedReactions.reactions.enumerated()), id: \.element) { index, reaction in
+
+            ForEach(Array(prepared.reactions.enumerated()), id: \.element) { index, reaction in
                 ReactionBubble(reaction: reaction, font: Font(font))
                     .transition(.scaleAndFade)
-                    .zIndex(message.user.isCurrentUser ? Double(preparedReactions.reactions.count - index) : Double(index + 1))
+                    .zIndex(message.user.isCurrentUser ? Double(prepared.reactions.count - index)
+                                                      : Double(index + 1))
                     .sizeGetter($bubbleSize)
             }
-            
+
             if message.user.isCurrentUser {
                 overflowBubbleView(
                     leadingSpacer: false,
-                    needsOverflowBubble: preparedReactions.needsOverflowBubble,
-                    text: overflowBubbleText,
-                    containsReactionFromCurrentUser: preparedReactions.overflowContainsCurrentUser
+                    needsOverflowBubble: prepared.needsOverflowBubble,
+                    text: overflowText,
+                    containsReactionFromCurrentUser: prepared.overflowContainsCurrentUser
                 )
             }
         }
-        .offset(
-            x: message.user.isCurrentUser ? -(bubbleSize.height / 2) : (bubbleSize.height / 2),
-            y: 0
-        )
+        .offset(x: message.user.isCurrentUser ? -(bubbleSize.height / 2) : (bubbleSize.height / 2), y: 0)
     }
     
     @ViewBuilder
