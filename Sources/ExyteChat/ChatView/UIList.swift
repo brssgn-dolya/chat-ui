@@ -112,13 +112,9 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         }
 
         updatePaginationTargetIfNeeded(context.coordinator)
-        
-        if context.coordinator.sections == sections {
-            return
-        }
-
+        guard context.coordinator.sections != sections else { return }
         Task {
-            await updateQueue.enqueue() {
+            await updateQueue.enqueue {
                 await updateIfNeeded(coordinator: context.coordinator, tableView: tableView)
             }
         }
@@ -288,98 +284,154 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
     }
 
     private nonisolated func operationsSplit(oldSections: [MessagesSection], newSections: [MessagesSection]) -> SplitInfo {
-        var appliedDeletes = oldSections // start with old sections, remove rows that need to be deleted
-        var appliedDeletesSwapsAndEdits = newSections // take new sections and remove rows that need to be inserted for now, then we'll get array with all the changes except for inserts
-        // appliedDeletesSwapsEditsAndInserts == newSection
+        var appliedDeletes = oldSections
+        var appliedDeletesSwapsAndEdits = newSections
 
         var deleteOperations = [Operation]()
         var swapOperations = [Operation]()
         var editOperations = [Operation]()
         var insertOperations = [Operation]()
 
-        // 1 compare sections
+        // Build union of section keys but keep deterministic order (desc by date)
+        let oldDates = oldSections.map(\.date)
+        let newDates = newSections.map(\.date)
+        let commonDates = Array(Set(oldDates).union(newDates)).sorted(by: >)
 
-        let oldDates = oldSections.map { $0.date }
-        let newDates = newSections.map { $0.date }
-        let commonDates = Array(Set(oldDates + newDates)).sorted(by: >)
         for date in commonDates {
-            let oldIndex = appliedDeletes.firstIndex(where: { $0.date == date } )
-            let newIndex = appliedDeletesSwapsAndEdits.firstIndex(where: { $0.date == date } )
-            if oldIndex == nil, let newIndex {
-                // operationIndex is not the same as newIndex because appliedDeletesSwapsAndEdits is being changed as we go, but to apply changes to UITableView we should have initial index
-                if let operationIndex = newSections.firstIndex(where: { $0.date == date } ) {
-                    appliedDeletesSwapsAndEdits.remove(at: newIndex)
-                    insertOperations.append(.insertSection(operationIndex))
-                }
+            let oldIdxMut = appliedDeletes.firstIndex(where: { $0.date == date })
+            let newIdxMut = appliedDeletesSwapsAndEdits.firstIndex(where: { $0.date == date })
+
+            // Capture stable "operation indices" against original arrays for UITableView
+            let oldOpIdx = oldSections.firstIndex(where: { $0.date == date })
+            let newOpIdx = newSections.firstIndex(where: { $0.date == date })
+
+            if oldIdxMut == nil, let newIdxMut, let newOpIdx {
+                // Section insert
+                appliedDeletesSwapsAndEdits.remove(at: newIdxMut)
+                insertOperations.append(.insertSection(newOpIdx))
                 continue
             }
-            if newIndex == nil, let oldIndex {
-                if let operationIndex = oldSections.firstIndex(where: { $0.date == date } ) {
-                    appliedDeletes.remove(at: oldIndex)
-                    deleteOperations.append(.deleteSection(operationIndex))
-                }
+            if newIdxMut == nil, let oldIdxMut, let oldOpIdx {
+                // Section delete
+                appliedDeletes.remove(at: oldIdxMut)
+                deleteOperations.append(.deleteSection(oldOpIdx))
                 continue
             }
-            guard let newIndex, let oldIndex else { continue }
+            guard let oldIdxMut, let newIdxMut, let oldOpIdx, let newOpIdx else { continue }
 
-            // 2 compare section rows
-            // isolate deletes and inserts, and remove them from row arrays, leaving only rows that are in both arrays: 'duplicates'
-            // this will allow to compare relative position changes of rows - swaps
+            // Rows diff within a section
+            var oldRows = appliedDeletes[oldIdxMut].rows
+            var newRows = appliedDeletesSwapsAndEdits[newIdxMut].rows
 
-            var oldRows = appliedDeletes[oldIndex].rows
-            var newRows = appliedDeletesSwapsAndEdits[newIndex].rows
-            let oldRowIDs = oldRows.map { $0.id }
-            let newRowIDs = newRows.map { $0.id }
-            let rowIDsToDelete = oldRowIDs.filter { !newRowIDs.contains($0) }.reversed()
-            let rowIDsToInsert = newRowIDs.filter { !oldRowIDs.contains($0) }
-            for rowId in rowIDsToDelete {
-                if let index = oldRows.firstIndex(where: { $0.id == rowId }) {
-                    oldRows.remove(at: index)
-                    deleteOperations.append(.delete(oldIndex, index)) // this row was in old section, should not be in final result
-                }
-            }
-            for rowId in rowIDsToInsert {
-                if let index = newRows.firstIndex(where: { $0.id == rowId }) {
-                    // this row was not in old section, should add it to final result
-                    insertOperations.append(.insert(newIndex, index))
-                }
-            }
+            // Fast path sets/maps
+            let oldIDs = oldRows.map(\.id)
+            let newIDs = newRows.map(\.id)
+            let oldSet = Set(oldIDs)
+            let newSet = Set(newIDs)
 
-            for rowId in rowIDsToInsert {
-                if let index = newRows.firstIndex(where: { $0.id == rowId }) {
-                    // remove for now, leaving only 'duplicates'
-                    newRows.remove(at: index)
+            let idsToDelete = oldIDs.filter { !newSet.contains($0) }
+            let idsToInsert = newIDs.filter { !oldSet.contains($0) }
+
+            // DELETE rows (descending by original index in oldRows)
+            if !idsToDelete.isEmpty {
+                // Map id -> index in oldRows
+                var indexMapOld: [String:Int] = [:]
+                for (i, r) in oldRows.enumerated() { indexMapOld[r.id] = i }
+                let deleteIdxsDesc = idsToDelete.compactMap { indexMapOld[$0] }.sorted(by: >)
+                for idx in deleteIdxsDesc {
+                    oldRows.remove(at: idx)
+                    deleteOperations.append(.delete(oldOpIdx, idx)) // use stable section index
                 }
             }
 
-            // 3 isolate swaps and edits
+            // INSERT rows (ascending by index in newRows)
+            if !idsToInsert.isEmpty {
+                // Map id -> index in newRows
+                var indexMapNew: [String:Int] = [:]
+                for (i, r) in newRows.enumerated() { indexMapNew[r.id] = i }
+                let insertIdxsAsc = idsToInsert.compactMap { indexMapNew[$0] }.sorted()
+                for idx in insertIdxsAsc {
+                    insertOperations.append(.insert(newOpIdx, idx)) // use stable section index
+                }
+                // Remove inserted rows from `newRows` to leave only duplicates
+                let insertSet = Set(idsToInsert)
+                newRows = newRows.filter { !insertSet.contains($0.id) }
+            }
 
-            for i in 0..<oldRows.count {
-                let oldRow = oldRows[i]
-                let newRow = newRows[i]
-                if oldRow.id != newRow.id { // a swap: rows in same position are not actually the same rows
-                    if let index = newRows.firstIndex(where: { $0.id == oldRow.id }) {
-                        if !swapsContain(swaps: swapOperations, section: oldIndex, index: i) ||
-                            !swapsContain(swaps: swapOperations, section: oldIndex, index: index) {
-                            swapOperations.append(.swap(oldIndex, i, index))
+            // Now only duplicates remain; lengths might still differ. Protect indexing.
+            let count = min(oldRows.count, newRows.count)
+            if count > 0 {
+                // Build quick map id -> index in newRows for swap detection
+                var newPos: [String:Int] = [:]
+                for (i, r) in newRows.enumerated() { newPos[r.id] = i }
+
+                for i in 0..<count {
+                    let o = oldRows[i]
+                    let n = newRows[i]
+
+                    if o.id != n.id {
+                        if let target = newPos[o.id], target != i {
+                            // Avoid duplicate swaps: ensure both ends not already scheduled
+                            if !swapsContain(swaps: swapOperations, section: oldOpIdx, index: i)
+                                && !swapsContain(swaps: swapOperations, section: oldOpIdx, index: target) {
+                                swapOperations.append(.swap(oldOpIdx, i, target))
+                            }
+                        }
+                    } else if o != n {
+                        // Visual content vs. meta changes
+                        let oldMsg = o.message
+                        let newMsg = n.message
+
+                        let contentChanged =
+                            oldMsg.text != newMsg.text ||
+                            oldMsg.attachments != newMsg.attachments ||
+                            oldMsg.recording != newMsg.recording ||
+                            oldMsg.replyMessage?.id != newMsg.replyMessage?.id ||
+                            oldMsg.type != newMsg.type ||
+                            oldMsg.isDeleted != newMsg.isDeleted
+
+                        let metaChanged =
+                            oldMsg.status != newMsg.status ||
+                            oldMsg.reactions != newMsg.reactions ||
+                            oldMsg.createdAt != newMsg.createdAt
+
+                        if contentChanged || metaChanged {
+                            editOperations.append(.edit(oldOpIdx, i, contentChanged))
                         }
                     }
-                } else if oldRow != newRow { // same ids om same positions but something changed - reload rows without animation
-                     let oldMsg = oldRow.message
-                     let newMsg = newRow.message
-                     let isContentEdit =
-                         oldMsg.text != newMsg.text
-                     editOperations.append(.edit(oldIndex, i, isContentEdit))
                 }
             }
 
-            // 4 store row changes in sections
-
-            appliedDeletes[oldIndex].rows = oldRows
-            appliedDeletesSwapsAndEdits[newIndex].rows = newRows
+            // Persist filtered rows back to the working copies
+            appliedDeletes[oldIdxMut].rows = oldRows
+            appliedDeletesSwapsAndEdits[newIdxMut].rows = newRows
         }
 
-        return SplitInfo(appliedDeletes: appliedDeletes, appliedDeletesSwapsAndEdits: appliedDeletesSwapsAndEdits, deleteOperations: deleteOperations, swapOperations: swapOperations, editOperations: editOperations, insertOperations: insertOperations)
+        // Normalize operation order: deletes desc, inserts asc
+        // Try without this
+        deleteOperations.sort { lhs, rhs in
+            switch (lhs, rhs) {
+            case let (.deleteSection(a), .deleteSection(b)): return a > b
+            case let (.delete(sa, ra), .delete(sb, rb)): return sa == sb ? ra > rb : sa > sb
+            default: return false
+            }
+        }
+        insertOperations.sort { lhs, rhs in
+            switch (lhs, rhs) {
+            case let (.insertSection(a), .insertSection(b)): return a < b
+            case let (.insert(sa, ra), .insert(sb, rb)): return sa == sb ? ra < rb : sa < sb
+            default: return false
+            }
+        }
+
+        return SplitInfo(
+            appliedDeletes: appliedDeletes,
+            appliedDeletesSwapsAndEdits: appliedDeletesSwapsAndEdits,
+            deleteOperations: deleteOperations,
+            swapOperations: swapOperations,
+            editOperations: editOperations,
+            insertOperations: insertOperations
+        )
     }
 
     private nonisolated func swapsContain(swaps: [Operation], section: Int, index: Int) -> Bool {
@@ -692,15 +744,81 @@ extension UIList {
 }
 
 actor UpdateQueue {
-    private var isProcessing = false
+    // MARK: - Tuning
+    private let debounce: Duration = .milliseconds(20)    // 20ms debounce
+    private let maxWait:  Duration = .milliseconds(120)   // flush at least every 120ms
 
-    func enqueue(_ work: @escaping @Sendable () async -> Void) async {
-        while isProcessing {
-            await Task.yield() // Wait for previous task to finish
+    // MARK: - State
+    private var isProcessing = false
+    private var scheduledTask: Task<Void, Never>?
+    private var queue: [@Sendable () async -> Void] = []
+
+    private let clock = ContinuousClock()
+    private var lastFlush: ContinuousClock.Instant
+
+    init() {
+        self.lastFlush = clock.now
+    }
+
+    /// Enqueue work; it will be coalesced and executed later.
+    /// `urgent: true` triggers immediate flush, preserving batching semantics.
+    func enqueue(_ work: @escaping @Sendable () async -> Void, urgent: Bool = false) {
+        queue.append(work)
+
+        if urgent {
+            scheduledTask?.cancel()
+            scheduledTask = Task { await self.processQueue() }
+            return
         }
 
+        scheduleNextFlush()
+    }
+
+    /// Force immediate processing of everything queued.
+    func flush() async {
+        scheduledTask?.cancel()
+        await processQueue()
+    }
+
+    // MARK: - Private
+
+    /// Decide when to run next: debounce but never exceed maxWait.
+    private func scheduleNextFlush() {
+        scheduledTask?.cancel()
+
+        let sinceLast = clock.now - lastFlush
+        let remainingToMax = max(.zero, maxWait - sinceLast)
+        let delay = min(debounce, remainingToMax)
+
+        scheduledTask = Task { [clock] in
+            if delay > .zero {
+                // cooperative cancellation: if task is cancelled, sleep throws — ignoring issue
+                try? await clock.sleep(for: delay)
+            }
+            await self.processQueue()
+        }
+    }
+
+    /// Drain the queue in batches; re-check if new work arrived while processing.
+    private func processQueue() async {
+        guard !isProcessing else { return }
         isProcessing = true
-        await work()
-        isProcessing = false
+        // we're flushing now; any pending timer — no need
+        scheduledTask?.cancel()
+        scheduledTask = nil
+
+        defer {
+            lastFlush = clock.now
+            isProcessing = false
+        }
+
+        while !queue.isEmpty {
+            let batch = queue
+            queue.removeAll()
+
+            for job in batch {
+                await job()
+            }
+        }
     }
 }
