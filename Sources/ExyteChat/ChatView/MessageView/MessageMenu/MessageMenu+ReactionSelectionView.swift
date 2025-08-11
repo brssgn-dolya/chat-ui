@@ -44,74 +44,85 @@ struct ReactionSelectionView: View {
     var leadingPadding: CGFloat
     var trailingPadding: CGFloat
     var reactionClosure: ((ReactionType?) -> Void)
-    
+    var alignWithMenuStart: Bool = false
     private let horizontalPadding: CGFloat = 16
     private let verticalPadding: CGFloat = 10
     private let bubbleDiameterMultiplier: CGFloat = 1.5
     
     var body: some View {
         let currentEmojiReactions = currentReactions.compactMap(\.emoji)
+        // Compact when not .row (covers .search and .picked)
+        let isCompact = (viewState != .row && viewState != .initial)
+
         HStack(spacing: 0) {
-            // Apply the leading padding
             leadingPaddingView()
 
-            // The main reaction selection view
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: horizontalPadding) {
-                    // Add the latest / most relevant emojis
-                    ForEach(emojis, id: \.self) { emoji in
-                        Button(action: {
-                            transitionToViewState(.picked(emoji))
-                        }) {
-                            emojiView(emoji: emoji, isSelected: currentEmojiReactions.contains( emoji ))
+                    // Center the single bubble in compact states
+                    if isCompact { Spacer(minLength: 0) }
+
+                    ForEach(emojis.indices, id: \.self) { index in
+                        Button {
+                            transitionToViewState(.picked(emojis[index]))
+                        } label: {
+                            emojiView(
+                                emoji: emojis[index],
+                                isSelected: currentEmojiReactions.contains(emojis[index])
+                            )
+                            .frame(width: bubbleDiameter, height: bubbleDiameter, alignment: .center)
                         }
                     }
-                    
+
                     if allowEmojiSearch, viewState.needsSearchButton {
-                        // Finish the list with a `button` to open the keyboard in it's emoji state
                         additionalEmojiPickerView()
+                            .frame(width: bubbleDiameter, height: bubbleDiameter, alignment: .center)
                             .onChange(of: selectedEmoji) {
                                 transitionToViewState(.picked(selectedEmoji))
                             }
                             .onChange(of: emojiEntryIsFocused) {
-                                if emojiEntryIsFocused {
-                                    transitionToViewState(.search)
-                                }
+                                if emojiEntryIsFocused { transitionToViewState(.search) }
                             }
                     }
+
+                    if isCompact { Spacer(minLength: 0) }
                 }
                 .padding(.vertical, verticalPadding)
-                .padding(.horizontal, (emojiEntryIsFocused || viewState.isPicked) ? bubbleDiameter / 6 : horizontalPadding)
-                
+                // Give the inner row a fixed box only in compact modes so Spacers can center content
+                .frame(
+                    width: isCompact ? maxWidth : nil,
+                    height: isCompact ? maxHeight : nil,
+                    alignment: .center
+                )
             }
-            .padding(.horizontal, 2)
+            .contentMargins(
+                .horizontal,
+                !isCompact ? max(horizontalPadding, bubbleDiameter/2 + 6) : 0,
+                for: .scrollContent
+            )
+            .scrollIndicators(.hidden)
+            .padding(.horizontal, isCompact ? 0 : 2)          // key: no extra inset in compact
             .modifier(InteriorRadialShadow(color: viewState.needsInteriorShadow ? backgroundColor : .clear))
-            .frame(minWidth: maxHeight, maxWidth: maxWidth, minHeight: maxHeight, maxHeight: maxHeight)
-            .background(
-                Capsule(style: .continuous)
-                    .foregroundStyle(backgroundColor)
-            )
-            .clipShape(
-                Capsule(style: .continuous)
-            )
-            .opacity(opacity)
-            
-            if emojiEntryIsFocused {
-                // Provide a close button that cancels the emoji search
-                // (dismisses the keyboard) and returns to the .row ViewState
-                closeButton(color: backgroundColor)
-                    .padding(.trailing, alignment == .left ? -24 : 0)
-                    .transition(.scaleAndFade)
-            }
+            .frame(width: maxWidth, height: maxHeight, alignment: .center) // key: fixed box
 
-            // Apply the trailing padding
+            .background(Capsule(style: .continuous).foregroundStyle(backgroundColor))
+            .clipShape(Capsule(style: .continuous))
+    
+            .opacity(opacity)
+            .overlay(alignment: alignment == .left ? .topLeading : .topTrailing) {
+                if emojiEntryIsFocused {
+                    // draw above without affecting layout
+                    closeButton(color: backgroundColor)
+                        .transition(.scaleAndFade)
+                }
+            }
+            
             trailingPaddingView()
         }
         .offset(x: xOffset, y: yOffset)
         .onAppear { transitionToViewState(.row) }
         .onChange(of: keyboardState.isShown) {
             if !keyboardState.isShown && viewState == .search {
-                // Someone closed the keyboard while we were searching, return to `.row`
                 transitionToViewState(.row)
             }
         }
@@ -152,56 +163,82 @@ struct ReactionSelectionView: View {
             .frame(width: bubbleDiameter, height: bubbleDiameter)
     }
     
+//    @ViewBuilder
+//    func closeButton(color: Color) -> some View {
+//        Text("🅧")
+//            .font(.title)
+//            .foregroundStyle(.secondary)
+//            .background(
+//                ZStack {
+//                    Circle()
+//                        .stroke(style: .init(lineWidth: 1))
+//                        .fill(color)
+//                }
+//            )
+//            .onTapGesture {
+//                // We call the reaction closure here so our message menu can react accordingly
+//                reactionClosure(nil)
+//                // Transistion back to .row state
+//                transitionToViewState(.row)
+//            }
+//            .offset(x: -(bubbleDiameter / 3), y: -(bubbleDiameter / 1.5))
+//    }
     @ViewBuilder
     func closeButton(color: Color) -> some View {
-        Text("🅧")
-            .font(.title)
-            .foregroundStyle(.secondary)
-            .background(
-                ZStack {
-                    Circle()
-                        .stroke(style: .init(lineWidth: 1))
-                        .fill(color)
-                }
-            )
-            .onTapGesture {
-                // We call the reaction closure here so our message menu can react accordingly
-                reactionClosure(nil)
-                // Transistion back to .row state
-                transitionToViewState(.row)
-            }
-            .offset(x: -(bubbleDiameter / 3), y: -(bubbleDiameter / 1.5))
-    }
-    
-//    @ViewBuilder
-//    func leadingPaddingView() -> some View {
-//        if alignment == .left {
-//            Color.clear.viewWidth(max(1, leadingPadding - 8))
-//            Spacer()
-//        } else {
-//            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - trailingPadding)
-//            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
-//        }
-//    }
-    @ViewBuilder
-    func leadingPaddingView() -> some View {
-        Spacer(minLength: 32) //for group 32
+        // Same size everywhere → no glyph metric surprises
+        let size = bubbleDiameter
+        let dx = (alignment == .left ? -1.0 : 1.0) * (size * 0.33)  // mirror horizontally
+        let dy = -(size * 0.66)                                     // up, same for both sides
+
+        ZStack {
+            Circle()
+                .fill(color)
+                .overlay(Circle().stroke(style: .init(lineWidth: 1)))
+                .frame(width: size, height: size)
+
+            Text("🅧")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+        .offset(x: dx, y: dy) // symmetric positioning
+        .onTapGesture {
+            // Notify and return to .row
+            reactionClosure(nil)
+            transitionToViewState(.row)
+        }
     }
 
-    func trailingPaddingView() -> some View {
-        Spacer(minLength: 32) //for group 32
+
+    @ViewBuilder
+    func leadingPaddingView() -> some View {
+        if alignWithMenuStart {
+            EmptyView()
+        } else {
+            if alignment == .left {
+                Color.clear.viewWidth(max(1, leadingPadding - 8))
+                Spacer()
+            } else {
+                let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - trailingPadding)
+                Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
+            }
+        }
     }
-//    @ViewBuilder
-//    func trailingPaddingView() -> some View {
-//        if alignment == .right {
-//            Spacer()
-//            Color.clear.viewWidth(trailingPadding)
-//        } else {
-//            let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - leadingPadding)
-//            Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
-//        }
-//    }
-    
+
+    @ViewBuilder
+    func trailingPaddingView() -> some View {
+        if alignWithMenuStart {
+            EmptyView()
+        } else {
+            if alignment == .right {
+                Spacer()
+                Color.clear.viewWidth(trailingPadding)
+            } else {
+                let additionalPadding = max(0, UIScreen.main.bounds.width - maxSelectionRowWidth - leadingPadding)
+                Color.clear.viewWidth(additionalPadding + trailingPadding * 3)
+            }
+        }
+    }
+
     private func calcMaxSelectionRowWidth() -> CGFloat {
         var emojiCount = emojis.count
         if allowEmojiSearch { emojiCount += 1 }

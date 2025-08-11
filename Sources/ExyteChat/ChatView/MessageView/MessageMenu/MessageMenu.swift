@@ -444,6 +444,29 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     }
     
     @ViewBuilder
+    private func alignedRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            if alignment == .right { Spacer() }
+
+            if alignment == .left && !isGroup {
+                content().padding(.leading, 16)
+                Spacer()
+            } else if alignment == .left && isGroup {
+                content()
+                Spacer()
+            } else { // .right
+                content()
+            }
+        }
+        .padding(
+            alignment == .right || (alignment == .left && !isGroup) ? .trailing : .leading,
+            alignment == .right || (alignment == .left && !isGroup) ? trailingPadding : leadingPadding
+        )
+    }
+
+
+    
+    @ViewBuilder
     func messageMenuView() -> some View {
         VStack(spacing: verticalSpacing) {
             if reactionOverviewIsVisible, case .scrollView = messageMenuStyle {
@@ -456,25 +479,29 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             }
             
             if reactionSelectionIsVisible {
-                ReactionSelectionView(
-                    viewModel: viewModel,
-                    backgroundColor: Color(UIColor.systemGray6),
-                    selectedColor: theme.colors.myMessage,
-                    animation: .bouncy(duration: animationDuration),
-                    animationDuration: animationDuration,
-                    currentReactions: message.reactions.filter({ $0.user.isCurrentUser }),
-                    customReactions: reactions,
-                    allowEmojiSearch: shouldAllowEmojiSearch,
-                    alignment: alignment,
-                    leadingPadding: leadingPadding,
-                    trailingPadding: trailingPadding,
-                    reactionClosure: handleOnReaction
-                )
-                .maxHeightGetter($reactionSelectionHeight)
+                alignedRow {
+                    ReactionSelectionView(
+                        viewModel: viewModel,
+                        backgroundColor: Color(UIColor.systemGray6),
+                        selectedColor: theme.colors.myMessage,
+                        animation: .bouncy(duration: animationDuration),
+                        animationDuration: animationDuration,
+                        currentReactions: message.reactions.filter({ $0.user.isCurrentUser }),
+                        customReactions: reactions,
+                        allowEmojiSearch: shouldAllowEmojiSearch,
+                        alignment: alignment,
+                        leadingPadding: leadingPadding,
+                        trailingPadding: trailingPadding,
+                        reactionClosure: handleOnReaction,
+                        alignWithMenuStart: true
+                    )
+                    .frame(maxWidth: .infinity,
+                           alignment: alignment == .right ? .trailing : .leading)
+                    .maxHeightGetter($reactionSelectionHeight)
+                    .transition(defaultTransition)
+                    .zIndex(2)
+                }
                 .padding(.bottom, reactionSelectionBottomPadding)
-                .padding(.leading, (alignment == .left && !isGroup) ? -32 : 0)
-                .transition(defaultTransition)
-                .zIndex(2)
             }
             
             mainButton()
