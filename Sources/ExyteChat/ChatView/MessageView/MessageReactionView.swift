@@ -8,11 +8,11 @@ import SwiftUI
 extension MessageView {
     
     @ViewBuilder
-    func reactionsView(_ message: Message, maxReactions: Int = 5) -> some View {
+    func reactionsView(_ message: Message, maxReactions: Int = 4) -> some View {
         let preparedReactions = prepareReactions(message: message, maxReactions: maxReactions)
         let overflowBubbleText = "+\(message.reactions.count - maxReactions + 1)"
         
-        HStack(spacing: -bubbleSize.width / 5) {
+        HStack(spacing: -bubbleSize.width / 4) {
             if !message.user.isCurrentUser {
                 overflowBubbleView(
                     leadingSpacer: true,

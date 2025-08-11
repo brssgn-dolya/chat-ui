@@ -147,67 +147,73 @@ struct ReactionSelectionView: View {
     
     @ViewBuilder
     func additionalEmojiPickerView() -> some View {
-        // Finish the list with a `button` to open the keyboard in it's emoji state
-        EmojiTextField(placeholder: placeholder, text: $selectedEmoji)
-            .tint(.clear)
-            .font(.title3)
-            .focused($emojiEntryIsFocused)
-            .textSelection(.disabled)
-            .background(
-                ZStack {
-                    Image(systemName: "face.smiling")
-                        .imageScale(.large)
-                        .foregroundStyle(selectedEmoji.isEmpty ? Color.secondary.opacity(0.35) : Color.clear)
+        ZStack {
+            // Hidden field that receives emoji from the keyboard
+            EmojiTextField(placeholder: placeholder, text: $selectedEmoji)
+                .font(.title3)
+                .focused($emojiEntryIsFocused)
+                .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                .textSelection(.disabled)
+                .opacity(0.01)              // hide caret/content
+                .allowsHitTesting(false)    // cannot edit by tap
+                .onChange(of: selectedEmoji) {
+                    // Keep only the last emoji; drop non-emoji input
+                    selectedEmoji = selectedEmoji.lastEmojiOrEmpty()
+                    if !selectedEmoji.isEmpty {
+                        transitionToViewState(.picked(selectedEmoji))
+                    }
                 }
-            )
-            .frame(width: bubbleDiameter, height: bubbleDiameter)
+
+            // Visible launcher icon
+            Image(systemName: "face.smiling")
+                .imageScale(.large)
+                .foregroundStyle(selectedEmoji.isEmpty ? Color.secondary.opacity(0.35) : Color.clear)
+        }
+        .frame(width: bubbleDiameter, height: bubbleDiameter)
+        .contentShape(Circle())
+        .onTapGesture {
+            // Programmatically focus → opens emoji keyboard
+            emojiEntryIsFocused = true
+        }
     }
-    
-//    @ViewBuilder
-//    func closeButton(color: Color) -> some View {
-//        Text("🅧")
-//            .font(.title)
-//            .foregroundStyle(.secondary)
-//            .background(
-//                ZStack {
-//                    Circle()
-//                        .stroke(style: .init(lineWidth: 1))
-//                        .fill(color)
-//                }
-//            )
-//            .onTapGesture {
-//                // We call the reaction closure here so our message menu can react accordingly
-//                reactionClosure(nil)
-//                // Transistion back to .row state
-//                transitionToViewState(.row)
-//            }
-//            .offset(x: -(bubbleDiameter / 3), y: -(bubbleDiameter / 1.5))
-//    }
+
     @ViewBuilder
     func closeButton(color: Color) -> some View {
-        // Same size everywhere → no glyph metric surprises
-        let size = bubbleDiameter
-        let dx = (alignment == .left ? -1.0 : 1.0) * (size * 0.33)  // mirror horizontally
-        let dy = -(size * 0.66)                                     // up, same for both sides
+        // Visual size (slightly larger)
+        let base = bubbleDiameter * 0.9
+        let size = base * 1.12               // +12% visual size
+
+        // Keep placement like before (use base to avoid drift when size changes)
+        let dx = (alignment == .left ? -1.0 : 1.0) * (base * 0.33)
+        let dy = -(base * 0.66)
+
+        // Extra tap area around the button
+        let tapExtra = max(12, base * 0.25)
 
         ZStack {
             Circle()
-                .fill(color)
-                .overlay(Circle().stroke(style: .init(lineWidth: 1)))
+                .fill(Color(UIColor.systemGray5).opacity(0.95))
                 .frame(width: size, height: size)
 
-            Text("🅧")
-                .font(.title3)
-                .foregroundStyle(.secondary)
+            Image(systemName: "xmark")
+                .font(.system(size: size * 0.45, weight: .semibold))
+                .foregroundColor(Color(UIColor.label).opacity(0.85))
         }
-        .offset(x: dx, y: dy) // symmetric positioning
-        .onTapGesture {
-            // Notify and return to .row
-            reactionClosure(nil)
-            transitionToViewState(.row)
-        }
+        .offset(x: dx, y: dy)
+        .contentShape(Circle()) // shape for hit tests within the view bounds
+        // Invisible larger tap target that doesn't affect layout/position
+        .overlay(
+            Circle()
+                .fill(Color.clear)
+                .frame(width: size + tapExtra, height: size + tapExtra)
+                .contentShape(Circle())
+                .onTapGesture {
+                    reactionClosure(nil)
+                    transitionToViewState(.row)
+                }
+        )
     }
-
 
     @ViewBuilder
     func leadingPaddingView() -> some View {
@@ -249,16 +255,6 @@ struct ReactionSelectionView: View {
 
         return min(contentWidth, maxAllowedWidth)
     }
-
-//    private func calcMaxSelectionRowWidth() -> CGFloat {
-//        var emojiCount = emojis.count + 1
-//        if allowEmojiSearch { emojiCount += 1 }
-//        let maxWidth = min(
-//            CGFloat(emojiCount) * (bubbleDiameter + horizontalPadding) + horizontalPadding * 3,
-//            ReactionSelectionView.maxSelectionRowWidth
-//        )
-//        return maxWidth
-//    }
     
     private func transitionToViewState(_ state:ViewState) {
         guard state != viewState else { return }
@@ -414,6 +410,18 @@ extension ReactionSelectionView {
                 return false
             }
         }
+    }
+}
+
+private extension String {
+    func lastEmojiOrEmpty() -> String {
+        let emojis = self.filter { $0.isEmoji }
+        return emojis.last.map(String.init) ?? ""
+    }
+}
+private extension Character {
+    var isEmoji: Bool {
+        unicodeScalars.contains { $0.properties.isEmojiPresentation || $0.properties.isEmoji }
     }
 }
 
