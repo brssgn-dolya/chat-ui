@@ -10,7 +10,7 @@ extension MessageView {
     @ViewBuilder
     func reactionsView(_ message: Message, maxReactions: Int = 4) -> some View {
         // If text has a single character, cap at 3; otherwise keep provided max
-        let adjustedMaxReactions = (message.text.count == 1) ? 3 : maxReactions
+        let adjustedMaxReactions = (message.text.count <= 2) ? 3 : maxReactions
 
         let prepared = prepareReactions(message: message, maxReactions: adjustedMaxReactions)
         // "+N" equals hidden count: total - visibleCount
@@ -111,15 +111,34 @@ struct ReactionBubble: View {
     let font: Font
     
     @State private var phase = 0.0
-    
-    var fillColor: Color {
+    private var isOverflowText: Bool {
+           (reaction.emoji ?? "").hasPrefix("+")
+       }
+
+    private var fillColor: Color {
+        // Special case for "+N" overflow bubble
+        if isOverflowText {
+            // If hidden set contains my reaction, use myMessage; otherwise friendMessage
+            return theme.colors.friendMessage
+        }
+
+        // Regular bubbles
         switch reaction.status {
-        case .sending, .sent, .read:
-            return reaction.user.isCurrentUser ? theme.colors.myMessage : theme.colors.friendMessage
         case .error:
             return .red
+        case .sending, .sent, .read:
+            return reaction.user.isCurrentUser ? theme.colors.myMessage : theme.colors.friendMessage
         }
     }
+    
+    private var textColor: Color {
+            // For overflow "+N" ensure contrast with background
+//            if isOverflowText {
+//                return .dolyaBlue
+//            }
+            // For normal emoji keep system coloring (don’t tint)
+        return .dolyaBlue //.primary
+        }
     
     var opacity: Double {
         switch reaction.status {
@@ -134,8 +153,7 @@ struct ReactionBubble: View {
         Text(reaction.emoji ?? "?")
             .font(font)
             .opacity(opacity)
-//            .foregroundStyle(theme.colors.messageText(reaction.user.type))
-            .foregroundStyle(theme.colors.myMessage)
+            .foregroundStyle(textColor)
             .padding(6)
             .background(
                 ZStack {
