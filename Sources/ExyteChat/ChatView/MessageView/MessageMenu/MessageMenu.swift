@@ -650,7 +650,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                         Group {
                             if #available(iOS 17.0, *) {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(Color(uiColor: .label).opacity(0.2), lineWidth: 0.5)
+                                    .stroke(Color(uiColor: .label).opacity(0.2), lineWidth: 0.3)
                             }
                         }
                     )
