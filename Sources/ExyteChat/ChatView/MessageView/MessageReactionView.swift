@@ -78,25 +78,42 @@ extension MessageView {
         let overflowContainsCurrentUser:Bool
     }
     
-    /// Orders the reactions by most recent to oldest, reverses their layout based on alignment and determines if an overflow bubble is necessary
-    private func prepareReactions(message:Message, maxReactions:Int) -> PreparedReactions {
+    // MARK: - prepareReactions: (my reaction always first)
+    private func prepareReactions(message: Message, maxReactions: Int) -> PreparedReactions {
         guard maxReactions > 1, !message.reactions.isEmpty else {
             return .init(reactions: [], needsOverflowBubble: false, overflowContainsCurrentUser: false)
         }
-        // If we have more reactions than maxReactions, then we'll need an overflow bubble
-        let needsOverflowBubble = message.reactions.count > maxReactions
-        // Sort all reactions by most recent -> oldest
-        var reactions = Array(message.reactions.sorted(by: { $0.createdAt > $1.createdAt }))
-        // Check if our current user has a reaction in the overflow reactions (used for coloring the overflow bubble)
-        var overflowContainsCurrentUser: Bool = false
-        if needsOverflowBubble {
-           overflowContainsCurrentUser = reactions[min(reactions.count, maxReactions)...].contains(where: {  $0.user.isCurrentUser })
+
+        // 1) Split: mine vs others
+        //    Then sort each bucket by createdAt desc and concatenate: mine first, then others.
+        //    This guarantees: my reaction is always first if it exists.
+        let mine   = message.reactions.filter { $0.user.isCurrentUser }
+            .sorted(by: { $0.createdAt > $1.createdAt })
+        let others = message.reactions.filter { !$0.user.isCurrentUser }
+            .sorted(by: { $0.createdAt > $1.createdAt })
+
+        var ordered = mine + others
+
+        // 2) Overflow logic
+        let needsOverflowBubble = ordered.count > maxReactions
+        // Visible bubbles count (excluding the "+N" bubble) when overflow is present
+        let visibleSlots = needsOverflowBubble ? (maxReactions - 1) : maxReactions
+
+        // Hidden tail AFTER taking visible
+        let hiddenTail = ordered.count > visibleSlots ? Array(ordered.dropFirst(visibleSlots)) : []
+        let overflowContainsCurrentUser = hiddenTail.contains(where: { $0.user.isCurrentUser })
+
+        // Trim to visible portion
+        if ordered.count > visibleSlots {
+            ordered = Array(ordered.prefix(visibleSlots))
         }
-        // Trim the reactions array if necessary
-        if needsOverflowBubble { reactions = Array(reactions.prefix(maxReactions - 1)) }
-        
+
+        // 3) Layout direction:
+        //    keep your old reversal rule for opponent messages (z-index/overlap expectation)
+        let layoutOrdered = message.user.isCurrentUser ? ordered : ordered.reversed()
+
         return .init(
-            reactions: message.user.isCurrentUser ? reactions : reactions.reversed(),
+            reactions: layoutOrdered,
             needsOverflowBubble: needsOverflowBubble,
             overflowContainsCurrentUser: overflowContainsCurrentUser
         )
