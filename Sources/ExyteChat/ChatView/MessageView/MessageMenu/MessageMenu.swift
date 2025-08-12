@@ -650,10 +650,6 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 onAction(action)
                 dismissSelf()
             }
-
-            if alignment == .right {
-                Color.clear.viewWidth(12)
-            }
         }
     }
     
