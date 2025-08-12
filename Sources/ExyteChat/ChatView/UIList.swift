@@ -498,8 +498,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         let mainBackgroundColor: Color
 //        let listSwipeActions: ListSwipeActions
 
-        private let impactGenerator = UIImpactFeedbackGenerator(style: .heavy)
-
         init(
             viewModel: ChatViewModel, inputViewModel: InputViewModel,
             isScrolledToBottom: Binding<Bool>, isScrolledToTop: Binding<Bool>,
@@ -682,8 +680,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                         TapGesture().onEnded { } // add empty tap to prevent iOS17 scroll breaking bug (drag on cells stops working)
                     )
                     .onLongPressGesture {
-                        // Trigger haptic feedback
-                        self.impactGenerator.impactOccurred()
                         // Launch the message menu
                         self.viewModel.messageMenuRow = row
                     }
