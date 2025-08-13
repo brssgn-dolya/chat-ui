@@ -29,6 +29,10 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     
     @Binding var isShowingMenu: Bool
     
+    /// State to control inner message scrolling
+    @State private var messageScrollable: Bool = false
+    @State private var messageViewportHeight: CGFloat = .infinity
+    
     /// Overall ChatView Frame
     let chatViewFrame: CGRect = UIScreen.main.bounds
     
@@ -289,6 +293,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             reactionSelectionIsVisible = false
             reactionOverviewIsVisible = false
             menuIsVisible = false
+            recomputeMessageViewport()
             /// Calculate our vertical offset so our message lines up with the message from our TableView
             verticalOffset = calcVertOffset(previousState: oldState)
             /// Animate our rendered message into view
@@ -301,6 +306,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 reactionSelectionIsVisible = shouldShowReactionSelectionView
                 reactionOverviewIsVisible = shouldShowReactionOverviewView
                 menuIsVisible = true
+                recomputeMessageViewport()
                 verticalOffset = calcVertOffset(previousState: oldState)
             }
             
@@ -309,6 +315,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 reactionSelectionIsVisible = true
                 reactionOverviewIsVisible = false
                 menuIsVisible = false
+                recomputeMessageViewport()
                 verticalOffset = calcVertOffset(previousState: oldState)
             }
             
@@ -336,42 +343,68 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         case .original:
             return messageFrame.midY - (messageTopPadding / 2)
         case .ready:
+            // Preserve smooth return from keyboard: keep previous Y
             if case .keyboard = previousState {
-                if case .scrollView = messageMenuStyle {
-                    /// Ensure we still need our scroll view
-                    let rOHeight: CGFloat = reactionOverviewIsVisible ? reactionOverviewHeight : 0
-                    let contentHeight = calculateMessageMenuHeight(including: [.message, .reactionSelection, .menu]) + rOHeight
-                    let safeArea = UIApplication.safeArea.top + UIApplication.safeArea.bottom
-                    if contentHeight > maxEntireHeight - safeArea {
-                        messageMenuStyle = .scrollView(height: maxEntireHeight - safeArea)
-                    } else {
+                // If entire stack is scrollable, re-evaluate style necessity after keyboard closed
+                if case .scrollView(let height) = messageMenuStyle {
+                    // Check whether we still need the outer scroll container
+                    let rSelH: CGFloat = reactionSelectionIsVisible ? (reactionSelectionHeight + verticalSpacing + reactionSelectionBottomPadding) : 0
+                    let rOvH:  CGFloat = reactionOverviewIsVisible ? reactionOverviewHeight : 0
+                    let menuH: CGFloat = menuIsVisible ? (menuStyle.height(menuHeight) + verticalSpacing) : 0
+                    let safe   = UIApplication.safeArea.top + UIApplication.safeArea.bottom
+                    let contentHeight = (messageFrame.height + messageTopPadding) + rSelH + rOvH + menuH
+
+                    if contentHeight <= (chatViewFrame.height - safe) {
+                        // Collapse back to vStack if everything fits now
                         messageMenuStyle = .vStack
+                    } else {
+                        // Keep scrollView but ensure its height equals available viewport
+                        let available = chatViewFrame.height - safe
+                        messageMenuStyle = .scrollView(height: available)
                     }
                 }
                 return lastVerticalOffset
             }
-            /// If the messageMenuStyle is a scrollView then we place it in the middle of the screen
-            if case .scrollView(let height) = messageMenuStyle { return (height / 2) + UIApplication.safeArea.top }
 
-            /// Otherwise, calculate our offsets and move to our target
-            let rHeight: CGFloat = reactionSelectionIsVisible ? calculateMessageMenuHeight(including: [.reactionSelection]) : 0
-            let mHeight: CGFloat = menuIsVisible ? calculateMessageMenuHeight(including: [.menu]) : 0
-            let rOHeight: CGFloat = reactionOverviewIsVisible ? reactionOverviewHeight : 0
-
-            var ty: CGFloat = messageFrame.midY - (messageTopPadding / 2)
-
-            if (messageFrame.minY - rHeight) < UIApplication.safeArea.top + rOHeight {
-                let off = (UIApplication.safeArea.top + rOHeight) - (messageFrame.minY - rHeight)
-                /// We need to move the message down to make room for the views above it
-                ty += off
-            } else if messageFrame.maxY + mHeight > chatViewFrame.height - UIApplication.safeArea.bottom {
-                let off = messageFrame.maxY + mHeight + UIApplication.safeArea.bottom - chatViewFrame.height
-                /// We need to move the message up to make room for the menu buttons below it
-                ty -= off
+            // If outer container is scrollable, center it between safe areas
+            if case .scrollView(let height) = messageMenuStyle {
+                return UIApplication.safeArea.top + (height / 2)
             }
-            
-            return ty + (mHeight / 2) - (rHeight / 2)
-            
+
+            // Fixed bars (reactions/overview on top, actions on bottom).
+            // Compute the vertical rails available for the message *viewport*.
+            let rSelBar: CGFloat = reactionSelectionIsVisible
+                ? (reactionSelectionHeight + verticalSpacing + reactionSelectionBottomPadding) : 0
+            let rOvBar:  CGFloat = reactionOverviewIsVisible ? reactionOverviewHeight : 0
+            let menuBar: CGFloat = menuIsVisible ? (menuStyle.height(menuHeight) + verticalSpacing) : 0
+
+            let topRail    = UIApplication.safeArea.top + rOvBar + rSelBar
+            let bottomRail = chatViewFrame.height - UIApplication.safeArea.bottom - menuBar
+            let available  = max(0, bottomRail - topRail)
+
+            if messageScrollable {
+                // Center the *viewport* of the bubble, not its full natural height.
+                let viewport = min(available, messageViewportHeight)
+                return topRail + (viewport / 2)
+            } else {
+                // Legacy behavior for short bubbles: keep the bubble anchored near its natural spot,
+                // but push it away from the top/bottom bars if it overlaps.
+                var ty = messageFrame.midY - (messageTopPadding / 2)
+
+                // Push down if the top of the bubble collides with the top rails
+                if (messageFrame.minY) < (UIApplication.safeArea.top + rOvBar + rSelBar) {
+                    let off = (UIApplication.safeArea.top + rOvBar + rSelBar) - (messageFrame.minY)
+                    ty += off
+                }
+                // Push up if the bottom of the bubble collides with the bottom rails
+                else if (messageFrame.maxY + menuBar) > (chatViewFrame.height - UIApplication.safeArea.bottom) {
+                    let off = messageFrame.maxY + menuBar + UIApplication.safeArea.bottom - chatViewFrame.height
+                    ty -= off
+                }
+
+                // Balance top/bottom chrome so the visual center is correct
+                return ty + (menuBar / 2) - (rSelBar / 2)
+            }
         case .keyboard:
             /// Store our vertical offset
             lastVerticalOffset = verticalOffset
@@ -504,10 +537,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 .padding(.bottom, reactionSelectionBottomPadding)
             }
             
-            mainButton()
-                .frame(maxWidth: chatViewFrame.width - UIApplication.safeArea.leading - UIApplication.safeArea.trailing)
-                .offset(x: (alignment == .right) ? UIApplication.safeArea.trailing : -UIApplication.safeArea.leading)
-                .allowsHitTesting(false)
+            messageBubbleContainer()
             
             if menuIsVisible {
                 menuView()
@@ -524,6 +554,55 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         })
     }
     
+    // Replace current plain message rendering with a conditional scroll container
+    @ViewBuilder
+    private func messageBubbleContainer() -> some View {
+        // Your message bubble (non-interactive clone)
+        let bubble = mainButton()
+            .frame(maxWidth: chatViewFrame.width - UIApplication.safeArea.leading - UIApplication.safeArea.trailing)
+            .offset(x: (alignment == .right) ? UIApplication.safeArea.trailing : -UIApplication.safeArea.leading)
+            .allowsHitTesting(false)
+
+        if messageScrollable {
+            ScrollView(.vertical, showsIndicators: true) {
+                bubble
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 4)
+            }
+            .frame(height: messageViewportHeight)
+            // Subtle edge fades to hint scrollability
+            .mask(
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.0), location: 0.0),
+                        .init(color: .black,              location: 0.06),
+                        .init(color: .black,              location: 0.94),
+                        .init(color: .black.opacity(0.0), location: 1.0),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+            )
+            .zIndex(1)
+        } else {
+            bubble
+                .zIndex(1)
+        }
+    }
+    
+    private func recomputeMessageViewport() {
+        let rSel = reactionSelectionIsVisible
+            ? (reactionSelectionHeight + verticalSpacing + reactionSelectionBottomPadding) : 0
+        let rOv  = reactionOverviewIsVisible ? reactionOverviewHeight : 0
+        let menu = menuIsVisible ? (menuStyle.height(menuHeight) + verticalSpacing) : 0
+
+        let chrome = UIApplication.safeArea.top + UIApplication.safeArea.bottom + rSel + rOv + menu
+        let available = max(0, maxEntireHeight - chrome)
+        let bubble = messageFrame.height + messageTopPadding
+
+        messageScrollable = bubble > available
+        messageViewportHeight = min(bubble, available)
+    }
+
     private struct MenuButton: Identifiable {
         let id: Int
         let action: ActionEnum
