@@ -48,6 +48,23 @@ struct ReactionSelectionView: View {
     private let horizontalPadding: CGFloat = 16
     private let verticalPadding: CGFloat = 10
     private let bubbleDiameterMultiplier: CGFloat = 1.5
+    /// Scales only the emoji glyph inside the bubble (relative to bubbleDiameter)
+    var emojiGlyphScale: CGFloat = 0.72
+
+    /// Scales the launcher icon (search/xmark) relative to bubbleDiameter
+    var launcherIconScale: CGFloat = 0.66
+
+    var uiScale: CGFloat = 1.0
+    private var hPad: CGFloat { horizontalPadding * uiScale }
+    private var vPad: CGFloat { verticalPadding * uiScale }
+//    private let searchSymbolName: String = "plus.circle"//"face.smiling"
+  
+    private var searchSymbolName: String {
+        if UIImage(systemName: "plus.circle") != nil {
+            return "plus.circle"
+        }
+        return "plus" 
+    }
     
     var body: some View {
         let currentEmojiReactions = currentReactions.compactMap(\.emoji)
@@ -58,7 +75,7 @@ struct ReactionSelectionView: View {
             leadingPaddingView()
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: horizontalPadding) {
+                HStack(spacing: hPad) {
                     // Center the single bubble in compact states
                     if isCompact { Spacer(minLength: 0) }
 
@@ -87,7 +104,7 @@ struct ReactionSelectionView: View {
 
                     if isCompact { Spacer(minLength: 0) }
                 }
-                .padding(.vertical, verticalPadding)
+                .padding(.vertical, vPad)
                 // Give the inner row a fixed box only in compact modes so Spacers can center content
                 .frame(
                     width: isCompact ? maxWidth : nil,
@@ -97,7 +114,7 @@ struct ReactionSelectionView: View {
             }
             .contentMargins(
                 .horizontal,
-                !isCompact ? max(horizontalPadding, bubbleDiameter/2 + 6) : 0,
+                !isCompact ? max(hPad, bubbleDiameter/2 + 6) : 0,
                 for: .scrollContent
             )
             .scrollIndicators(.hidden)
@@ -109,13 +126,13 @@ struct ReactionSelectionView: View {
             .clipShape(Capsule(style: .continuous))
     
             .opacity(opacity)
-            .overlay(alignment: alignment == .left ? .topLeading : .topTrailing) {
-                if emojiEntryIsFocused {
-                    // draw above without affecting layout
-                    closeButton(color: backgroundColor)
-                        .transition(.scaleAndFade)
-                }
-            }
+//            .overlay(alignment: alignment == .left ? .topLeading : .topTrailing) {
+//                if emojiEntryIsFocused {
+//                    // draw above without affecting layout
+////                    closeButton(color: backgroundColor)
+////                        .transition(.scaleAndFade)
+//                }
+//            }
             
             trailingPaddingView()
         }
@@ -130,89 +147,56 @@ struct ReactionSelectionView: View {
     
     @ViewBuilder
     func emojiView(emoji:String, isSelected:Bool) -> some View {
+        let fontSize = bubbleDiameter * 0.75
         if isSelected {
             Text(emoji)
-                .font(.title3)
+                .font(.system(size: fontSize, weight: .regular))
                 .background(
                     Circle()
                         .fill(selectedColor)
                         .shadow(radius: 1)
-                        .padding(-verticalPadding + 4)
+                        .padding(-vPad + 4)
                 )
         } else {
             Text(emoji)
-                .font(.title3)
+                .font(.system(size: fontSize, weight: .regular))
         }
     }
-    
+
     @ViewBuilder
     func additionalEmojiPickerView() -> some View {
         ZStack {
-            // Hidden field that receives emoji from the keyboard
             EmojiTextField(placeholder: placeholder, text: $selectedEmoji)
-                .font(.title3)
+                .font(.system(size: bubbleDiameter * 0.62))
                 .focused($emojiEntryIsFocused)
                 .disableAutocorrection(true)
                 .textInputAutocapitalization(.never)
                 .textSelection(.disabled)
-                .opacity(0.01)              // hide caret/content
-                .allowsHitTesting(false)    // cannot edit by tap
+                .opacity(0.01)
+                .allowsHitTesting(false)
                 .onChange(of: selectedEmoji) {
-                    // Keep only the last emoji; drop non-emoji input
                     selectedEmoji = selectedEmoji.lastEmojiOrEmpty()
                     if !selectedEmoji.isEmpty {
                         transitionToViewState(.picked(selectedEmoji))
                     }
                 }
 
-            // Visible launcher icon
-            Image(systemName: "face.smiling")
-                .imageScale(.large)
-                .foregroundStyle(selectedEmoji.isEmpty ? Color.secondary.opacity(0.35) : Color.clear)
-        }
-        .frame(width: bubbleDiameter, height: bubbleDiameter)
-        .contentShape(Circle())
-        .onTapGesture {
-            // Programmatically focus → opens emoji keyboard
-            emojiEntryIsFocused = true
-        }
-    }
-
-    @ViewBuilder
-    func closeButton(color: Color) -> some View {
-        // Visual size (slightly larger)
-        let base = bubbleDiameter * 0.9
-        let size = base * 1.12               // +12% visual size
-
-        // Keep placement like before (use base to avoid drift when size changes)
-        let dx = (alignment == .left ? -1.0 : 1.0) * (base * 0.33)
-        let dy = -(base * 0.66)
-
-        // Extra tap area around the button
-        let tapExtra = max(12, base * 0.25)
-
-        ZStack {
-            Circle()
-                .fill(Color(UIColor.systemGray5).opacity(0.95))
-                .frame(width: size, height: size)
-
-            Image(systemName: "xmark")
-                .font(.system(size: size * 0.45, weight: .semibold))
-                .foregroundColor(Color(UIColor.label).opacity(0.85))
-        }
-        .offset(x: dx, y: dy)
-        .contentShape(Circle()) // shape for hit tests within the view bounds
-        // Invisible larger tap target that doesn't affect layout/position
-        .overlay(
-            Circle()
-                .fill(Color.clear)
-                .frame(width: size + tapExtra, height: size + tapExtra)
+            Image(systemName: emojiEntryIsFocused ? "xmark" : searchSymbolName)
+                .font(.system(size: emojiEntryIsFocused ? bubbleDiameter * 0.55 : bubbleDiameter * 0.85, weight: .regular))
+                .foregroundStyle(Color.secondary.opacity(0.35))
                 .contentShape(Circle())
                 .onTapGesture {
-                    reactionClosure(nil)
-                    transitionToViewState(.row)
+                    if emojiEntryIsFocused {
+                        // tap on xmark closes search mode
+                        reactionClosure(nil)
+                        transitionToViewState(.row)
+                    } else {
+                        // open emoji keyboard
+                        emojiEntryIsFocused = true
+                    }
                 }
-        )
+        }
+        .frame(width: bubbleDiameter, height: bubbleDiameter)
     }
 
     @ViewBuilder
@@ -248,11 +232,9 @@ struct ReactionSelectionView: View {
     private func calcMaxSelectionRowWidth() -> CGFloat {
         var emojiCount = emojis.count
         if allowEmojiSearch { emojiCount += 1 }
-
-        let contentWidth = CGFloat(emojiCount) * (bubbleDiameter + horizontalPadding) + horizontalPadding * 2
+        let contentWidth = CGFloat(emojiCount) * (bubbleDiameter + hPad) + hPad * 2
         let screenWidth = UIScreen.main.bounds.width
         let maxAllowedWidth = screenWidth * 0.8
-
         return min(contentWidth, maxAllowedWidth)
     }
     
@@ -265,7 +247,7 @@ struct ReactionSelectionView: View {
             self.transitionToViewState(.row)
             return
         case .row:
-            bubbleDiameter = dynamicTypeSize.bubbleDiameter()
+            bubbleDiameter = dynamicTypeSize.bubbleDiameter() * uiScale
             emojiEntryIsFocused = false
             withAnimation(animation) {
                 emojis = getEmojis()

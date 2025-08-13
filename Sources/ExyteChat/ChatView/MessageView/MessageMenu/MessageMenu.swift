@@ -526,7 +526,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                         leadingPadding: leadingPadding,
                         trailingPadding: trailingPadding,
                         reactionClosure: handleOnReaction,
-                        alignWithMenuStart: true
+                        alignWithMenuStart: true,
+                        uiScale: 1.18 
                     )
                     .frame(maxWidth: .infinity,
                            alignment: alignment == .right ? .trailing : .leading)
