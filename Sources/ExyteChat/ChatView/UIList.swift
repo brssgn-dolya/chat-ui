@@ -467,6 +467,8 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         @Binding var isScrolledToBottom: Bool
         @Binding var isScrolledToTop: Bool
 
+        @State private var haptic = UIImpactFeedbackGenerator(style: .medium)
+        
         let messageBuilder: MessageBuilderClosure?
         let mainHeaderBuilder: (()->AnyView)?
         let headerBuilder: ((Date)->AnyView)?
@@ -671,18 +673,37 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                     messageFont: messageFont,
                     tapDocumentClosure: tapDocumentClosure,
                     groupUsers: groupUsers)
-                .id(row.id)
-                .transition(.scale)
+//                .id(row.id)
+//                .transition(.scale)
                 .background(MessageMenuPreferenceViewSetter(id: row.id))
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
-                .applyIf(showMessageMenuOnLongPress && !row.message.isDeleted && row.message.type != .status && row.message.type != .call) {
-                    $0.simultaneousGesture(
-                        TapGesture().onEnded { } // add empty tap to prevent iOS17 scroll breaking bug (drag on cells stops working)
-                    )
-                    .onLongPressGesture {
-                        // Launch the message menu
-                        self.viewModel.messageMenuRow = row
-                    }
+                .contentShape(Rectangle())
+                .applyIf(showMessageMenuOnLongPress
+                         && !row.message.isDeleted
+                         && row.message.type != .status
+                         && row.message.type != .call) { v in
+                    v
+                        // iOS 17 scroll bug guard
+                        .simultaneousGesture(TapGesture().onEnded { })
+
+                        .onLongPressGesture(
+                            minimumDuration: 0.16,  // fast, avoids most accidental triggers
+                            maximumDistance: 10,     // small finger drift allowed
+                            pressing: { _ in },
+                            perform: { [weak vm = viewModel, generator = haptic] in
+                                guard let vm else { return }
+
+                                // Avoid double-trigger if menu is already shown
+                                guard vm.messageMenuRow == nil else { return }
+
+                                // Single haptic on commit
+                                generator.prepare()
+                                generator.impactOccurred(intensity: 1.0)
+
+                                // Open the menu
+                                vm.messageMenuRow = row
+                            }
+                        )
                 }
             }
             .minSize(width: 0, height: 0)

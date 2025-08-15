@@ -614,23 +614,6 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         }
     }
     
-    // MARK: - Lightweight haptics helper
-    private enum Haptics {
-        /// Subtle tick when the menu appears.
-        static func menuOpen() {
-            let gen = UISelectionFeedbackGenerator()
-            gen.prepare()
-            gen.selectionChanged()
-        }
-
-        /// Soft impact on any menu button tap.
-        static func tapSoft() {
-            let gen = UIImpactFeedbackGenerator(style: .soft)
-            gen.prepare()
-            gen.impactOccurred()
-        }
-    }
-    
     @ViewBuilder
     func menuView() -> some View {
         let buttons = filteredMenuActions().enumerated().map { MenuButton(id: $0, action: $1) }
@@ -665,13 +648,10 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .padding(.top, 8)
         .maxHeightGetter($menuHeight)
         .frame(maxWidth: .infinity)
-
-        .onAppear {                 // pleasant tick when menu shows
-            Haptics.menuOpen()
-        }
+        
         .simultaneousGesture(       // soft impact on any tap inside the menu content
             TapGesture().onEnded {
-                Haptics.tapSoft()
+                softTapHaptic()
             }
         )
     }
@@ -767,6 +747,13 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             reactionHandler.didReact(rt)
             dismiss()
         }
+    }
+    
+    private func softTapHaptic() {
+        // Single soft impact for menu taps
+        let gen = UIImpactFeedbackGenerator(style: .soft)
+        gen.prepare()
+        gen.impactOccurred()
     }
 }
 
