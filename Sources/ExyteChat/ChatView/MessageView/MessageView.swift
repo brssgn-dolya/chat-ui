@@ -280,69 +280,28 @@ struct MessageView: View {
 
     @ViewBuilder
     func textWithTimeView(_ message: Message) -> some View {
-        let isDeleted = message.isDeleted
-        
-        let messageView = MessageTextView(
-            text: message.text,
-            messageUseMarkdown: messageUseMarkdown,
-            inbound: !message.user.isCurrentUser,
-            anyLinkColor: theme.colors.anyLink,
-            darkLinkColor: theme.colors.darkLink,
-            isDeleted: isDeleted,
-            onMentionTap: { id in
-                if let user = groupUsers.first(where: {
-                    $0.id.components(separatedBy: "@").first == id
-                }) {
-                    tapAvatarClosure?(user, message.id)
+        HStack(alignment: .lastTextBaseline, spacing: 24) {
+            MessageTextView(
+                text: message.text,
+                messageUseMarkdown: messageUseMarkdown,
+                inbound: !message.user.isCurrentUser,
+                anyLinkColor: theme.colors.anyLink,
+                darkLinkColor: theme.colors.darkLink,
+                isDeleted: message.isDeleted,
+                onMentionTap: { id in
+                    if let user = groupUsers.first(where: {
+                        $0.id.components(separatedBy: "@").first == id
+                    }) {
+                        tapAvatarClosure?(user, message.id)
+                    }
                 }
-            }
-        )
+            )
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, MessageView.horizontalTextPadding)
-        
-        let timeView = messageTimeView()
-            .padding(.trailing, 12)
-        
-        if isDeleted {
-            HStack(alignment: .center, spacing: 6) {
-                messageView
-                timeView
-            }
-            .padding(.vertical, 8)
-        } else {
-            Group {
-                switch dateArrangement {
-                case .hstack:
-                    HStack(alignment: .lastTextBaseline, spacing: 12) {
-                        messageView
-                        if !message.attachments.isEmpty {
-                            Spacer()
-                        }
-                        timeView
-                    }
-                    .padding(.vertical, 8)
-                    
-                case .vstack:
-                    VStack(alignment: .leading, spacing: 4) {
-                        messageView
-                        HStack(spacing: 0) {
-                            Spacer()
-                            timeView
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    
-                case .overlay:
-                    HStack(alignment: .bottom, spacing: 4) {
-                        messageView
-                            .padding(.vertical, 8)
-                        
-                        timeView
-                            .padding(.bottom, 8)
-                    }
-                }
-            }
+
+            messageTimeView()
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder
