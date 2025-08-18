@@ -322,6 +322,12 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             // Rows diff within a section
             var oldRows = appliedDeletes[oldIdxMut].rows
             var newRows = appliedDeletesSwapsAndEdits[newIdxMut].rows
+            
+            // Keep full new rows BEFORE removing inserts (needed to detect layout changes)
+            let fullNewRows = newSections[newOpIdx].rows
+            var newByID: [String: MessageRow] = [:]
+            for r in fullNewRows { newByID[r.id] = r }
+
 
             // Fast path sets/maps
             let oldIDs = oldRows.map(\.id)
@@ -356,6 +362,22 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 // Remove inserted rows from `newRows` to leave only duplicates
                 let insertSet = Set(idsToInsert)
                 newRows = newRows.filter { !insertSet.contains($0.id) }
+            }
+            
+            // Reconfigure rows whose layout position changed (affects avatar visibility)
+            if !oldRows.isEmpty {
+                for (oldIndex, oldRow) in oldRows.enumerated() {
+                    if let newRow = newByID[oldRow.id] {
+                        let layoutChanged =
+                            oldRow.positionInUserGroup != newRow.positionInUserGroup ||
+                            oldRow.positionInMessagesSection != newRow.positionInMessagesSection
+
+                        if layoutChanged && !editsContain(editOperations, section: oldOpIdx, row: oldIndex) {
+                            // lightweight reconfigure (no content animation)
+                            editOperations.append(.edit(oldOpIdx, oldIndex, false))
+                        }
+                    }
+                }
             }
 
             // Now only duplicates remain; lengths might still differ. Protect indexing.
@@ -432,6 +454,13 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             editOperations: editOperations,
             insertOperations: insertOperations
         )
+    }
+    
+    private nonisolated func editsContain(_ edits: [Operation], section: Int, row: Int) -> Bool {
+        for op in edits {
+            if case let .edit(s, r, _) = op, s == section, r == row { return true }
+        }
+        return false
     }
 
     private nonisolated func swapsContain(swaps: [Operation], section: Int, index: Int) -> Bool {
