@@ -16,6 +16,7 @@ struct MessageView: View {
 
     let message: Message
     let positionInUserGroup: PositionInUserGroup
+    let positionInMessagesSection: PositionInMessagesSection
     let chatType: ChatType
     let avatarSize: CGFloat
     let tapAvatarClosure: ChatView.TapAvatarClosure?
@@ -29,7 +30,7 @@ struct MessageView: View {
     @State var avatarViewSize: CGSize = .zero
     @State var statusSize: CGSize = .zero
     @State var timeSize: CGSize = .zero
-
+    @State var bubbleSize: CGSize = .zero
     static let widthWithMedia: CGFloat = 204
     static let horizontalNoAvatarPadding: CGFloat = 8
     static let horizontalAvatarPadding: CGFloat = 8
@@ -80,12 +81,12 @@ struct MessageView: View {
 
     var topPadding: CGFloat {
         if chatType == .comments { return 0 }
-        return positionInUserGroup == .single || positionInUserGroup == .first ? 8 : 4
+        return positionInUserGroup.isTop && !positionInMessagesSection.isTop ? 8 : 4
     }
 
     var bottomPadding: CGFloat {
         if chatType == .conversation { return 0 }
-        return positionInUserGroup == .single || positionInUserGroup == .first ? 8 : 4
+        return positionInUserGroup.isTop ? 8 : 4
     }
 
     var body: some View {
@@ -136,46 +137,62 @@ struct MessageView: View {
 
     @ViewBuilder
     func bubbleView(_ message: Message) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !message.attachments.isEmpty {
-                attachmentsView(message)
+        VStack(
+            alignment: message.user.isCurrentUser ? .leading : .trailing,
+            spacing: -bubbleSize.height / 3
+        ) {
+            
+            if !isDisplayingMessageMenu && !message.reactions.isEmpty && !message.isDeleted {
+                reactionsView(message)
+                    .zIndex(1)
             }
             
-            if message.type == .geo {
-                VStack(alignment: .trailing, spacing: 8) {
-                    locationView(message)
+            VStack(alignment: .leading, spacing: 0) {
+                if !message.attachments.isEmpty {
+                    attachmentsView(message)
                 }
-            }
-
-            if !message.text.isEmpty && message.type != .document && message.type != .geo {
-                textWithTimeView(message)
-                    .font(Font(font))
-            }
-
-            if let recording = message.recording {
-                VStack(alignment: .trailing, spacing: 8) {
-                    recordingView(recording)
-                    messageTimeView()
-                        .padding(.bottom, 8)
-                        .padding(.trailing, 12)
+                
+                if message.type == .geo {
+                    VStack(alignment: .trailing, spacing: 8) {
+                        locationView(message)
+                    }
                 }
-            }
-            
-            if message.type == .document {
-                VStack(alignment: .trailing, spacing: 8) {
-                    documentView(message)
-                        .highPriorityGesture(TapGesture().onEnded {
-                            tapDocumentClosure?(message.user, message.id)
-                        })
-                    messageTimeView()
-                        .padding(.bottom, 8)
-                        .padding(.trailing, 12)
+                
+                if !message.text.isEmpty && message.type != .document && message.type != .geo {
+                    textWithTimeView(message)
+                        .font(Font(font))
                 }
+                
+                if let recording = message.recording {
+                    VStack(alignment: .trailing, spacing: 8) {
+                        recordingView(recording)
+                        messageTimeView()
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 12)
+                    }
+                }
+                
+                if message.type == .document {
+                    VStack(alignment: .trailing, spacing: 8) {
+                        documentView(message)
+                            .highPriorityGesture(TapGesture().onEnded {
+                                tapDocumentClosure?(message.user, message.id)
+                            })
+                        messageTimeView()
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 12)
+                    }
+                }
+                    
             }
+            .bubbleBackground(message, theme: theme)
+            .zIndex(0)
         }
-        .bubbleBackground(message, theme: theme)
+        .applyIf(isDisplayingMessageMenu) {
+            $0.frameGetter($viewModel.messageFrame)
+        }
     }
-
+    
     @ViewBuilder
     func replyBubbleView(_ message: Message) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -263,69 +280,28 @@ struct MessageView: View {
 
     @ViewBuilder
     func textWithTimeView(_ message: Message) -> some View {
-        let isDeleted = message.isDeleted
-        
-        let messageView = MessageTextView(
-            text: message.text,
-            messageUseMarkdown: messageUseMarkdown,
-            inbound: !message.user.isCurrentUser,
-            anyLinkColor: theme.colors.anyLink,
-            darkLinkColor: theme.colors.darkLink,
-            isDeleted: isDeleted,
-            onMentionTap: { id in
-                if let user = groupUsers.first(where: {
-                    $0.id.components(separatedBy: "@").first == id
-                }) {
-                    tapAvatarClosure?(user, message.id)
+        HStack(alignment: .lastTextBaseline, spacing: 24) {
+            MessageTextView(
+                text: message.text,
+                messageUseMarkdown: messageUseMarkdown,
+                inbound: !message.user.isCurrentUser,
+                anyLinkColor: theme.colors.anyLink,
+                darkLinkColor: theme.colors.darkLink,
+                isDeleted: message.isDeleted,
+                onMentionTap: { id in
+                    if let user = groupUsers.first(where: {
+                        $0.id.components(separatedBy: "@").first == id
+                    }) {
+                        tapAvatarClosure?(user, message.id)
+                    }
                 }
-            }
-        )
+            )
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, MessageView.horizontalTextPadding)
-        
-        let timeView = messageTimeView()
-            .padding(.trailing, 12)
-        
-        if isDeleted {
-            HStack(alignment: .center, spacing: 6) {
-                messageView
-                timeView
-            }
-            .padding(.vertical, 8)
-        } else {
-            Group {
-                switch dateArrangement {
-                case .hstack:
-                    HStack(alignment: .lastTextBaseline, spacing: 12) {
-                        messageView
-                        if !message.attachments.isEmpty {
-                            Spacer()
-                        }
-                        timeView
-                    }
-                    .padding(.vertical, 8)
-                    
-                case .vstack:
-                    VStack(alignment: .leading, spacing: 4) {
-                        messageView
-                        HStack(spacing: 0) {
-                            Spacer()
-                            timeView
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    
-                case .overlay:
-                    HStack(alignment: .bottom, spacing: 4) {
-                        messageView
-                            .padding(.vertical, 8)
-                        
-                        timeView
-                            .padding(.bottom, 8)
-                    }
-                }
-            }
+
+            messageTimeView()
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder

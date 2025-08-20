@@ -23,10 +23,11 @@ public enum ReplyMode {
 }
 
 public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction: MessageMenuAction>: View {
-
+    
     /// To build a custom message view use the following parameters passed by this closure:
     /// - message containing user, attachments, etc.
     /// - position of message in its continuous group of messages from the same user
+    /// - position of message in the section of messages from that day
     /// - position of message in its continuous group of comments (only works for .answer ReplyMode, nil for .quote mode)
     /// - closure to show message context menu
     /// - closure to pass user interaction, .reply for example
@@ -34,12 +35,13 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     public typealias MessageBuilderClosure = ((
         _ message: Message,
         _ positionInGroup: PositionInUserGroup,
+        _ positionInMessagesSection: PositionInMessagesSection,
         _ positionInCommentsGroup: CommentsPosition?,
         _ showContextMenuClosure: @escaping () -> Void,
         _ messageActionClosure: @escaping (Message, DefaultMessageMenuAction) -> Void,
         _ showAttachmentClosure: @escaping (Attachment) -> Void
     ) -> MessageContent)
-
+    
     /// To build a custom input view use the following parameters passed by this closure:
     /// - binding to the text in input view
     /// - InputViewAttachments to store the attachments from external pickers
@@ -54,7 +56,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         _ inputViewActionClosure: @escaping (InputViewAction) -> Void,
         _ dismissKeyboardClosure: ()->()
     ) -> InputViewContent
-
+    
     /// To define custom message menu actions declare an enum conforming to MessageMenuAction. The library will show your custom menu options on long tap on message. Once the action is selected the following callback will be called:
     /// - action selected by the user from the menu. NOTE: when declaring this variable, specify its type (your custom descendant of MessageMenuAction) explicitly
     /// - a closure taking a case of default implementation of MessageMenuAction which provides simple actions handlers; you call this closure passing the selected message and choosing one of the default actions if you need them; or you can write a custom implementation for all your actions, in that case just ignore this closure
@@ -86,6 +88,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     let sections: [MessagesSection]
     let ids: [String]
     let didSendMessage: (DraftMessage) -> Void
+    var reactionDelegate: ReactionDelegate?
     let draft: String
     let didChangeDraft: (String) -> Void
 
@@ -108,6 +111,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     /// date section header builder
     var headerBuilder: ((Date)->AnyView)?
+    var localization: ChatLocalization = createLocalization()
 
     // MARK: - Customization
 
@@ -115,9 +119,11 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var showDateHeaders: Bool = true
     var isScrollEnabled: Bool = true
     var avatarSize: CGFloat = 32
+    var messageStyler: (String) -> AttributedString = AttributedString.init
     var messageUseMarkdown: Bool = false
     var showMessageMenuOnLongPress: Bool = true
     var showNetworkConnectionProblem: Bool = false
+    var messageMenuAnimationDuration: Double = 0.3
     var tapAvatarClosure: TapAvatarClosure?
     var tapDocumentClosure: TapDocumentClosure?
     var documentSelectionClosure: DocumentSelectionClosure?
@@ -162,6 +168,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         replyMode: ReplyMode = .quote,
         showAvatars: Bool = true,
         didSendMessage: @escaping (DraftMessage) -> Void,
+        reactionDelegate: ReactionDelegate? = nil,
         messageBuilder: @escaping MessageBuilderClosure,
         inputViewBuilder: @escaping InputViewBuilderClosure,
         messageMenuAction: MessageMenuActionClosure?,
@@ -180,6 +187,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         self.draft = draft
         self.didChangeDraft = didChangeDraft
         self.groupUsers = groupUsers
+        self.reactionDelegate = reactionDelegate
     }
 
     public var body: some View {
@@ -342,6 +350,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 listWithButton
             }
         }
+        // Used to prevent ChatView movement during Emoji Keyboard invocation
+        .ignoresSafeArea(isShowingMenu ? .keyboard : [])
     }
 
     @ViewBuilder
@@ -370,30 +380,35 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     @ViewBuilder
     var list: some View {
-        UIList(viewModel: viewModel,
-               inputViewModel: inputViewModel,
-               isScrolledToBottom: $isScrolledToBottom,
-               shouldScrollToTop: $shouldScrollToTop,
-               tableContentHeight: $tableContentHeight,
-               messageBuilder: messageBuilder,
-               mainHeaderBuilder: mainHeaderBuilder,
-               headerBuilder: headerBuilder,
-               inputView: inputView,
-               type: type,
-               showDateHeaders: showDateHeaders,
-               isScrollEnabled: isScrollEnabled,
-               avatarSize: avatarSize,
-               showAvatars: showAvatars,
-               groupUsers: groupUsers,
-               showMessageMenuOnLongPress: showMessageMenuOnLongPress,
-               tapAvatarClosure: tapAvatarClosure,
-               tapDocumentClosure: tapDocumentClosure,
-               paginationHandler: paginationHandler,
-               messageUseMarkdown: messageUseMarkdown,
-               showMessageTimeView: showMessageTimeView,
-               messageFont: messageFont,
-               sections: sections,
-               ids: ids
+        UIList(
+            viewModel: viewModel,
+            inputViewModel: inputViewModel,
+            isScrolledToBottom: $isScrolledToBottom,
+            shouldScrollToTop: $shouldScrollToTop,
+            tableContentHeight: $tableContentHeight,
+            messageBuilder: messageBuilder,
+            mainHeaderBuilder: mainHeaderBuilder,
+            headerBuilder: headerBuilder,
+            inputView: inputView,
+            type: type,
+            showDateHeaders: showDateHeaders,
+            isScrollEnabled: isScrollEnabled,
+            avatarSize: avatarSize,
+            showMessageMenuOnLongPress: showMessageMenuOnLongPress,
+            tapAvatarClosure: tapAvatarClosure,
+            tapDocumentClosure: tapDocumentClosure,
+            paginationHandler: paginationHandler,
+            messageStyler: messageStyler,
+//            shouldShowLinkPreview: shouldShowLinkPreview,
+            showMessageTimeView: showMessageTimeView,
+//            messageLinkPreviewLimit: messageLinkPreviewLimit,
+            messageFont: messageFont,
+            sections: sections,
+            ids: ids,
+            messageUseMarkdown: messageUseMarkdown,
+            showAvatars: showAvatars,
+            groupUsers: groupUsers
+//            listSwipeActions: listSwipeActions
         )
         .applyIf(!isScrollEnabled) {
             $0.frame(height: tableContentHeight)
@@ -403,51 +418,30 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         }
         .transparentNonAnimatingFullScreenCover(item: $viewModel.messageMenuRow) {
             if let row = viewModel.messageMenuRow {
-                ZStack(alignment: .topLeading) {
-                    Color.clear
-                        .background(.ultraThinMaterial)
-                        .ignoresSafeArea()
-
-                    if needsScrollView {
-                        let wholeMenu = menuButtonsSize.height * CGFloat(menuButtonsCount)
-
-                        ScrollView {
-                            VStack {
-                                messageMenu(row)
-                            }
-                            .frame(minHeight: contentHeight)
-                            .padding(.bottom, wholeMenu)
-                        }
-                        .opacity(readyToShowScrollView ? 1 : 0)
-                    }
-                    if !needsScrollView || !readyToShowScrollView {
-                        messageMenu(row)
-                            .position(menuCellPosition)
-                    }
-                }
-                .onAppear {
-                    if let frame = cellFrames[row.id] {
-                        showMessageMenu(frame)
-                    }
-                }
-                .onTapGesture {
-                    hideMessageMenu()
-                }
+                messageMenu(row)
+                    .onAppear(perform: showMessageMenu)
+            }
+            
+        }
+        .onPreferenceChange(MessageMenuPreferenceKey.self) { frames in
+            DispatchQueue.main.async {
+                self.cellFrames = frames
             }
         }
-        .onPreferenceChange(MessageMenuPreferenceKey.self) {
-            self.cellFrames = $0
-        }
-        .onTapGesture {
-            globalFocusState.focus = nil
-        }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                globalFocusState.focus = nil
+            }
+        )
         .onAppear {
             viewModel.didSendMessage = didSendMessage
             viewModel.inputViewModel = inputViewModel
             viewModel.globalFocusState = globalFocusState
 
             inputViewModel.didSendMessage = { value in
-                didSendMessage(value)
+                Task { @MainActor in
+                    didSendMessage(value)
+                }
                 if type == .conversation {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         NotificationCenter.default.post(name: .onScrollToBottom, object: nil)
@@ -488,45 +482,80 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     }
 
     func messageMenu(_ row: MessageRow) -> some View {
-        MessageMenu(
+        let cellFrame = cellFrames[row.id] ?? .zero
+        
+        return MessageMenu(
+            viewModel: viewModel,
             isShowingMenu: $isShowingMenu,
-            menuButtonsSize: $menuButtonsSize,
-            menuButtonsCount: $menuButtonsCount,
             message: row.message,
-            isGroup: showAvatars,
-            alignment: row.message.user.isCurrentUser ? .right : .left,
-            direction: .bottom,
-            leadingPadding: (showAvatars ? avatarSize : 0.0) + MessageView.horizontalAvatarPadding * 2,
+            isGroup: showAvatars, cellFrame: cellFrame,
+            alignment: menuAlignment(row.message, chatType: type),
+            positionInUserGroup: row.positionInUserGroup,
+            leadingPadding: avatarSize + MessageView.horizontalAvatarPadding * 2,
             trailingPadding: MessageView.statusViewSize + MessageView.horizontalStatusPadding,
-            onAction: menuActionClosure(row.message)) {
-                
-                VStack(spacing: 0) {
-                    ChatMessageView(
-                        viewModel: viewModel,
-                        messageBuilder: messageBuilder,
-                        row: row,
-                        chatType: type,
-                        avatarSize: avatarSize,
-                        tapAvatarClosure: nil,
-                        messageUseMarkdown: messageUseMarkdown,
-                        isDisplayingMessageMenu: true,
-                        showMessageTimeView: showMessageTimeView,
-                        showAvatar: showAvatars,
-                        messageFont: messageFont,
-                        tapDocumentClosure: nil,
-                        groupUsers: groupUsers)
-                    .shadow(color: Color(uiColor: UIColor { traitCollection in
-                        return traitCollection.userInterfaceStyle == .dark ? UIColor.systemGray3 : UIColor.systemGray
-                    }).opacity(0.3), radius: 6, x: 0, y: 3)
-                    .onTapGesture {
-                        hideMessageMenu()
-                    }
-                    Spacer().frame(height: 4)
-                }
-                
+            font: messageFont,
+            animationDuration: messageMenuAnimationDuration,
+            onAction: menuActionClosure(row.message),
+            reactionHandler: MessageMenu.ReactionConfig(
+                delegate: reactionDelegate,
+                didReact: reactionClosure(row.message)
+            )
+        ) {
+            ChatMessageView(
+                viewModel: viewModel,
+                messageBuilder: messageBuilder,
+                row: row, chatType: type,
+                avatarSize: avatarSize,
+                tapAvatarClosure: tapAvatarClosure,
+                messageUseMarkdown: messageUseMarkdown,
+                isDisplayingMessageMenu: false,
+                showMessageTimeView: showMessageTimeView,
+                showAvatar: showAvatars,
+                messageFont: messageFont,
+                tapDocumentClosure: tapDocumentClosure,
+                groupUsers: groupUsers)
+            .onTapGesture {
+                hideMessageMenu()
             }
-            .frame(height: max(menuButtonsSize.height * CGFloat(menuButtonsCount) + (cellFrames[row.id]?.height ?? 0), (cellFrames[row.id]?.height ?? 0)))
-            .opacity(menuCellOpacity)
+        }
+    }
+    
+    /// Determines the message menu alignment based on ChatType and message sender.
+    private func menuAlignment(_ message: Message, chatType: ChatType) -> MessageMenuAlignment {
+        switch chatType {
+        case .conversation:
+            return message.user.isCurrentUser ? .right : .left
+        case .comments:
+            return .left
+        }
+    }
+    
+    /// Our default reactionCallback flow if the user supports Reactions by implementing the didReactToMessage closure
+    private func reactionClosure(_ message: Message) -> (ReactionType?) -> () {
+        return { reactionType in
+            Task {
+                // Run the callback on the main thread
+                await MainActor.run {
+                    // Hide the menu
+                    hideMessageMenu()
+                    // Send the draft reaction
+                    guard let reactionDelegate, let reactionType else { return }
+                    reactionDelegate.didReact(to: message, reaction: DraftReaction(messageID: message.id, type: reactionType))
+                }
+            }
+        }
+    }
+    
+    private static func createLocalization() -> ChatLocalization {
+        return ChatLocalization(
+            inputPlaceholder: String(localized: "Type a message..."),
+            signatureText: String(localized: "Add signature..."),
+            cancelButtonText: String(localized: "Cancel"),
+            recentToggleText: String(localized: "Recents"),
+            waitingForNetwork: String(localized: "Waiting for network"),
+            recordingText: String(localized: "Recording..."),
+            replyToText: String(localized: "Reply to")
+        )
     }
 
     func menuActionClosure(_ message: Message) -> (MenuAction) -> () {
@@ -544,65 +573,14 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         return { _ in }
     }
     
-    func showMessageMenu(_ cellFrame: CGRect) {
-        let screenHeight = UIScreen.main.bounds.height
-        let safeTop = safeAreaInsets.top
-        let safeBottom = safeAreaInsets.bottom
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            let wholeMenu = (menuButtonsSize.height * CGFloat(menuButtonsCount))
-            + (CGFloat(menuButtonsCount) * 2)
-            let wholeMenuWithCell = wholeMenu + cellFrame.height
-
-            needsScrollView = wholeMenuWithCell > screenHeight / 2
-            contentHeight = wholeMenuWithCell
-            
-            var finalCenterY: CGFloat
-            let extraSpace = 8.0
-            let availableSpaceToBottom = (screenHeight - safeBottom) - cellFrame.minY
-
-            if !needsScrollView {
-                switch wholeMenuWithCell {
-                case _ where cellFrame.minY <= safeTop + cellFrame.height:
-                    finalCenterY = safeTop + cellFrame.height / 2
-                case _ where availableSpaceToBottom >= wholeMenuWithCell:
-                    finalCenterY = cellFrame.height > wholeMenu
-                    ? cellFrame.minY
-                    : cellFrame.minY - cellFrame.height - extraSpace
-                default:
-                    finalCenterY = max(cellFrame.minY - (wholeMenuWithCell - availableSpaceToBottom) - safeBottom - extraSpace, safeTop)
-                }
-            } else {
-                finalCenterY = screenHeight / 2
-            }
-
-            let finalPosition = CGPoint(x: cellFrame.midX, y: finalCenterY)
-            
-            withAnimation(.spring(response: 0.1, dampingFraction: 0.85, blendDuration: 0)) {
-                menuCellPosition = finalPosition
-                menuCellOpacity = 1
-                isShowingMenu = true
-            }
-            
-            if needsScrollView {
-                DispatchQueue.main.async {
-                    readyToShowScrollView = true
-                }
-            }
-        }
+    func showMessageMenu() {
+        isShowingMenu = true
     }
-
+    
     func hideMessageMenu() {
-        menuScrollView = nil
-        withAnimation(.linear(duration: 0.1)) {
-            menuCellOpacity = 0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            viewModel.messageMenuRow = nil
-            isShowingMenu = false
-            needsScrollView = false
-            readyToShowScrollView = false
-        }
+        viewModel.messageMenuRow = nil
+        viewModel.messageFrame = .zero
+        isShowingMenu = false
     }
 }
 
@@ -747,6 +725,43 @@ public extension ChatView {
         view.availablelInput = type
         return view
     }
+    
+    /// Sets the general duration of various message menu animations
+    ///
+    /// This value is more akin to 'how snappy' the message menu feels
+    /// - Note: Good values are between 0.15 - 0.5 (defaults to 0.3)
+    /// - Important: This value is clamped between 0.1 and 1.0
+    func messageMenuAnimationDuration(_ duration:Double) -> ChatView {
+        var view = self
+        view.messageMenuAnimationDuration = max(0.1, min(1.0, duration))
+        return view
+    }
+    
+    /// Sets a ReactionDelegate on the ChatView for handling and configuring message reactions
+    func messageReactionDelegate(_ configuration: ReactionDelegate) -> ChatView {
+        var view = self
+        view.reactionDelegate = configuration
+        return view
+    }
+    
+    /// Constructs, and applies, a ReactionDelegate for you based on the provided closures
+    func onMessageReaction(
+        didReactTo: @escaping (Message, DraftReaction) -> Void,
+        canReactTo: ((Message) -> Bool)? = nil,
+        availableReactionsFor: ((Message) -> [ReactionType]?)? = nil,
+        allowEmojiSearchFor: ((Message) -> Bool)? = nil,
+        shouldShowOverviewFor: ((Message) -> Bool)? = nil
+    ) -> ChatView {
+        var view = self
+        view.reactionDelegate = DefaultReactionConfiguration(
+            didReact: didReactTo,
+            canReact: canReactTo,
+            reactions: availableReactionsFor,
+            allowEmojiSearch: allowEmojiSearchFor,
+            shouldShowOverview: shouldShowOverviewFor
+        )
+        return view
+    }
 }
 
 private extension ChatView {
@@ -779,5 +794,27 @@ extension ChatView {
     private func preparedMentionsViewModel() -> MentionsSuggestionsViewModel {
         mentionsViewModel.setContext(users: groupUsers, isGroup: showAvatars)
         return mentionsViewModel
+    }
+}
+
+import Foundation
+
+public struct ChatLocalization: Hashable {
+    public var inputPlaceholder: String
+    public var signatureText: String
+    public var cancelButtonText: String
+    public var recentToggleText: String
+    public var waitingForNetwork: String
+    public var recordingText: String
+    public var replyToText: String
+
+    public init(inputPlaceholder: String, signatureText: String, cancelButtonText: String, recentToggleText: String, waitingForNetwork: String, recordingText: String, replyToText: String) {
+        self.inputPlaceholder = inputPlaceholder
+        self.signatureText = signatureText
+        self.cancelButtonText = cancelButtonText
+        self.recentToggleText = recentToggleText
+        self.waitingForNetwork = waitingForNetwork
+        self.recordingText = recordingText
+        self.replyToText = replyToText
     }
 }

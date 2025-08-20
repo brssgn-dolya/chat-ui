@@ -56,6 +56,7 @@ public struct Message: Identifiable, Hashable {
 
     public var text: String
     public var attachments: [Attachment]
+    public var reactions: [Reaction]
     public var recording: Recording?
     public var replyMessage: ReplyMessage?
     public var isEncrypted: Bool
@@ -70,6 +71,7 @@ public struct Message: Identifiable, Hashable {
                 createdAt: Date = Date(),
                 text: String = "",
                 attachments: [Attachment] = [],
+                reactions: [Reaction] = [],
                 recording: Recording? = nil,
                 replyMessage: ReplyMessage? = nil,
                 type: MessageType = .text,
@@ -82,6 +84,7 @@ public struct Message: Identifiable, Hashable {
         self.createdAt = createdAt
         self.text = text
         self.attachments = attachments
+        self.reactions = reactions
         self.recording = recording
         self.replyMessage = replyMessage
         self.type = type
@@ -128,6 +131,7 @@ extension Message: Equatable {
         lhs.createdAt == rhs.createdAt &&
         lhs.text == rhs.text &&
         lhs.attachments == rhs.attachments &&
+        lhs.reactions == rhs.reactions &&
         lhs.recording == rhs.recording &&
         lhs.replyMessage == rhs.replyMessage
     }
@@ -218,5 +222,79 @@ public extension Message {
 public extension Message {
     var isDeliverableStatus: Bool {
         return [.sent, .received, .read].contains(status)
+    }
+}
+
+import Foundation
+
+public enum ReactionType: Codable, Equatable, Hashable, Sendable {
+    case emoji(String)
+    //case sticker(Image / Giphy / Memoji)
+    //case other...
+    
+    var toString:String {
+        switch self {
+        case .emoji(let emoji):
+            return emoji
+        }
+    }
+    
+    public var stringValue: String {
+        switch self {
+        case .emoji(let emoji):
+            return emoji
+        }
+    }
+}
+
+public struct Reaction: Codable, Identifiable, Hashable, Sendable {
+    public let id: String
+    public let user: User
+    public let createdAt: Date
+    public let type: ReactionType
+    public var status: Status
+
+    public init(id: String = UUID().uuidString, user: User, createdAt: Date = .now, type: ReactionType, status: Status = .sending) {
+        self.id = id
+        self.user = user
+        self.createdAt = createdAt
+        self.type = type
+        self.status = status
+    }
+    
+    var emoji: String? {
+        switch self.type {
+        case .emoji(let emoji): return emoji
+        }
+    }
+}
+
+extension Reaction {
+    public enum Status: Codable, Equatable, Hashable, Sendable {
+        case sending
+        case sent
+        case read
+        case error(DraftReaction)
+    }
+}
+
+extension Reaction {
+    func isCurrentUser(myJid: String) -> Bool {
+        user.id == myJid
+    }
+}
+
+
+public struct DraftReaction: Codable, Identifiable, Hashable, Sendable {
+    public let id: String
+    public let messageID: String
+    public let createdAt: Date
+    public let type: ReactionType
+
+    public init(id: String = UUID().uuidString, messageID: String, createdAt: Date = .now, type: ReactionType) {
+        self.id = id
+        self.messageID = messageID
+        self.createdAt = createdAt
+        self.type = type
     }
 }
