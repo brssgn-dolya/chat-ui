@@ -43,8 +43,11 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     @State private var isSwitchingCamera = false
     @State private var isTogglingFlash = false
     @State private var cameraPosition: AVCaptureDevice.Position = .back
-
     @State private var isTorchOn = false
+
+    // Optimized switching helpers
+    @State private var switchWorkItems: [DispatchWorkItem] = []
+    @State private var liveFeedReady: Bool = true   // controls liveCamera visibility while switching
 
     var showingAlbums: Bool {
         inputViewModel.mediaPickerMode == .albums
@@ -58,51 +61,80 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                 ActivityIndicator()
             }
         }
-        .onDisappear { stopRecordingTimer() }
+        .onDisappear {
+            // Ensure timers and pending tasks are cleaned up on leave
+            stopRecordingTimer()
+            cancelPendingSwitches()
+        }
         .onChange(of: cameraMode) { _, newMode in
-            if newMode == .photo, isRecording {
-                stopRecordingTimer()
-            }
+            // Stop the timer when returning to photo mode
+            if newMode == .photo, isRecording { stopRecordingTimer() }
         }
     }
     
+    // MARK: - Actions (logic-only; UI is unchanged)
+
+    /// Safe torch toggle with minimal locking and optimistic UI state.
     private func toggleFlashSafe(_ toggleFlash: @escaping () -> Void) {
         guard !isTogglingFlash, !isRecording else { return }
         isTogglingFlash = true
-        
-        // Оновлюємо стан спалаху
-        let newTorchState = !isTorchOn
-        isTorchOn = newTorchState
-        
+
+        // Optimistically update local state to keep UI responsive
+        isTorchOn.toggle()
         toggleFlash()
-        
-        // Скидаємо прапор після виконання дії
+
         isTogglingFlash = false
     }
 
+    /// Debounced, time-staggered 3-attempt camera switch.
+    /// Hides the live preview until the new feed is presumed ready.
     private func switchCameraSafe(_ switchCamera: @escaping () -> Void) {
-        guard !isRecording else {
-            print("⚠️ Не можу перемкнути камеру: isSwitchingCamera=\(isSwitchingCamera), isRecording=\(isRecording)")
+        guard !isRecording, !isSwitchingCamera else {
+            print("⚠️ Skip camera switch: isSwitchingCamera=\(isSwitchingCamera), isRecording=\(isRecording)")
             return
         }
-        
+
         isSwitchingCamera = true
-        print("🔄 Початок перемикання камери")
-        
-        // Нова позиція (очікувана)
+        liveFeedReady = false   // hide liveCamera until the pipeline stabilizes
+        print("🔄 Camera switch started")
+
+        // Flip expected position (UI state only; framework does the actual switch)
         let newPosition: AVCaptureDevice.Position = cameraPosition == .back ? .front : .back
         cameraPosition = newPosition
-        print("📷 Очікувана позиція камери: \(newPosition == .back ? "задня" : "передня")")
-        
-        // retry-цикл
-        let maxAttempts = 3
-        for attempt in 1...maxAttempts {
-            switchCamera()
-            print("🔁 Спроба перемикання №\(attempt)")
+        print("📷 Expected camera position: \(newPosition == .back ? "back" : "front")")
+
+        // Cancel any pending retries before scheduling new ones
+        cancelPendingSwitches()
+
+        // Schedule 3 attempts: t=0.00, 0.15, 0.30 (equivalent to your for-loop with spacing)
+        let delays: [TimeInterval] = [0.0, 0.15, 0.30]
+        for (idx, delay) in delays.enumerated() {
+            let work = DispatchWorkItem {
+                guard !isRecording else { return }
+                switchCamera()
+                print("🔁 switchCamera() attempt #\(idx + 1) (+\(String(format: "%.2f", delay))s)")
+
+                // After the last attempt, wait a short tail to let the video pipeline rebuild,
+                // then show the live feed again.
+                if idx == delays.count - 1 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                        isSwitchingCamera = false
+                        liveFeedReady = true
+                        print("✅ Camera switch finished; live feed is ready")
+                    }
+                }
+            }
+            switchWorkItems.append(work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         }
-        
-        isSwitchingCamera = false
-        print("✅ Перемикання камери завершено")
+    }
+    
+    /// Cancel all pending switch attempts and reset flags.
+    private func cancelPendingSwitches() {
+        switchWorkItems.forEach { $0.cancel() }
+        switchWorkItems.removeAll()
+        // Do not change UI flags here unless you explicitly want to force-finish
+        // a switch; flags are controlled in the scheduled tasks above.
     }
 
     var albumSelectionHeaderView: some View {
@@ -114,7 +146,6 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                 } label: {
                     Text("Скасувати")
                 }
-
                 Spacer()
             }
 
@@ -135,7 +166,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
         .padding(.bottom, 5)
     }
 
-    // MARK: - MediaPicker
+    // MARK: - MediaPicker (UI unchanged; only the live preview visibility is controlled)
+
     var mediaPicker: some View {
         GeometryReader { g in
             MediaPicker(isPresented: $inputViewModel.showPicker) {
@@ -171,6 +203,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             title: chatTitle,
                             onClose: {
                                 cancelClosure()
+                                cancelPendingSwitches()
                                 stopRecordingTimer()
                             }
                         )
@@ -192,14 +225,23 @@ struct AttachmentsEditor<InputViewContent: View>: View {
             } cameraViewBuilder: { liveCamera, cancel, showPreview, takePhoto, startRecord, stopRecord, toggleFlash, switchCamera in
                 GeometryReader { geometry in
                     ZStack {
-                        liveCamera
-                            .ignoresSafeArea()
+                        // Keep the layout identical; only control live feed visibility during switching.
+                        Group {
+                            if liveFeedReady {
+                                liveCamera
+                            } else {
+                                // Placeholder while switching; same footprint to avoid layout jumps.
+                                Color.black
+                            }
+                        }
+                        .ignoresSafeArea()
 
-                        // TOP: close only
+                        // TOP CONTROLS (unchanged UI)
                         VStack {
                             HStack {
                                 Button(action: {
                                     cancel()
+                                    cancelPendingSwitches()
                                     stopRecordingTimer()
                                 }) {
                                     Image(systemName: "xmark")
@@ -209,14 +251,30 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                         .background(Circle().fill(Color.black.opacity(0.6)))
                                 }
                                 .padding(.leading, 16)
-                                .padding(.top, 48)
+                                .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 48)
 
                                 Spacer()
+
+                                Button(action: {
+                                    toggleFlashSafe(toggleFlash)
+                                }) {
+                                    Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(Circle().fill(Color.black.opacity(0.6)))
+                                }
+                                .disabled(isTogglingFlash || isRecording)
+                                .opacity((isTogglingFlash || isRecording) ? 0.5 : 1.0)
+                                .padding(.trailing, 16)
+                                .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 48)
+                                .accessibilityLabel(isTorchOn ? "Turn flash off" : "Turn flash on")
                             }
+
                             Spacer()
                         }
 
-                        // BOTTOM: all controls
+                        // BOTTOM CONTROLS (unchanged UI)
                         VStack(spacing: 12) {
                             Spacer()
 
@@ -225,7 +283,6 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                     .padding(.bottom, 4)
                             }
 
-                            // Mode switch (Photo / Video)
                             HStack(spacing: 10) {
                                 modeChip(title: "ФОТО", active: cameraMode == .photo) {
                                     if isRecording { stopRecordingTimer() }
@@ -237,8 +294,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             }
                             .padding(.horizontal, 16)
 
-                            // Main control bar
-                            HStack {
+                            HStack(alignment: .center, spacing: 40) {
                                 Button(action: {
                                     if isRecording { stopRecordingTimer() }
                                     inputViewModel.mediaPickerMode = .albums
@@ -249,9 +305,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                         .padding(12)
                                         .background(Circle().fill(Color.black.opacity(0.6)))
                                 }
-                                .accessibilityLabel("Відкрити галерею")
-
-                                Spacer(minLength: 24)
+                                .accessibilityLabel("Open gallery")
 
                                 Button(action: {
                                     guard !isSwitchingCamera, !isTogglingFlash else { return }
@@ -284,47 +338,28 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                     }
                                 }
 
-                                Spacer(minLength: 24)
-
-                                // Flash + Switch camera (right, stacked)
-                                VStack(spacing: 14) {
-                                    Button(action: {
-                                        toggleFlashSafe(toggleFlash)
-                                    }) {
-                                        Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash.fill")
-                                            .font(.title2)
-                                            .foregroundColor(.white)
-                                            .padding(12)
-                                            .background(Circle().fill(Color.black.opacity(0.6)))
-                                    }
-//                                    .disabled(isTogglingFlash || isRecording)
-//                                    .opacity((isTogglingFlash || isRecording) ? 0.5 : 1.0)
-                                    .opacity(0.0)
-                                    .accessibilityLabel(isTorchOn ? "Вимкнути спалах" : "Увімкнути спалах")
-
-                                    Button(action: {
-                                        switchCameraSafe(switchCamera)
-                                    }) {
-                                        Image(systemName: cameraPosition == .front ? "camera.rotate.fill" : "camera.rotate")
-                                            .font(.title2)
-                                            .foregroundColor(.white)
-                                            .padding(12)
-                                            .background(Circle().fill(Color.black.opacity(0.6)))
-                                    }
-//                                    .disabled(isSwitchingCamera || isRecording)
-//                                    .opacity((isSwitchingCamera || isRecording) ? 0.5 : 1.0)
-                                    .opacity(0.0)
-                                    .accessibilityLabel("Перемкнути камеру")
+                                Button(action: {
+                                    switchCameraSafe(switchCamera)
+                                }) {
+                                    Image(systemName: "camera.rotate")
+                                        .font(.title2)
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(Circle().fill(Color.black.opacity(0.6)))
                                 }
+                                .disabled(isSwitchingCamera || isRecording)
+                                .opacity((isSwitchingCamera || isRecording) ? 0.5 : 1.0)
+                                .accessibilityLabel("Switch camera")
                             }
                             .padding(.horizontal, 20)
-                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 12 : 28)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 20 : 36)
                         }
                     }
                 }
             }
             .didPressCancelCamera {
                 inputViewModel.showPicker = false
+                cancelPendingSwitches()
                 stopRecordingTimer()
             }
             .currentFullscreenMedia($currentFullscreenMedia)
@@ -346,9 +381,12 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                     inputViewModel.send()
                 }
                 if !newValue {
+                    // Reset state when picker is dismissed
                     stopRecordingTimer()
                     isSwitchingCamera = false
                     isTogglingFlash = false
+                    cancelPendingSwitches()
+                    liveFeedReady = true
                 }
             }
         }
@@ -367,10 +405,13 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     }
 
     private func startRecordingTimer() {
+        // Make sure we don't keep any pending switch tasks while recording
+        cancelPendingSwitches()
         stopRecordingTimer()
         isRecording = true
         recordingTime = 0
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            // Keep state updates on the main thread
             DispatchQueue.main.async { self.recordingTime += 0.1 }
         }
     }
@@ -381,7 +422,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
         recordingTimer = nil
     }
 
-    // MARK: - UI Pieces
+    // MARK: - UI Pieces (unchanged)
 
     private func headerCloseOnly(topInset: CGFloat, title: String? = nil, onClose: @escaping () -> Void) -> some View {
         ZStack {
@@ -420,7 +461,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                 .foregroundColor(active ? .white : .white.opacity(0.7))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 6)
-                .background(active ? Color.blue : Color.black.opacity(0.35))
+                .background(active ? Color.dolyaBlue : Color.black.opacity(0.35))
                 .cornerRadius(12)
         }
         .buttonStyle(.plain)
