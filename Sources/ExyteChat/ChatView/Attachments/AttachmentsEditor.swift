@@ -283,11 +283,17 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                     .padding(.bottom, 4)
                             }
 
+                            // Mode switch (Photo / Video)
                             HStack(spacing: 10) {
+                                // Photo button - disabled if currently recording in video mode
                                 modeChip(title: "ФОТО", active: cameraMode == .photo) {
-                                    if isRecording { stopRecordingTimer() }
-                                    cameraMode = .photo
+                                    if !isRecording {   // ✅ prevent switching to photo while recording
+                                        cameraMode = .photo
+                                    }
                                 }
+                                .disabled(isRecording && cameraMode == .video)
+
+                                // Video button (always available)
                                 modeChip(title: "ВІДЕО", active: cameraMode == .video) {
                                     cameraMode = .video
                                 }
