@@ -575,14 +575,17 @@ struct ShutterButton: View {
     private let innerSize: CGFloat = 62
     private let ringWidth: CGFloat = 5
     
+    // Fixed layout size so HStack doesn't shift when recording adds extra visuals
+    private let touchSize: CGFloat = 92 // outerSize(76) + spinner headroom (+8) + safety
+    
     @State private var pressed = false
     
     // Recording animation states
-    @State private var morphProgress: CGFloat = 0        // 0 -> circle, 1 -> rounded square
-    @State private var recordPulse = false               // subtle breathing of inner shape
-    @State private var ripples = false                   // expanding ripple rings
-    @State private var spinner = false                   // rotating activity arc
-    @State private var ringGlow = false                  // soft glow on the outer ring
+    @State private var morphProgress: CGFloat = 0
+    @State private var recordPulse = false
+    @State private var ripples = false
+    @State private var spinner = false
+    @State private var ringGlow = false
     
     var body: some View {
         Button {
@@ -594,6 +597,7 @@ struct ShutterButton: View {
                 isRecording ? actionStopVideo() : actionStartVideo()
             }
         } label: {
+            // === Fixed-size measurement box ===
             ZStack {
                 // Background black plate
                 Circle()
@@ -606,23 +610,10 @@ struct ShutterButton: View {
                     .frame(width: outerSize, height: outerSize)
                     .shadow(color: Color.red.opacity(isRecording ? (ringGlow ? 0.65 : 0.35) : 0),
                             radius: isRecording ? 8 : 0, x: 0, y: 0)
-                    .scaleEffect(isRecording ? 1.04 : 1.0)
+                    .scaleEffect(isRecording ? 1.04 : 1.0) // transform doesn't affect layout
                     .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isRecording)
                 
-                // Spinning activity arc while recording
-                if kind == .video && isRecording {
-                    Circle()
-                        .trim(from: 0.0, to: 0.82)
-                        .stroke(style: StrokeStyle(lineWidth: ringWidth - 2, lineCap: .round))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(width: outerSize + 8, height: outerSize + 8)
-                        .rotationEffect(.degrees(spinner ? 360 : 0))
-                        .animation(.linear(duration: 1.35).repeatForever(autoreverses: false), value: spinner)
-                        .opacity(0.65)
-                        .blendMode(.screen)
-                }
-                
-                // Ripple waves from the core (recording only)
+                // Ripple waves
                 if kind == .video && isRecording {
                     Group {
                         Circle()
@@ -644,14 +635,31 @@ struct ShutterButton: View {
                 // Inner morphing core
                 RecordMorphShape(
                     progress: kind == .video ? morphProgress : 0,
-                    bigDiameter: innerSize,         // circle diameter (idle)
-                    smallSize: 34,                  // square side when recording
-                    smallCorner: 8                  // square corner radius
+                    bigDiameter: innerSize,
+                    smallSize: 34,
+                    smallCorner: 8
                 )
                 .fill(kind == .photo ? Color.white : Color.red)
                 .frame(width: innerSize, height: innerSize)
                 .scaleEffect(isRecording && kind == .video ? (recordPulse ? 1.08 : 1.0) : (pressed ? 0.9 : 1.0))
                 .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: recordPulse)
+            }
+           
+            .frame(width: touchSize, height: touchSize)
+            .contentShape(Circle())
+            .overlay(alignment: .center) {
+                if kind == .video && isRecording {
+                    Circle()
+                        .trim(from: 0.0, to: 0.82)
+                        .stroke(style: StrokeStyle(lineWidth: ringWidth - 2, lineCap: .round))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: outerSize + 8, height: outerSize + 8)
+                        .rotationEffect(.degrees(spinner ? 360 : 0))
+                        .animation(.linear(duration: 1.35).repeatForever(autoreverses: false), value: spinner)
+                        .opacity(0.65)
+                        .blendMode(.screen)
+                        .allowsHitTesting(false)
+                }
             }
             .opacity(isDisabled ? 0.5 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: pressed)
@@ -674,26 +682,16 @@ struct ShutterButton: View {
         }
     }
     
-    /// Keeps all animation flags in sync with `isRecording`.
+    // Keep animation flags in sync
     private func syncAnimationsWithState() {
         if kind == .video && isRecording {
-            // Morph to rounded square with a tiny pop
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
-                morphProgress = 1
-            }
-            // Start continuous effects
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) { morphProgress = 1 }
             recordPulse = true
             ripples = true
             spinner = true
-            // Gentle glow ping-pong
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                ringGlow = true
-            }
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { ringGlow = true }
         } else {
-            // Back to circle, stop continuous effects
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
-                morphProgress = 0
-            }
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) { morphProgress = 0 }
             recordPulse = false
             ripples = false
             spinner = false
