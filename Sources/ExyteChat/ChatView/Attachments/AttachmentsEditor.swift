@@ -72,7 +72,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
         }
     }
     
-    // MARK: - Actions (logic-only; UI is unchanged)
+    // MARK: - Actions
 
     /// Safe torch toggle with minimal locking and optimistic UI state.
     private func toggleFlashSafe(_ toggleFlash: @escaping () -> Void) {
@@ -236,7 +236,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                         }
                         .ignoresSafeArea()
 
-                        // TOP CONTROLS (unchanged UI)
+                        // TOP CONTROLS
                         VStack {
                             HStack {
                                 Button(action: {
@@ -274,7 +274,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             Spacer()
                         }
 
-                        // BOTTOM CONTROLS (unchanged UI)
+                        // BOTTOM CONTROLS 
                         VStack(spacing: 12) {
                             Spacer()
 
@@ -313,35 +313,50 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                 }
                                 .accessibilityLabel("Open gallery")
 
-                                Button(action: {
-                                    guard !isSwitchingCamera, !isTogglingFlash else { return }
-                                    if cameraMode == .photo {
-                                        takePhoto()
-                                    } else {
-                                        if isRecording {
-                                            stopRecord()
-                                            stopRecordingTimer()
-                                        } else {
-                                            startRecord()
-                                            startRecordingTimer()
-                                        }
-                                    }
-                                }) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(isRecording ? Color.red : Color.white)
-                                            .frame(width: 70, height: 70)
-
-                                        if isRecording {
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .fill(Color.white)
-                                                .frame(width: 20, height: 20)
-                                        } else {
-                                            Circle()
-                                                .stroke(Color.black, lineWidth: 3)
-                                                .frame(width: 60, height: 60)
-                                        }
-                                    }
+//                                Button(action: {
+//                                    guard !isSwitchingCamera, !isTogglingFlash else { return }
+//                                    if cameraMode == .photo {
+//                                        takePhoto()
+//                                    } else {
+//                                        if isRecording {
+//                                            stopRecord()
+//                                            stopRecordingTimer()
+//                                        } else {
+//                                            startRecord()
+//                                            startRecordingTimer()
+//                                        }
+//                                    }
+//                                }) {
+//                                    ZStack {
+//                                        Circle()
+//                                            .fill(isRecording ? Color.red : Color.white)
+//                                            .frame(width: 70, height: 70)
+//
+//                                        if isRecording {
+//                                            RoundedRectangle(cornerRadius: 4)
+//                                                .fill(Color.white)
+//                                                .frame(width: 20, height: 20)
+//                                        } else {
+//                                            Circle()
+//                                                .stroke(Color.black, lineWidth: 3)
+//                                                .frame(width: 60, height: 60)
+//                                        }
+//                                    }
+//                                }
+                          
+                                ShutterButton(
+                                    kind: cameraMode == .photo ? .photo : .video,
+                                    isRecording: isRecording,
+                                    isDisabled: (isSwitchingCamera || isTogglingFlash)
+                                ) {
+                                    // actionPhoto
+                                    takePhoto()
+                                } actionStartVideo: {
+                                    startRecord()
+                                    startRecordingTimer()
+                                } actionStopVideo: {
+                                    stopRecord()
+                                    stopRecordingTimer()
                                 }
 
                                 Button(action: {
@@ -428,7 +443,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
         recordingTimer = nil
     }
 
-    // MARK: - UI Pieces (unchanged)
+    // MARK: - UI Pieces
 
     private func headerCloseOnly(topInset: CGFloat, title: String? = nil, onClose: @escaping () -> Void) -> some View {
         ZStack {
@@ -475,20 +490,67 @@ struct AttachmentsEditor<InputViewContent: View>: View {
 }
 
 // MARK: - Recording Timer View
+//struct RecordingTimerView: View {
+//    let elapsedTime: TimeInterval
+//
+//    var body: some View {
+//        Text(timeString)
+//            .font(.system(size: 16, weight: .bold, design: .monospaced))
+//            .foregroundColor(.white)
+//            .padding(.horizontal, 12)
+//            .padding(.vertical, 8)
+//            .background(Color.red.opacity(0.85))
+//            .cornerRadius(8)
+//            .shadow(radius: 5)
+//    }
+//
+//    private var timeString: String {
+//        let minutes = Int(elapsedTime) / 60
+//        let seconds = Int(elapsedTime) % 60
+//        let milliseconds = Int((elapsedTime.truncatingRemainder(dividingBy: 1)) * 100)
+//        return String(format: "%02d:%02d.%02d", minutes, seconds, milliseconds)
+//    }
+//}
+// MARK: - Recording Timer View (camera style)
 struct RecordingTimerView: View {
     let elapsedTime: TimeInterval
-
+    
+    @State private var blink = false
+    
     var body: some View {
-        Text(timeString)
-            .font(.system(size: 16, weight: .bold, design: .monospaced))
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.red.opacity(0.85))
-            .cornerRadius(8)
-            .shadow(radius: 5)
+        HStack(spacing: 8) {
+            // Blinking red dot
+            Circle()
+                .fill(Color.red)
+                .frame(width: 10, height: 10)
+                .opacity(blink ? 0.25 : 1.0)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: blink)
+                .onAppear { blink = true }
+            
+//            Text("REC")
+//                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+//                .foregroundColor(.white.opacity(0.9))
+//                .padding(.trailing, 2)
+//                .opacity(0.9)
+            
+            Text(timeString)
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.black.opacity(0.55))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+        .accessibilityLabel("Запис. Час \(timeString)")
     }
-
+    
     private var timeString: String {
         let minutes = Int(elapsedTime) / 60
         let seconds = Int(elapsedTime) % 60
@@ -496,6 +558,7 @@ struct RecordingTimerView: View {
         return String(format: "%02d:%02d.%02d", minutes, seconds, milliseconds)
     }
 }
+
 
 enum CameraMode { case photo, video }
 
@@ -527,3 +590,213 @@ extension AttachmentsEditor {
         }
     }
 }
+
+struct ShutterButton: View {
+    enum Kind { case photo, video }
+    
+    let kind: Kind
+    let isRecording: Bool
+    let isDisabled: Bool
+    let actionPhoto: () -> Void
+    let actionStartVideo: () -> Void
+    let actionStopVideo: () -> Void
+    
+    // Apple-like sizes
+    private let outerSize: CGFloat = 76
+    private let innerSize: CGFloat = 62
+    private let ringWidth: CGFloat = 5
+    
+    @State private var pressed = false
+    
+    // Recording animation states
+    @State private var morphProgress: CGFloat = 0        // 0 -> circle, 1 -> rounded square
+    @State private var recordPulse = false               // subtle breathing of inner shape
+    @State private var ripples = false                   // expanding ripple rings
+    @State private var spinner = false                   // rotating activity arc
+    @State private var ringGlow = false                  // soft glow on the outer ring
+    
+    var body: some View {
+        Button {
+            guard !isDisabled else { return }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if kind == .photo {
+                actionPhoto()
+            } else {
+                isRecording ? actionStopVideo() : actionStartVideo()
+            }
+        } label: {
+            ZStack {
+                // Background black plate
+                Circle()
+                    .fill(Color.black.opacity(0.3))
+                    .frame(width: outerSize, height: outerSize)
+                
+                // Outer ring (glow + subtle scale when recording)
+                Circle()
+                    .stroke(Color.white, lineWidth: ringWidth)
+                    .frame(width: outerSize, height: outerSize)
+                    .shadow(color: Color.red.opacity(isRecording ? (ringGlow ? 0.65 : 0.35) : 0),
+                            radius: isRecording ? 8 : 0, x: 0, y: 0)
+                    .scaleEffect(isRecording ? 1.04 : 1.0)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isRecording)
+                
+                // Spinning activity arc while recording
+                if kind == .video && isRecording {
+                    Circle()
+                        .trim(from: 0.0, to: 0.82)
+                        .stroke(style: StrokeStyle(lineWidth: ringWidth - 2, lineCap: .round))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: outerSize + 8, height: outerSize + 8)
+                        .rotationEffect(.degrees(spinner ? 360 : 0))
+                        .animation(.linear(duration: 1.35).repeatForever(autoreverses: false), value: spinner)
+                        .opacity(0.65)
+                        .blendMode(.screen)
+                }
+                
+                // Ripple waves from the core (recording only)
+                if kind == .video && isRecording {
+                    Group {
+                        Circle()
+                            .stroke(Color.red.opacity(0.35), lineWidth: 2)
+                            .frame(width: innerSize, height: innerSize)
+                            .scaleEffect(ripples ? 1.6 : 1.0)
+                            .opacity(ripples ? 0.0 : 0.6)
+                            .animation(.easeOut(duration: 1.4).repeatForever(autoreverses: false), value: ripples)
+                        
+                        Circle()
+                            .stroke(Color.red.opacity(0.25), lineWidth: 2)
+                            .frame(width: innerSize, height: innerSize)
+                            .scaleEffect(ripples ? 2.0 : 1.2)
+                            .opacity(ripples ? 0.0 : 0.5)
+                            .animation(.easeOut(duration: 1.9).delay(0.3).repeatForever(autoreverses: false), value: ripples)
+                    }
+                }
+                
+                // Inner morphing core
+                RecordMorphShape(
+                    progress: kind == .video ? morphProgress : 0,
+                    bigDiameter: innerSize,         // circle diameter (idle)
+                    smallSize: 34,                  // square side when recording
+                    smallCorner: 8                  // square corner radius
+                )
+                .fill(kind == .photo ? Color.white : Color.red)
+                .frame(width: innerSize, height: innerSize)
+                .scaleEffect(isRecording && kind == .video ? (recordPulse ? 1.08 : 1.0) : (pressed ? 0.9 : 1.0))
+                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: recordPulse)
+            }
+            .opacity(isDisabled ? 0.5 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: pressed)
+            .onAppear { syncAnimationsWithState() }
+            .onChange(of: isRecording) { _, _ in syncAnimationsWithState() }
+        }
+        .buttonStyle(ShutterButtonStyle(isPressed: pressed))
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in pressed = true }
+                .onEnded { _ in pressed = false }
+        )
+        .accessibilityLabel(accessibilityLabel)
+    }
+    
+    private var accessibilityLabel: String {
+        switch kind {
+        case .photo: return "Зробити фото"
+        case .video: return isRecording ? "Зупинити запис відео" : "Почати запис відео"
+        }
+    }
+    
+    /// Keeps all animation flags in sync with `isRecording`.
+    private func syncAnimationsWithState() {
+        if kind == .video && isRecording {
+            // Morph to rounded square with a tiny pop
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
+                morphProgress = 1
+            }
+            // Start continuous effects
+            recordPulse = true
+            ripples = true
+            spinner = true
+            // Gentle glow ping-pong
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                ringGlow = true
+            }
+        } else {
+            // Back to circle, stop continuous effects
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+                morphProgress = 0
+            }
+            recordPulse = false
+            ripples = false
+            spinner = false
+            ringGlow = false
+        }
+    }
+}
+
+// MARK: - Animatable morphing shape (circle -> rounded square)
+private struct RecordMorphShape: Shape {
+    /// 0...1 where 0 is a circle (bigDiameter) and 1 is a rounded square (smallSize + smallCorner)
+    var progress: CGFloat
+    let bigDiameter: CGFloat
+    let smallSize: CGFloat
+    let smallCorner: CGFloat
+    
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        // Interpolate size and corner radius
+        let size = bigDiameter - (bigDiameter - smallSize) * progress
+        let corner = (bigDiameter / 2) - ((bigDiameter / 2) - smallCorner) * progress
+        
+        let x = rect.midX - size / 2
+        let y = rect.midY - size / 2
+        let rrect = CGRect(x: x, y: y, width: size, height: size)
+        return Path(roundedRect: rrect, cornerRadius: corner, style: .continuous)
+    }
+}
+
+// MARK: - Button style (press feedback)
+struct ShutterButtonStyle: ButtonStyle {
+    let isPressed: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+    }
+}
+
+// MARK: - Optional: Apple-style timer pill
+struct AppleStyleRecordingTimer: View {
+    let elapsedTime: TimeInterval
+    @State private var blink = false
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 8, height: 8)
+                .opacity(blink ? 0.4 : 1.0)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 0.6).repeatForever()) {
+                        blink.toggle()
+                    }
+                }
+            Text(formattedTime)
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Color.black.opacity(0.6)))
+    }
+    
+    private var formattedTime: String {
+        let minutes = Int(elapsedTime) / 60
+        let seconds = Int(elapsedTime) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+
