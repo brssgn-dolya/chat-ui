@@ -274,7 +274,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             Spacer()
                         }
 
-                        // BOTTOM CONTROLS 
+                        // BOTTOM CONTROLS
                         VStack(spacing: 12) {
                             Spacer()
 
@@ -312,38 +312,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                         .background(Circle().fill(Color.black.opacity(0.6)))
                                 }
                                 .accessibilityLabel("Open gallery")
-
-//                                Button(action: {
-//                                    guard !isSwitchingCamera, !isTogglingFlash else { return }
-//                                    if cameraMode == .photo {
-//                                        takePhoto()
-//                                    } else {
-//                                        if isRecording {
-//                                            stopRecord()
-//                                            stopRecordingTimer()
-//                                        } else {
-//                                            startRecord()
-//                                            startRecordingTimer()
-//                                        }
-//                                    }
-//                                }) {
-//                                    ZStack {
-//                                        Circle()
-//                                            .fill(isRecording ? Color.red : Color.white)
-//                                            .frame(width: 70, height: 70)
-//
-//                                        if isRecording {
-//                                            RoundedRectangle(cornerRadius: 4)
-//                                                .fill(Color.white)
-//                                                .frame(width: 20, height: 20)
-//                                        } else {
-//                                            Circle()
-//                                                .stroke(Color.black, lineWidth: 3)
-//                                                .frame(width: 60, height: 60)
-//                                        }
-//                                    }
-//                                }
-                          
+                    
                                 ShutterButton(
                                     kind: cameraMode == .photo ? .photo : .video,
                                     isRecording: isRecording,
@@ -362,7 +331,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                 Button(action: {
                                     switchCameraSafe(switchCamera)
                                 }) {
-                                    Image(systemName: "camera.rotate")
+                                    Image(systemName: cameraPosition == .back ? "camera.rotate" : "camera.rotate.fill")
                                         .font(.title2)
                                         .foregroundColor(.white)
                                         .padding(12)
