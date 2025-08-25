@@ -193,8 +193,15 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     public var body: some View {
         ZStack {
         mainView
-            .background(theme.colors.mainBackground)
-            .environmentObject(keyboardState)
+                .background(content: {
+                    if let backgroundImage = theme.images.conversation.background {
+                        backgroundImage
+                            .resizable()
+                            .scaledToFill()
+                    }
+                })
+                .background(theme.colors.mainBackground)
+                .environmentObject(keyboardState)
 
             .fullScreenCover(isPresented: $viewModel.fullscreenAttachmentPresented) {
                 let attachments = sections.flatMap { section in section.rows.flatMap { $0.message.attachments } }

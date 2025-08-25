@@ -565,7 +565,7 @@ struct InputView: View {
     var backgroundColor: Color {
         switch style {
         case .message:
-            return theme.colors.mainBackground
+            return theme.colors.mainBackground.opacity(theme.images.conversation.background == nil ? 1.0 : 0.3)
         case .signature:
             return pickerTheme.main.pickerBackground
         }

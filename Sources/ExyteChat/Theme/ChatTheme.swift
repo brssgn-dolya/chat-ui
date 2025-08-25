@@ -190,6 +190,10 @@ public struct ChatTheme {
             public var cancelReply: Image
             public var replyToMessage: Image
         }
+        
+        public struct Conversation {
+            public var background: Image?
+        }
 
         public var backButton: Image
         public var scrollToBottom: Image
@@ -202,6 +206,7 @@ public struct ChatTheme {
         public var messageMenu: MessageMenu
         public var recordAudio: RecordAudio
         public var reply: Reply
+        public var conversation: Conversation
 
         public init(
             camera: Image? = nil,
@@ -250,7 +255,8 @@ public struct ChatTheme {
             cancelReply: Image? = nil,
             replyToMessage: Image? = nil,
             backButton: Image? = nil,
-            scrollToBottom: Image? = nil
+            scrollToBottom: Image? = nil,
+            conversationBackground: Image? = nil
         ) {
             self.backButton = backButton ?? Image("backArrow", bundle: .current)
             self.scrollToBottom = scrollToBottom ?? Image("scrollToBottom", bundle: .current)
@@ -322,6 +328,10 @@ public struct ChatTheme {
             self.reply = Reply(
                 cancelReply: cancelReply ?? Image("cancelReply", bundle: .current),
                 replyToMessage: replyToMessage ?? Image("replyToMessage", bundle: .current)
+            )
+            
+            self.conversation = .init(
+                background: conversationBackground
             )
         }
     }

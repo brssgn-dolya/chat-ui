@@ -71,7 +71,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
         tableView.showsVerticalScrollIndicator = false
         tableView.estimatedSectionHeaderHeight = 1
         tableView.estimatedSectionFooterHeight = UITableView.automaticDimension
-        tableView.backgroundColor = UIColor(theme.colors.mainBackground)
+        tableView.backgroundColor = .clear
         tableView.scrollsToTop = false
         tableView.isScrollEnabled = isScrollEnabled
 
@@ -485,7 +485,13 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
             
             showMessageTimeView: showMessageTimeView,
              messageFont: messageFont,
-            sections: sections, ids: ids, showAvatars: showAvatars, groupUsers: groupUsers, messageUseMarkdown: messageUseMarkdown, mainBackgroundColor: theme.colors.mainBackground)
+            sections: sections,
+            ids: ids,
+            showAvatars: showAvatars,
+            groupUsers: groupUsers,
+            messageUseMarkdown: messageUseMarkdown,
+            mainBackgroundColor: theme.colors.mainBackground
+        )
     }
 
     class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
@@ -619,7 +625,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 sectionHeaderViewBuilder(section)
                     .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
             ).view
-            header?.backgroundColor = UIColor(mainBackgroundColor)
+            header?.backgroundColor = .clear
             return header
         }
         
@@ -685,7 +691,7 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
 
             let tableViewCell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
             tableViewCell.selectionStyle = .none
-            tableViewCell.backgroundColor = UIColor(mainBackgroundColor)
+            tableViewCell.backgroundColor = .clear//UIColor(mainBackgroundColor)
 
             let row = sections[indexPath.section].rows[indexPath.row]
             tableViewCell.contentConfiguration = UIHostingConfiguration {
