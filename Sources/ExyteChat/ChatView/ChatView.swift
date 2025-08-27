@@ -334,8 +334,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             messageUseMarkdown: messageUseMarkdown,
             orientationHandler: orientationHandler,
             mediaPickerSelectionParameters: mediaPickerSelectionParameters,
-            availableInput: availablelInput,
-            mediaPickerMode: $inputViewModel.mediaPickerMode
+            availableInput: availablelInput
+//            mediaPickerMode: $inputViewModel.mediaPickerMode
         )
         .environmentObject(globalFocusState)
     }
@@ -662,6 +662,7 @@ public extension ChatView {
 
     func orientationHandler(orientationHandler: @escaping MediaPickerOrientationHandler) -> ChatView {
         var view = self
+        print("orientationHandler = \(orientationHandler)")
         view.orientationHandler = orientationHandler
         return view
     }
