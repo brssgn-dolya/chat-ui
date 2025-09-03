@@ -185,14 +185,6 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             .padding(.bottom, g.safeAreaInsets.bottom > 0 ? g.safeAreaInsets.bottom : 20)
                     }
                     .background(pickerTheme.main.pickerBackground)
-
-                    if isRecording {
-                        RecordingTimerView(elapsedTime: recordingTime)
-                            .position(
-                                x: g.size.width / 2,
-                                y: (g.safeAreaInsets.top > 0 ? g.safeAreaInsets.top : 20) + 50
-                            )
-                    }
                 }
                 .ignoresSafeArea()
             } cameraSelectionBuilder: { _, cancelClosure, cameraSelectionView in
@@ -214,11 +206,6 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                             safeBottomInset: g.safeAreaInsets.bottom,
                             onShowPreview: nil
                         )
-                    }
-
-                    if isRecording {
-                        RecordingTimerView(elapsedTime: recordingTime)
-                            .position(x: g.size.width / 2, y: (g.safeAreaInsets.top > 0 ? g.safeAreaInsets.top : 20) + 50)
                     }
                 }
                 .ignoresSafeArea()
@@ -280,10 +267,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                         VStack(spacing: 12) {
                             Spacer()
 
-                            if isRecording {
-                                RecordingTimerView(elapsedTime: recordingTime)
-                                    .padding(.bottom, 4)
-                            }
+                            RecordingTimerView(elapsedTime: recordingTime, isRecording: isRecording)
+                                .padding(.bottom, 4)
 
                             // Mode switch (Photo / Video)
                             HStack(spacing: 10) {
@@ -313,6 +298,8 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                                         .padding(12)
                                         .background(Circle().fill(Color.black.opacity(0.6)))
                                 }
+                                .disabled(isRecording)
+                                .opacity(isRecording ? 0.5 : 1.0)
                                 .accessibilityLabel("Open gallery")
                     
                                 ShutterButton(
@@ -463,36 +450,49 @@ struct AttachmentsEditor<InputViewContent: View>: View {
 // MARK: - Recording Timer View (camera style)
 struct RecordingTimerView: View {
     let elapsedTime: TimeInterval
-    
+    let isRecording: Bool   // <- control visibility from parent
+
     @State private var blink = false
-    
+
     var body: some View {
-        HStack(spacing: 8) {
-            // Blinking red dot
-            Circle()
-                .fill(Color.red)
-                .frame(width: 10, height: 10)
-                .opacity(blink ? 0.25 : 1.0)
-                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: blink)
-                .onAppear { blink = true }
-            Text(timeString)
-                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.black.opacity(0.55))
-                .overlay(
+        Group {
+            if isRecording {
+                HStack(spacing: 8) {
+                    // Blinking red dot
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 10, height: 10)
+                        .opacity(blink ? 0.25 : 1.0)
+                        // start infinite blinking only while visible
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: blink)
+
+                    Text(timeString)
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        .fill(Color.black.opacity(0.55))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
                 )
-        )
-        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
-        .accessibilityLabel("Запис. Час \(timeString)")
+                .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+                .accessibilityLabel("Запис. Час \(timeString)")
+                .transition(.opacity)                 // nice fade in/out
+                .onAppear { blink = true }            // start blinking when shown
+                .onDisappear { blink = false }        // stop blinking when hidden
+            }
+        }
+        // Safety: if parent toggles 'isRecording' while still mounted
+        .onChange(of: isRecording) { _, rec in
+            if rec { blink = true } else { blink = false }
+        }
     }
-    
+
     private var timeString: String {
         let minutes = Int(elapsedTime) / 60
         let seconds = Int(elapsedTime) % 60
@@ -694,37 +694,3 @@ struct ShutterButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.15), value: isPressed)
     }
 }
-
-// MARK: - Optional: Apple-style timer pill
-struct AppleStyleRecordingTimer: View {
-    let elapsedTime: TimeInterval
-    @State private var blink = false
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(Color.red)
-                .frame(width: 8, height: 8)
-                .opacity(blink ? 0.4 : 1.0)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 0.6).repeatForever()) {
-                        blink.toggle()
-                    }
-                }
-            Text(formattedTime)
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundColor(.white)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Capsule().fill(Color.black.opacity(0.6)))
-    }
-    
-    private var formattedTime: String {
-        let minutes = Int(elapsedTime) / 60
-        let seconds = Int(elapsedTime) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-}
-
-
