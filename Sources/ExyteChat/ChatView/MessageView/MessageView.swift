@@ -211,7 +211,7 @@ struct MessageView: View {
                     text: message.text,
                     messageUseMarkdown: messageUseMarkdown,
                     inbound: !message.user.isCurrentUser,
-                    anyLinkColor: theme.colors.anyLink,
+                    anyLinkColor: theme.colors.textMyReply,
                     darkLinkColor: theme.colors.darkLink,
                     isDeleted: message.isDeleted,
                     onMentionTap: { id in
