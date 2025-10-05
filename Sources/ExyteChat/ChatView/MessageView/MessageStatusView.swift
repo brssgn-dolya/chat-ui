@@ -38,38 +38,51 @@ public struct MessageStatusView: View {
     }
 
     public var body: some View {
-        Group {
-            switch status {
-            case .sending:
-                theme.images.message.sending
-                    .resizable()
-                    .rotationEffect(.degrees(90))
-                    .foregroundColor(resolvedColor)
-            case .sent:
-                theme.images.message.checkmark
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundColor(resolvedColor)
-            case .received:
-                theme.images.message.checkmarks
-                    .resizable()
-                    .foregroundColor(resolvedColor)
-            case .read:
-                theme.images.message.checkmarks
-                    .resizable()
-                    .foregroundColor(resolvedColor)
-            case .error:
-                Button {
-                    onRetry()
-                } label: {
-                    theme.images.message.error
+        if case let .error(_) = status {
+            Button {
+                onRetry()
+            } label: {
+                HStack(spacing: 4.0) {
+                    Image(systemName: "exclamationmark.circle.fill")
                         .resizable()
                         .foregroundColor(resolvedColor)
+                        .viewSize(MessageView.statusViewSize)
+                        
+                    Text("Повторити")
+                        .foregroundColor(.init(uiColor: .systemGray))
+                        .font(.system(size: 13))
+                        .fontWeight(.medium)
+                }
+                .padding(.leading, MessageView.horizontalStatusPadding)
+            }
+        } else {
+            Group {
+                switch status {
+                case .sending:
+                    theme.images.message.sending
+                        .resizable()
+                        .rotationEffect(.degrees(90))
+                        .foregroundColor(resolvedColor)
+                case .sent:
+                    theme.images.message.checkmark
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(resolvedColor)
+                case .received:
+                    theme.images.message.checkmarks
+                        .resizable()
+                        .foregroundColor(resolvedColor)
+                case .read:
+                    theme.images.message.checkmarks
+                        .resizable()
+                        .foregroundColor(resolvedColor)
+                case .error:
+                    EmptyView()
                 }
             }
+            .viewSize(MessageView.statusViewSize)
+            .padding(.trailing, MessageView.horizontalStatusPadding)
         }
-        .viewSize(MessageView.statusViewSize)
-        .padding(.trailing, MessageView.horizontalStatusPadding)
     }
 }
 
