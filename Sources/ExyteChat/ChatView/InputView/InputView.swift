@@ -409,8 +409,10 @@ struct InputView: View {
 
     var recordButton: some View {
         theme.images.inputView.microphone
+            .renderingMode(.template)
+            .foregroundColor(theme.colors.buttonBackground)
             .viewSize(48)
-            .circleBackground(theme.colors.sendButtonBackground)
+            .circleBackground(theme.colors.inputLightContextBackground)
             .frameGetter($recordButtonFrame)
     }
 
