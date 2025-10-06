@@ -88,6 +88,13 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 tableView.contentOffset = CGPoint(x: 0, y: tableView.contentSize.height - tableView.frame.height)
             }
         }
+        
+        let lp = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleLongPress(_:)))
+        lp.minimumPressDuration = 0.35          // WhatsApp-like delay before firing
+        lp.allowableMovement = 12               // allow small finger drift
+        lp.cancelsTouchesInView = true          // prevent other touch handling when recognized
+        lp.delaysTouchesBegan = true            // delay touches to avoid conflicts with taps
+        tableView.addGestureRecognizer(lp)
 
         return tableView
     }
@@ -671,6 +678,44 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
                 dateViewBuilder(section)
             }
         }
+        
+        @objc func handleLongPress(_ gr: UILongPressGestureRecognizer) {
+            // Fire only on the initial hold (not on release)
+            guard gr.state == .began else { return }
+            guard let tableView = gr.view as? UITableView else { return }
+
+            // Ignore while user is scrolling/decelerating
+            if tableView.isDragging || tableView.isDecelerating { return }
+
+            let location = gr.location(in: tableView)
+            guard let indexPath = tableView.indexPathForRow(at: location) else { return }
+
+            // Do nothing if a menu is already open
+            guard viewModel.messageMenuRow == nil else { return }
+
+            // Resolve row & basic filters
+            let row = sections[indexPath.section].rows[indexPath.row]
+            if row.message.isDeleted || row.message.type == .status || row.message.type == .call { return }
+
+            // Ensure touch is inside the cell's contentView (avoid gaps between bubbles)
+            guard let cell = tableView.cellForRow(at: indexPath) else { return }
+            let pointInCell = tableView.convert(location, to: cell.contentView)
+            guard cell.contentView.bounds.contains(pointInCell) else { return }
+
+            // Subtle highlight 
+            cell.setHighlighted(true, animated: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                cell.setHighlighted(false, animated: true)
+            }
+
+            // Haptic feedback on commit
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.prepare()
+            generator.impactOccurred(intensity: 1.0)
+
+            // Open the message menu
+            viewModel.messageMenuRow = row
+        }
 
         @ViewBuilder
         func dateViewBuilder(_ section: Int) -> some View {
@@ -712,33 +757,6 @@ struct UIList<MessageContent: View, InputView: View>: UIViewRepresentable {
 //                .transition(.scale)
                 .background(MessageMenuPreferenceViewSetter(id: row.id))
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
-                .applyIf(showMessageMenuOnLongPress
-                         && !row.message.isDeleted
-                         && row.message.type != .status
-                         && row.message.type != .call) { v in
-                    v
-                        // iOS 17 scroll bug guard
-                        .simultaneousGesture(TapGesture().onEnded { })
-
-                        .onLongPressGesture(
-                            minimumDuration: 0.16,  // fast, avoids most accidental triggers
-                            maximumDistance: 10,     // small finger drift allowed
-                            pressing: { _ in },
-                            perform: { [weak vm = viewModel, generator = haptic] in
-                                guard let vm else { return }
-
-                                // Avoid double-trigger if menu is already shown
-                                guard vm.messageMenuRow == nil else { return }
-
-                                // Single haptic on commit
-                                generator.prepare()
-                                generator.impactOccurred(intensity: 1.0)
-
-                                // Open the menu
-                                vm.messageMenuRow = row
-                            }
-                        )
-                }
             }
             .minSize(width: 0, height: 0)
             .margins(.all, 0)
