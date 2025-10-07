@@ -85,41 +85,64 @@ public struct MarkdownProcessor {
 
         switch style {
         case .inlineCode:
-            pattern = "`([^`]+)`"
+            // `code` — limited to a single line, does not span multiple lines
+            pattern = #"`([^\n`]+)`"#
             applyAttributes = { fullRange, inner, attr in
                 attr.replaceCharacters(in: fullRange, with: inner)
-                attr.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: fullRange.location, length: inner.count))
+                attr.addAttribute(
+                    .font,
+                    value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),
+                    range: NSRange(location: fullRange.location, length: inner.count)
+                )
             }
 
         case .strikethrough:
-            pattern = "~([^~]+)~"
+            // ~text~ — single-line only, ignores multi-line matches
+            pattern = #"~([^\n~]+)~"#
             applyAttributes = { fullRange, inner, attr in
                 attr.replaceCharacters(in: fullRange, with: inner)
-                attr.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: fullRange.location, length: inner.count))
+                attr.addAttribute(
+                    .strikethroughStyle,
+                    value: NSUnderlineStyle.single.rawValue,
+                    range: NSRange(location: fullRange.location, length: inner.count)
+                )
             }
 
         case .bold:
-            pattern = "\\*([^*]+)\\*"
+            // *text* — single-line only; avoid matching **double asterisks** or asterisks inside words
+            pattern = #"(?<!\*)\*([^\n*]+?)\*(?!\*)"#
             applyAttributes = { fullRange, inner, attr in
                 attr.replaceCharacters(in: fullRange, with: inner)
-                attr.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: baseFont.pointSize), range: NSRange(location: fullRange.location, length: inner.count))
+                attr.addAttribute(
+                    .font,
+                    value: UIFont.boldSystemFont(ofSize: baseFont.pointSize),
+                    range: NSRange(location: fullRange.location, length: inner.count)
+                )
             }
 
         case .italic:
-            pattern = "_([^_]+)_"
+            // _text_ — single-line only; ignore underscores that are part of a word
+            // Condition: no alphanumeric before the first '_' and no alphanumeric after the last '_'
+            pattern = #"(?<!\w)_(?!_)([^\n_]+?)_(?!\w)"#
             applyAttributes = { fullRange, inner, attr in
                 attr.replaceCharacters(in: fullRange, with: inner)
-                attr.addAttribute(.font, value: UIFont.italicSystemFont(ofSize: baseFont.pointSize), range: NSRange(location: fullRange.location, length: inner.count))
+                attr.addAttribute(
+                    .font,
+                    value: UIFont.italicSystemFont(ofSize: baseFont.pointSize),
+                    range: NSRange(location: fullRange.location, length: inner.count)
+                )
             }
         }
 
+        // Compile and apply regex
         let regex = try! NSRegularExpression(pattern: pattern)
         let nsString = attributed.string as NSString
         let matches = regex.matches(in: attributed.string, range: NSRange(location: 0, length: nsString.length))
 
+        // Iterate in reverse order to avoid messing up ranges when replacing text
         for match in matches.reversed() {
-            guard match.range.length >= 2 else { continue }
-            let innerRange = NSRange(location: match.range.location + 1, length: match.range.length - 2)
+            guard match.numberOfRanges >= 2 else { continue }
+            let innerRange = match.range(at: 1)
             let innerText = nsString.substring(with: innerRange)
             applyAttributes(match.range, innerText, attributed)
         }
