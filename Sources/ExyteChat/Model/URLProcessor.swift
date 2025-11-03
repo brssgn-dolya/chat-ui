@@ -14,7 +14,7 @@ public struct URLProcessor {
     public let anyLinkColor: Color
     public let darkLinkColor: Color
     public let shouldAddLinks: Bool
-    
+
     public init(
         text: String,
         inbound: Bool = false,
@@ -29,42 +29,44 @@ public struct URLProcessor {
         self.shouldAddLinks = shouldAddLinks
     }
 
+    /// Extracts all URLs using NSDataDetector
     public func extractURLs() -> [URL] {
-        var urls: [URL] = []
-        let pattern = #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
-        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = regex.matches(in: text, options: [], range: nsRange)
-
-        for match in matches {
-            if let range = Range(match.range, in: text),
-               let url = URL(string: String(text[range])) {
-                urls.append(url)
-            }
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return []
         }
-        return urls
+        let fullRange = NSRange(text.startIndex..<text.endIndex, in: text)
+        return detector
+            .matches(in: text, options: [], range: fullRange)
+            .compactMap { $0.url }
     }
 
+    /// Styles and (optionally) links all detected URLs in the attributed string.
+    /// - Important: Uses detector-provided URL/range; does not re-encode or mutate the URL string.
     public func formatURLs(in attributed: NSMutableAttributedString) {
-        let pattern = #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return
+        }
+
         let nsString = attributed.string as NSString
-        let matches = regex.matches(in: attributed.string, options: [], range: NSRange(location: 0, length: nsString.length))
+        let fullRange = NSRange(location: 0, length: nsString.length)
+        let matches = detector.matches(in: attributed.string, options: [], range: fullRange)
 
+        // Apply from the end to keep ranges stable (defensive; we don't replace text here).
         for match in matches.reversed() {
-            let fullRange = match.range
-            let urlString = nsString.substring(with: fullRange)
+            guard let url = match.url else { continue }
+            let range = match.range
 
-            if let url = URL(string: urlString) {
-                let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
-
-                if shouldAddLinks {
-                    attributed.addAttribute(.link, value: url, range: fullRange)
-                }
-
-                attributed.addAttribute(.foregroundColor, value: color, range: fullRange)
-                attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: fullRange)
+            // Clickable link (only if enabled), otherwise ensure .link is removed.
+            if shouldAddLinks {
+                attributed.addAttribute(.link, value: url, range: range)
+            } else {
+                attributed.removeAttribute(.link, range: range)
             }
+
+            // Visual styling for the entire detected URL range.
+            let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
+            attributed.addAttribute(.foregroundColor, value: color, range: range)
+            attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
         }
     }
 }
