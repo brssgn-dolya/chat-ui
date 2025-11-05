@@ -67,6 +67,9 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
         cv.isScrollEnabled = isScrollEnabled
         cv.contentInsetAdjustmentBehavior = .never
 
+        cv.delaysContentTouches = false
+        cv.canCancelContentTouches = true
+        
         if type == .conversation {
             cv.transform = CGAffineTransform(scaleX: 1, y: -1)
         }
@@ -301,7 +304,7 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
             let lp = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
             lp.minimumPressDuration = 0.35
             lp.allowableMovement = 12
-            lp.cancelsTouchesInView = true
+            lp.cancelsTouchesInView = false
             lp.delaysTouchesBegan = true
             cv.addGestureRecognizer(lp)
         }
