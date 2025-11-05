@@ -49,7 +49,6 @@ struct ChatMessageView<MessageContent: View>: View {
                     groupUsers: groupUsers,
                     font: messageFont
                 )
-                .id(row.message.id)
                 .applyIf(shouldEnableReplyGesture(for: row.message)) {
                     $0.onReplyGesture(replySymbolColor: theme.colors.myMessage) {
                         viewModel.messageMenuActionInternal(
