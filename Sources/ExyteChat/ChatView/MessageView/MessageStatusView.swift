@@ -11,13 +11,16 @@ public struct MessageStatusView: View {
     let status: Message.Status
     let onRetry: () -> Void
     let colorSet: MessageStatusColorSet?
-
+    var needsCapsule: Bool
+    
     public init(
         status: Message.Status,
+        needsCapsule: Bool,
         colorSet: MessageStatusColorSet? = nil,
         onRetry: @escaping () -> Void
     ) {
         self.status = status
+        self.needsCapsule = needsCapsule
         self.onRetry = onRetry
         self.colorSet = colorSet
     }
@@ -25,16 +28,20 @@ public struct MessageStatusView: View {
     private var resolvedColor: Color {
         switch status {
         case .sending:
-            return colorSet?.sending ?? theme.colors.grayStatus
+            return colorSet?.sending ?? statusColor
         case .sent:
-            return colorSet?.sent ?? theme.colors.grayStatus
+            return colorSet?.sent ?? statusColor
         case .received:
-            return colorSet?.received ?? theme.colors.grayStatus
+            return colorSet?.received ?? statusColor
         case .read:
-            return colorSet?.read ?? .cyan//theme.colors.myMessage
+            return colorSet?.read ?? .cyan
         case .error:
             return colorSet?.error ?? theme.colors.errorStatus
         }
+    }
+    
+    private var statusColor: Color {
+        needsCapsule ? .white.opacity(0.85) : theme.colors.myMessageTime
     }
 
     public var body: some View {
@@ -49,20 +56,28 @@ public struct MessageStatusView: View {
                         .viewSize(MessageView.statusViewSize)
                         
                     Text("Повторити")
-                        .foregroundColor(.init(uiColor: .systemGray))
+                        .foregroundColor(statusColor)
                         .font(.system(size: 13))
                         .fontWeight(.medium)
                 }
-                .padding(.leading, MessageView.horizontalStatusPadding)
             }
         } else {
             Group {
                 switch status {
                 case .sending:
-                    theme.images.message.sending
-                        .resizable()
-                        .rotationEffect(.degrees(90))
-                        .foregroundColor(resolvedColor)
+                    if #available(iOS 18.0, *) {
+                        Image(systemName: "clock")
+                            .symbolRenderingMode(.hierarchical)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(resolvedColor)
+                            .symbolEffect(.rotate,
+                                          options: .repeat(.continuous).speed(0.9),
+                                          isActive: true)
+                    } else {
+                        Image(systemName: "clock")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(resolvedColor)
+                    }
                 case .sent:
                     theme.images.message.checkmark
                         .resizable()

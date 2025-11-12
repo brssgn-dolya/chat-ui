@@ -391,20 +391,6 @@ extension MessageView {
             .padding(.vertical, 2)
         }
     }
-    
-    @ViewBuilder
-    func timeView(text: String) -> some View {
-        Text(text)
-            .font(.caption)
-            .foregroundColor(Color.white.opacity(0.85))
-            .padding(.top, 4)
-            .padding(.bottom, 4)
-            .padding(.horizontal, 8)
-            .background {
-                Capsule()
-                    .fill(Color.black.opacity(0.3))
-            }
-    }
 
     func parseCoordinates(from text: String) -> (latitude: Double, longitude: Double)? {
         let cleanText = text.replacingOccurrences(of: "geo:", with: "")
@@ -428,7 +414,7 @@ extension MessageView {
         if showMessageTimeView {
             let spacing: CGFloat = {
                 guard let status = message.status else { return -4 }
-                if case .error = status { return 2 }
+                if case .error = status { return 4 }
                 return -4
             }()
 
@@ -468,7 +454,7 @@ extension MessageView {
     private func timeWithOptionalStatus(needsCapsule: Bool, spacing: CGFloat) -> some View {
         let content = HStack(spacing: spacing) {
             if message.user.isCurrentUser, let status = message.status {
-                MessageStatusView(status: status) {
+                MessageStatusView(status: status, needsCapsule: needsCapsule) {
                     if case let .error(draft) = status {
                         viewModel.sendMessage(draft)
                     }
