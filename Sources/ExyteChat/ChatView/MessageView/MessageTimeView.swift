@@ -38,22 +38,28 @@ struct MessageTimeWithCapsuleView: View {
     }
 }
 
-
- struct MessageTimeText: View {
+struct MessageTimeText: View {
     let text: String
     let isCurrentUser: Bool
     var theme: ChatTheme
+    var needsCapsule: Bool
+
+    private var timeColor: Color {
+        needsCapsule
+        ? theme.colors.frientMessageTime
+        : (isCurrentUser ? theme.colors.myMessageTime
+                         : theme.colors.frientMessageTime)
+    }
 
     var body: some View {
         Text(text)
             .font(.caption)
-            .foregroundColor(isCurrentUser ? theme.colors.myMessageTime
-                                           : theme.colors.frientMessageTime)
+            .foregroundStyle(timeColor)
             .fixedSize(horizontal: true, vertical: true)
     }
 }
 
- struct CapsuleTimeContainer<Content: View>: View {
+struct CapsuleTimeContainer<Content: View>: View {
     let isCurrentUser: Bool
     var theme: ChatTheme
     @ViewBuilder var content: Content
@@ -63,9 +69,11 @@ struct MessageTimeWithCapsuleView: View {
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
             .background(
-                Capsule()
-                    .fill(theme.colors.timeCapsuleBackground)
+                Capsule().fill(.ultraThinMaterial)
             )
-            .foregroundColor(theme.colors.timeCapsuleForeground.opacity(0.8))
+            .overlay(
+                Capsule().strokeBorder(.separator, lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
     }
 }

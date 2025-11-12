@@ -376,9 +376,11 @@ extension MessageView {
                     .frame(width: size.width, height: size.height)
                     .cornerRadius(20)
                     .overlay(alignment: .bottomTrailing) {
-                        timeView(text: message.time)
-                            .padding(4)
+                        messageTimeView(needsCapsule: true)
+                            .padding(.bottom, 6)
+                            .padding(.trailing, 6)
                     }
+                
                     .highPriorityGesture(
                         TapGesture().onEnded {
                             openMaps(latitude: lat, longitude: lon)
@@ -450,14 +452,14 @@ extension MessageView {
                 MessageTimeText(
                     text: message.time,
                     isCurrentUser: message.user.isCurrentUser,
-                    theme: theme
+                    theme: theme, needsCapsule: needsCapsule
                 )
             }
         } else {
             MessageTimeText(
                 text: message.time,
                 isCurrentUser: message.user.isCurrentUser,
-                theme: theme
+                theme: theme, needsCapsule: needsCapsule
             )
         }
     }
@@ -478,7 +480,7 @@ extension MessageView {
             MessageTimeText(
                 text: message.time,
                 isCurrentUser: message.user.isCurrentUser,
-                theme: theme
+                theme: theme, needsCapsule: needsCapsule
             )
             .alignmentGuide(.lastTextBaseline) { d in d[.lastTextBaseline] }
         }
