@@ -32,7 +32,7 @@ struct MessageView: View {
     @State var timeSize: CGSize = .zero
     @State var bubbleSize: CGSize = .zero
     static let widthWithMedia: CGFloat = 204
-    static let horizontalNoAvatarPadding: CGFloat = 8
+    static let horizontalNoAvatarPadding: CGFloat = 16 //or 8
     static let horizontalAvatarPadding: CGFloat = 8
     static let horizontalTextPadding: CGFloat = 12
     static let horizontalAttachmentPadding: CGFloat = 1 // for multiple attachments
@@ -117,15 +117,6 @@ struct MessageView: View {
                 bubbleView(message)
             }
 
-            if message.user.isCurrentUser, let status = message.status {
-                MessageStatusView(status: status) {
-                    if case let .error(draft) = status {
-                        viewModel.sendMessage(draft)
-                    }
-                }
-                .sizeGetter($statusSize)
-            }
-            
             encryptionIndicatorView(isEncrypted: message.isEncrypted)
         }
         .padding(.top, topPadding)
@@ -141,12 +132,6 @@ struct MessageView: View {
             alignment: message.user.isCurrentUser ? .leading : .trailing,
             spacing: -bubbleSize.height / 3
         ) {
-            
-            if !isDisplayingMessageMenu && !message.reactions.isEmpty && !message.isDeleted {
-                reactionsView(message)
-                    .zIndex(1)
-            }
-            
             VStack(alignment: .leading, spacing: 0) {
                 if !message.attachments.isEmpty {
                     attachmentsView(message)
@@ -183,10 +168,14 @@ struct MessageView: View {
                             .padding(.trailing, 12)
                     }
                 }
-                    
             }
             .bubbleBackground(message, theme: theme)
             .zIndex(0)
+            
+            if !isDisplayingMessageMenu && !message.reactions.isEmpty && !message.isDeleted {
+                reactionsView(message)
+                    .zIndex(1)
+            }
         }
         .applyIf(isDisplayingMessageMenu) {
             $0.frameGetter($viewModel.messageFrame)
@@ -280,7 +269,7 @@ struct MessageView: View {
 
     @ViewBuilder
     func textWithTimeView(_ message: Message) -> some View {
-        HStack(alignment: .lastTextBaseline, spacing: 24) {
+        HStack(alignment: .lastTextBaseline, spacing: 12) {
             MessageTextView(
                 text: message.text,
                 messageUseMarkdown: messageUseMarkdown,
@@ -289,9 +278,7 @@ struct MessageView: View {
                 darkLinkColor: theme.colors.darkLink,
                 isDeleted: message.isDeleted,
                 onMentionTap: { id in
-                    if let user = groupUsers.first(where: {
-                        $0.id.components(separatedBy: "@").first == id
-                    }) {
+                    if let user = groupUsers.first(where: { $0.id.components(separatedBy: "@").first == id }) {
                         tapAvatarClosure?(user, message.id)
                     }
                 }
@@ -299,6 +286,7 @@ struct MessageView: View {
             .fixedSize(horizontal: false, vertical: true)
 
             messageTimeView()
+                .baselineNudgeDown(6)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -314,19 +302,6 @@ struct MessageView: View {
         )
         .padding(.horizontal, MessageView.horizontalTextPadding)
         .padding(.top, 8)
-    }
-
-    func messageTimeView(needsCapsule: Bool = false) -> some View {
-        Group {
-            if showMessageTimeView {
-                if needsCapsule {
-                    MessageTimeWithCapsuleView(text: message.time, isCurrentUser: message.user.isCurrentUser, chatTheme: theme)
-                } else {
-                    MessageTimeView(text: message.time, isCurrentUser: message.user.isCurrentUser, chatTheme: theme)
-                }
-            }
-        }
-        .sizeGetter($timeSize)
     }
     
     @ViewBuilder
@@ -445,6 +420,80 @@ extension MessageView {
     }
 }
 
+extension MessageView {
+    @ViewBuilder
+    func messageTimeView(needsCapsule: Bool = false) -> some View {
+        if showMessageTimeView {
+            let spacing: CGFloat = {
+                guard let status = message.status else { return -4 }
+                if case .error = status { return 2 }
+                return -4
+            }()
+
+            if message.isDeleted {
+                timeOnly(needsCapsule: needsCapsule)
+                    .sizeGetter($timeSize)
+            } else {
+                timeWithOptionalStatus(needsCapsule: needsCapsule, spacing: spacing)
+                    .sizeGetter($timeSize)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func timeOnly(needsCapsule: Bool) -> some View {
+        if needsCapsule {
+            CapsuleTimeContainer(
+                isCurrentUser: message.user.isCurrentUser,
+                theme: theme
+            ) {
+                MessageTimeText(
+                    text: message.time,
+                    isCurrentUser: message.user.isCurrentUser,
+                    theme: theme
+                )
+            }
+        } else {
+            MessageTimeText(
+                text: message.time,
+                isCurrentUser: message.user.isCurrentUser,
+                theme: theme
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func timeWithOptionalStatus(needsCapsule: Bool, spacing: CGFloat) -> some View {
+        let content = HStack(spacing: spacing) {
+            if message.user.isCurrentUser, let status = message.status {
+                MessageStatusView(status: status) {
+                    if case let .error(draft) = status {
+                        viewModel.sendMessage(draft)
+                    }
+                }
+                .alignmentGuide(.lastTextBaseline) { d in d[.bottom] }
+                .sizeGetter($statusSize)
+            }
+
+            MessageTimeText(
+                text: message.time,
+                isCurrentUser: message.user.isCurrentUser,
+                theme: theme
+            )
+            .alignmentGuide(.lastTextBaseline) { d in d[.lastTextBaseline] }
+        }
+
+        if needsCapsule {
+            CapsuleTimeContainer(
+                isCurrentUser: message.user.isCurrentUser,
+                theme: theme
+            ) { content }
+        } else {
+            content
+        }
+    }
+}
+
 //#if DEBUG
 //struct MessageView_Preview: PreviewProvider {
 //    static let stan = User(id: "stan", name: "Stan", avatarURL: nil, avatarCachedImage: nil, isCurrentUser: false)
@@ -497,3 +546,19 @@ extension MessageView {
 //    }
 //}
 //#endif
+
+private struct BaselineNudgeDown: ViewModifier {
+    let points: CGFloat
+    func body(content: Content) -> some View {
+        content.alignmentGuide(.lastTextBaseline) { d in
+            d[.lastTextBaseline] - points
+        }
+    }
+}
+
+private extension View {
+    func baselineNudgeDown(_ points: CGFloat) -> some View {
+        modifier(BaselineNudgeDown(points: points))
+    }
+}
+

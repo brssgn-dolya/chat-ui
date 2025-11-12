@@ -31,7 +31,7 @@ public struct MessageStatusView: View {
         case .received:
             return colorSet?.received ?? theme.colors.grayStatus
         case .read:
-            return colorSet?.read ?? theme.colors.myMessage
+            return colorSet?.read ?? .cyan//theme.colors.myMessage
         case .error:
             return colorSet?.error ?? theme.colors.errorStatus
         }

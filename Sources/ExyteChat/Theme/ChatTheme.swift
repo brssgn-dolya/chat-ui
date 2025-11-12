@@ -295,8 +295,8 @@ public struct ChatTheme {
 
             self.message = Message(
                 attachedDocument: attachedDocument ?? Image("attachedDocument", bundle: .current),
-                checkmark: checkmark ?? Image("checkmark", bundle: .current),
-                checkmarks: checkmarks ?? Image("checkmarks", bundle: .current),
+                checkmark: checkmark ?? Image("checkmark-sonata", bundle: .current),
+                checkmarks: checkmarks ?? Image("checkmarks-sonata", bundle: .current),
                 error: error ?? Image("error", bundle: .current),
                 muteVideo: muteVideo ?? Image("muteVideo", bundle: .current),
                 pauseAudio: pauseAudio ?? Image("pauseAudio", bundle: .current),
