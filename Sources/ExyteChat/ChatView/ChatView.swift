@@ -380,6 +380,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @ViewBuilder
     var list: some View {
         SonataUIList(
+//        UIList(
             viewModel: viewModel,
             inputViewModel: inputViewModel,
             isScrolledToBottom: $isScrolledToBottom,

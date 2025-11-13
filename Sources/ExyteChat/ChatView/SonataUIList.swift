@@ -138,12 +138,7 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
         private var sectionIndexByID: [SectionID: Int] = [:]
         private var rowIndexByItemID: [ItemID: (s: Int, r: Int)] = [:]
         private var lastSections: [MessagesSection] = []
-
-        private var topPaginationInFlight = false
-        private var lastTopAnchorId: String? = nil
-
-        private let topTriggerDistance = 3
-        private let topPrefetchDistance = 6
+        private var paginationTargetItemID: ItemID?
 
         private var invertT: CGAffineTransform {
             outer.type == .conversation ? CGAffineTransform(scaleX: 1, y: -1) : .identity
@@ -165,7 +160,7 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
             self.collectionView = cv
             configureDataSource(for: cv)
             configureLongPress(on: cv)
-            cv.prefetchDataSource = self
+//            cv.prefetchDataSource = self
         }
 
         private func configureDataSource(for cv: UICollectionView) {
@@ -274,14 +269,25 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
                     if oldRow.message.text != newRow.message.text {
                         textEdited.append(ItemID(raw: id))
                     }
+
                     let deletedChanged = (oldRow.message.isDeleted != newRow.message.isDeleted)
-                    if deletedChanged || oldRow != newRow {
+                    let statusChanged = (oldRow.message.status != newRow.message.status)
+                    
+                    if deletedChanged || statusChanged || oldRow != newRow {
                         changed.append(ItemID(raw: id))
                     }
                 }
             }
 
             lastSections = newSections
+
+            if outer.type == .conversation,
+               let lastSection = lastSections.last,
+               let lastRow = lastSection.rows.last {
+                paginationTargetItemID = ItemID(raw: lastRow.id)
+            } else {
+                paginationTargetItemID = nil
+            }
 
             if !textEdited.isEmpty {
                 snapshot.reloadItems(textEdited)
@@ -377,61 +383,23 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
                             forItemAt indexPath: IndexPath) {
             guard outer.type == .conversation else { return }
             guard let paginationHandler = outer.paginationHandler else { return }
+            guard let targetID = paginationTargetItemID else { return }
+            guard let itemID = dataSource.itemIdentifier(for: indexPath),
+                  itemID == targetID else { return }
 
-            let lastSectionIdx = max(0, lastSections.count - 1)
-            guard indexPath.section == lastSectionIdx else { return }
+            guard let coords = rowIndexByItemID[itemID] else { return }
+            let row = lastSections[coords.s].rows[coords.r]
 
-            let rowCount = lastSections.last?.rows.count ?? 0
-            guard rowCount > 0 else { return }
-
-            let threshold = max(0, rowCount - 1 - topTriggerDistance)
-            let isNearTop = indexPath.item >= threshold
-            guard isNearTop else { return }
-            guard !topPaginationInFlight else { return }
-
-            guard let anchorRow = lastSections.last?.rows.last else { return }
-            let anchorId = anchorRow.id
-            guard anchorId != lastTopAnchorId else { return }
-
-            lastTopAnchorId = anchorId
-            topPaginationInFlight = true
-
-            Task { [weak self] in
-                guard let self else { return }
-                await paginationHandler.handleClosure(anchorRow.message)
-                await MainActor.run { self.topPaginationInFlight = false }
+            Task {
+                await paginationHandler.handleClosure(row.message)
             }
         }
 
-        func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-            guard outer.type == .conversation else { return }
-            guard let paginationHandler = outer.paginationHandler else { return }
+        func collectionView(_ collectionView: UICollectionView,
+                            prefetchItemsAt indexPaths: [IndexPath]) { }
 
-            let lastSectionIdx = max(0, lastSections.count - 1)
-            let rowCount = lastSections.last?.rows.count ?? 0
-            guard rowCount > 0 else { return }
-
-            let shouldPrefetchTop = indexPaths.contains { ip in
-                ip.section == lastSectionIdx && ip.item >= max(0, rowCount - 1 - topPrefetchDistance)
-            }
-            guard shouldPrefetchTop else { return }
-            guard !topPaginationInFlight else { return }
-
-            guard let anchorRow = lastSections.last?.rows.last else { return }
-            let anchorId = anchorRow.id
-            guard anchorId != lastTopAnchorId else { return }
-
-            lastTopAnchorId = anchorId
-            topPaginationInFlight = true
-
-            Task { [weak self] in
-                guard let self else { return }
-                await paginationHandler.handleClosure(anchorRow.message)
-                await MainActor.run { self.topPaginationInFlight = false }
-            }
-        }
-
-        func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) { }
+        func collectionView(_ collectionView: UICollectionView,
+                            cancelPrefetchingForItemsAt indexPaths: [IndexPath]) { }
     }
 }
 
