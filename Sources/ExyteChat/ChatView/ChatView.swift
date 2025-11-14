@@ -508,7 +508,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 avatarSize: avatarSize,
                 tapAvatarClosure: tapAvatarClosure,
                 messageUseMarkdown: messageUseMarkdown,
-                isDisplayingMessageMenu: false,
+                isDisplayingMessageMenu: true,
                 showMessageTimeView: showMessageTimeView,
                 showAvatar: showAvatars,
                 messageFont: messageFont,
