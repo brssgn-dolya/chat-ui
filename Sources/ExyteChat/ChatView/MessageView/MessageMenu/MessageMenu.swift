@@ -576,8 +576,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 LinearGradient(
                     stops: [
                         .init(color: .black.opacity(0.0), location: 0.0),
-                        .init(color: .black,              location: 0.06),
-                        .init(color: .black,              location: 0.94),
+                        .init(color: .black,              location: 0.02),
+                        .init(color: .black,              location: 0.98),
                         .init(color: .black.opacity(0.0), location: 1.0),
                     ],
                     startPoint: .top, endPoint: .bottom
