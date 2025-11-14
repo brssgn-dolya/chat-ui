@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// MARK: - URLProcessor (Handles URL Detection and Styling)
 public struct URLProcessor {
     public let text: String
     public let inbound: Bool
@@ -29,44 +28,69 @@ public struct URLProcessor {
         self.shouldAddLinks = shouldAddLinks
     }
 
-    /// Extracts all URLs using NSDataDetector
-    public func extractURLs() -> [URL] {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
-            return []
-        }
-        let fullRange = NSRange(text.startIndex..<text.endIndex, in: text)
-        return detector
-            .matches(in: text, options: [], range: fullRange)
-            .compactMap { $0.url }
-    }
-
-    /// Styles and (optionally) links all detected URLs in the attributed string.
-    /// - Important: Uses detector-provided URL/range; does not re-encode or mutate the URL string.
     public func formatURLs(in attributed: NSMutableAttributedString) {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+        assert(Thread.isMainThread, "formatURLs must be called on main thread")
+
+        let nsString = attributed.string as NSString
+        let length = nsString.length
+        guard length > 0 else { return }
+
+        let pattern = #"(https?://[^\s<>"']+)"#
+
+        guard let regex = try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive]
+        ) else {
             return
         }
 
-        let nsString = attributed.string as NSString
-        let fullRange = NSRange(location: 0, length: nsString.length)
-        let matches = detector.matches(in: attributed.string, options: [], range: fullRange)
+        let fullRange = NSRange(location: 0, length: length)
+        let matches = regex.matches(
+            in: nsString as String,
+            options: [],
+            range: fullRange
+        )
 
-        // Apply from the end to keep ranges stable (defensive; we don't replace text here).
         for match in matches.reversed() {
-            guard let url = match.url else { continue }
-            let range = match.range
+            guard match.numberOfRanges >= 2 else { continue }
 
-            // Clickable link (only if enabled), otherwise ensure .link is removed.
-            if shouldAddLinks {
-                attributed.addAttribute(.link, value: url, range: range)
-            } else {
-                attributed.removeAttribute(.link, range: range)
+            var urlRange = match.range(at: 1)
+            var urlString = nsString.substring(with: urlRange)
+
+            let trailingPunctuation = CharacterSet(charactersIn: ".,?!):;")
+            while let lastScalar = urlString.unicodeScalars.last,
+                  trailingPunctuation.contains(lastScalar),
+                  urlRange.length > 0 {
+                urlString = String(urlString.unicodeScalars.dropLast())
+                urlRange.length -= 1
             }
 
-            // Visual styling for the entire detected URL range.
-            let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
-            attributed.addAttribute(.foregroundColor, value: color, range: range)
-            attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+            guard !urlString.isEmpty,
+                  let url = URL(string: urlString) else {
+                continue
+            }
+
+            apply(link: url, to: attributed, in: urlRange)
         }
+    }
+
+    private func apply(
+        link url: URL,
+        to attributed: NSMutableAttributedString,
+        in range: NSRange
+    ) {
+        if shouldAddLinks {
+            attributed.addAttribute(.link, value: url, range: range)
+        } else {
+            attributed.removeAttribute(.link, range: range)
+        }
+
+        let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
+        attributed.addAttribute(.foregroundColor, value: color, range: range)
+        attributed.addAttribute(
+            .underlineStyle,
+            value: NSUnderlineStyle.single.rawValue,
+            range: range
+        )
     }
 }
