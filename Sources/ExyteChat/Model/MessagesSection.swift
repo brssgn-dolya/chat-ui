@@ -4,13 +4,23 @@
 
 import Foundation
 
-struct MessagesSection: Equatable {
-
+struct MessagesSection: Identifiable, Equatable, Sendable {
+    let id: Int
     let date: Date
     var rows: [MessageRow]
 
-    init(date: Date, rows: [MessageRow]) {
-        self.date = date
+    private static func makeDayKey(for date: Date, calendar: Calendar) -> (key: Int, startOfDay: Date) {
+        let start = calendar.startOfDay(for: date)
+        let y = calendar.component(.year,  from: start)
+        let m = calendar.component(.month, from: start)
+        let d = calendar.component(.day,   from: start)
+        return (y * 10_000 + m * 100 + d, start)
+    }
+
+    init(date: Date, rows: [MessageRow], calendar: Calendar = .current) {
+        let (key, start) = Self.makeDayKey(for: date, calendar: calendar)
+        self.id = key
+        self.date = start
         self.rows = rows
     }
 
@@ -19,7 +29,6 @@ struct MessagesSection: Equatable {
     }
 
     static func == (lhs: MessagesSection, rhs: MessagesSection) -> Bool {
-        lhs.date == rhs.date && lhs.rows == rhs.rows
+        lhs.id == rhs.id && lhs.rows == rhs.rows
     }
-
 }

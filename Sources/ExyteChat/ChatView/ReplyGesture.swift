@@ -24,6 +24,9 @@ struct ReplyGesture: ViewModifier {
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .medium)
     
+    var shouldEnableGesture: () -> Bool = { true }
+    var onGestureStateChange: ((Bool) -> Void)? = nil
+     
     private var progress: CGFloat {
         min(abs(draggedOffset) / maxSwipeOffset, 1.0)
     }
@@ -33,46 +36,70 @@ struct ReplyGesture: ViewModifier {
     }
     
     private var drag: some Gesture {
-        DragGesture(minimumDistance: maxSwipeOffset / 3, coordinateSpace: .local)
+        let minDistance = max(12, min(24, maxSwipeOffset / 2))
+        
+        return DragGesture(minimumDistance: minDistance, coordinateSpace: .global)
             .onChanged { value in
+                guard shouldEnableGesture() else { return }
+                
                 let horizontalMovement = abs(value.translation.width)
                 let verticalMovement = abs(value.translation.height)
-
-                guard horizontalMovement > verticalMovement else { return }
-
+                guard horizontalMovement > verticalMovement * 1.5 else {
+                    if draggedOffset != 0 {
+                        withAnimation(.spring()) { draggedOffset = 0 }
+                    }
+                    return
+                }
+                
                 let newOffset: CGFloat
                 switch swipeDirection {
                 case .left where value.translation.width < 0:
                     newOffset = max(value.translation.width, -maxSwipeOffset)
                 case .right where value.translation.width > 0:
-                    newOffset = min(value.translation.width, maxSwipeOffset)
+                    newOffset = min(value.translation.width,  maxSwipeOffset)
                 default:
                     return
                 }
-
+                
                 if draggedOffset != newOffset {
                     draggedOffset = newOffset
+                    onGestureStateChange?(true)
                 }
-
-                if progress == 1.0, shouldPlayHapticFeedback {
+                
+                let reached = progress >= 0.999
+                if !reached, progress >= 0.9 {
+                    hapticFeedback.prepare()
+                }
+                if reached, shouldPlayHapticFeedback {
                     hapticFeedback.impactOccurred()
                     shouldPlayHapticFeedback = false
                 }
             }
-            .onEnded { value in
-                let shouldTriggerReply = progress == 1.0
-                let targetOffset: CGFloat = shouldTriggerReply ? (swipeDirection == .left ? -maxSwipeOffset : maxSwipeOffset) : 0
-
+            .onEnded { _ in
+                guard shouldEnableGesture() else {
+                    withAnimation(.spring()) { draggedOffset = 0 }
+                    onGestureStateChange?(false)
+                    shouldPlayHapticFeedback = true
+                    return
+                }
+                
+                let reached = progress >= 0.999
+                let targetOffset: CGFloat = reached
+                ? (swipeDirection == .left ? -maxSwipeOffset : maxSwipeOffset)
+                : 0
+                
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     draggedOffset = targetOffset
                 }
-
-                if shouldTriggerReply {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        onReply?()
-                        withAnimation(.spring()) { draggedOffset = 0 }
+                
+                if reached {
+                    onReply?()
+                    withAnimation(.spring()) {
+                        draggedOffset = 0
                     }
                 }
+                
+                onGestureStateChange?(false)
                 shouldPlayHapticFeedback = true
             }
     }
@@ -83,6 +110,7 @@ struct ReplyGesture: ViewModifier {
                 .offset(x: draggedOffset)
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: draggedOffset)
                 .simultaneousGesture(drag)
+            
             ZStack {
                 Circle()
                     .trim(from: 0, to: progress)
@@ -90,7 +118,7 @@ struct ReplyGesture: ViewModifier {
                     .rotationEffect(.degrees(-90))
                     .frame(width: 32, height: 32)
                 Circle()
-                    .fill(progress == 1.0
+                    .fill(progress >= 0.999
                           ? replySymbolColor.opacity(progress)
                           : replySymbolColor.opacity(progress * 0.7))
                     .frame(width: 32, height: 32)
@@ -102,7 +130,7 @@ struct ReplyGesture: ViewModifier {
                     .foregroundStyle(.white)
                     .opacity(progress)
                     .scaleEffect(progress)
-                    .applySymbolEffect(shouldPlayHapticFeedback: shouldPlayHapticFeedback)
+                    .symbolEffect(.scale.up, isActive: shouldPlayHapticFeedback)
             }
             .scaleEffect(.init(width: replySymbolOpacity, height: replySymbolOpacity))
             .offset(x: swipeDirection == .left ? -16 : 16)
@@ -111,18 +139,15 @@ struct ReplyGesture: ViewModifier {
 }
 
 extension View {
-    func onReplyGesture(swipeDirection: ReplyGesture.SwipeDirection = .left, replySymbolColor: Color, handler: (() -> Void)?) -> some View {
-        modifier(ReplyGesture(swipeDirection: swipeDirection, replySymbolColor: replySymbolColor, onReply: handler))
-    }
-}
-
-extension View {
-    @ViewBuilder
-    func applySymbolEffect(shouldPlayHapticFeedback: Bool) -> some View {
-        if #available(iOS 17.0, *) {
-            self.symbolEffect(.scale.up, isActive: shouldPlayHapticFeedback)
-        } else {
-            self
-        }
+    func onReplyGesture(
+        swipeDirection: ReplyGesture.SwipeDirection = .left,
+        replySymbolColor: Color,
+        handler: (() -> Void)?
+    ) -> some View {
+        modifier(ReplyGesture(
+            swipeDirection: swipeDirection,
+            replySymbolColor: replySymbolColor,
+            onReply: handler
+        ))
     }
 }

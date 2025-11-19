@@ -479,8 +479,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
     @ViewBuilder
     private func alignedRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         HStack {
-            if alignment == .right { Spacer() }
-
+            
             if alignment == .left && !isGroup {
                 content().padding(.leading, 16)
                 Spacer()
@@ -488,16 +487,17 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 content()
                 Spacer()
             } else { // .right
+                Spacer()
                 content()
             }
         }
         .padding(
             alignment == .right || (alignment == .left && !isGroup) ? .trailing : .leading,
-            alignment == .right || (alignment == .left && !isGroup) ? trailingPadding : leadingPadding
+            alignment == .right
+                ? max(0, trailingPadding - 8) // // or - 16
+                : (alignment == .left && !isGroup ? trailingPadding : leadingPadding)
         )
     }
-
-
     
     @ViewBuilder
     func messageMenuView() -> some View {
@@ -576,8 +576,8 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 LinearGradient(
                     stops: [
                         .init(color: .black.opacity(0.0), location: 0.0),
-                        .init(color: .black,              location: 0.06),
-                        .init(color: .black,              location: 0.94),
+                        .init(color: .black,              location: 0.02),
+                        .init(color: .black,              location: 0.98),
                         .init(color: .black.opacity(0.0), location: 1.0),
                     ],
                     startPoint: .top, endPoint: .bottom
@@ -639,11 +639,11 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         }
         .padding(
             alignment == .right || (alignment == .left && !isGroup)
-                ? .trailing
-                : .leading,
-            alignment == .right || (alignment == .left && !isGroup)
-                ? trailingPadding
-                : leadingPadding
+            ? .trailing
+            : .leading,
+            alignment == .right
+            ? max(0, trailingPadding - 8) // or - 16
+            : (alignment == .left && !isGroup ? trailingPadding : leadingPadding)
         )
         .padding(.top, 8)
         .maxHeightGetter($menuHeight)

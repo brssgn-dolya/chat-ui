@@ -7,14 +7,13 @@
 
 import SwiftUI
 
-// MARK: - URLProcessor (Handles URL Detection and Styling)
 public struct URLProcessor {
     public let text: String
     public let inbound: Bool
     public let anyLinkColor: Color
     public let darkLinkColor: Color
     public let shouldAddLinks: Bool
-    
+
     public init(
         text: String,
         inbound: Bool = false,
@@ -29,42 +28,69 @@ public struct URLProcessor {
         self.shouldAddLinks = shouldAddLinks
     }
 
-    public func extractURLs() -> [URL] {
-        var urls: [URL] = []
-        let pattern = #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
-        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = regex.matches(in: text, options: [], range: nsRange)
-
-        for match in matches {
-            if let range = Range(match.range, in: text),
-               let url = URL(string: String(text[range])) {
-                urls.append(url)
-            }
-        }
-        return urls
-    }
-
     public func formatURLs(in attributed: NSMutableAttributedString) {
-        let pattern = #"(https?://[a-zA-Z0-9\.\-_/]+(?:\?[a-zA-Z0-9_\-=%&]+)?)"#
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        assert(Thread.isMainThread, "formatURLs must be called on main thread")
+
         let nsString = attributed.string as NSString
-        let matches = regex.matches(in: attributed.string, options: [], range: NSRange(location: 0, length: nsString.length))
+        let length = nsString.length
+        guard length > 0 else { return }
+
+        let pattern = #"(https?://[^\s<>"']+)"#
+
+        guard let regex = try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive]
+        ) else {
+            return
+        }
+
+        let fullRange = NSRange(location: 0, length: length)
+        let matches = regex.matches(
+            in: nsString as String,
+            options: [],
+            range: fullRange
+        )
 
         for match in matches.reversed() {
-            let fullRange = match.range
-            let urlString = nsString.substring(with: fullRange)
+            guard match.numberOfRanges >= 2 else { continue }
 
-            if let url = URL(string: urlString) {
-                let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
+            var urlRange = match.range(at: 1)
+            var urlString = nsString.substring(with: urlRange)
 
-                if shouldAddLinks {
-                    attributed.addAttribute(.link, value: url, range: fullRange)
-                }
-
-                attributed.addAttribute(.foregroundColor, value: color, range: fullRange)
-                attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: fullRange)
+            let trailingPunctuation = CharacterSet(charactersIn: ".,?!):;")
+            while let lastScalar = urlString.unicodeScalars.last,
+                  trailingPunctuation.contains(lastScalar),
+                  urlRange.length > 0 {
+                urlString = String(urlString.unicodeScalars.dropLast())
+                urlRange.length -= 1
             }
+
+            guard !urlString.isEmpty,
+                  let url = URL(string: urlString) else {
+                continue
+            }
+
+            apply(link: url, to: attributed, in: urlRange)
         }
+    }
+
+    private func apply(
+        link url: URL,
+        to attributed: NSMutableAttributedString,
+        in range: NSRange
+    ) {
+        if shouldAddLinks {
+            attributed.addAttribute(.link, value: url, range: range)
+        } else {
+            attributed.removeAttribute(.link, range: range)
+        }
+
+        let color = inbound ? darkLinkColor.uiColor : anyLinkColor.uiColor
+        attributed.addAttribute(.foregroundColor, value: color, range: range)
+        attributed.addAttribute(
+            .underlineStyle,
+            value: NSUnderlineStyle.single.rawValue,
+            range: range
+        )
     }
 }
