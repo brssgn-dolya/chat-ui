@@ -130,3 +130,6 @@ iOSInjectionProject/
 
 /.build/
 GoogleService-Info.plist
+*.xcworkspacedata
+*.xcscheme
+ChatFirestoreExample/ChatFirestoreExample.xcodeproj
