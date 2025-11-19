@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import ActivityIndicatorView
+//import ActivityIndicatorView
 
 struct ActivityIndicator: View {
     var body: some View {
@@ -15,9 +15,9 @@ struct ActivityIndicator: View {
                 .frame(width: 100, height: 100)
                 .cornerRadius(8)
             
-            ActivityIndicatorView(isVisible: .constant(true), type: .flickeringDots())
-                .foregroundColor(.gray)
-                .frame(width: 50, height: 50)
+//            ActivityIndicatorView(isVisible: .constant(true), type: .flickeringDots())
+//                .foregroundColor(.gray)
+//                .frame(width: 50, height: 50)
         }
     }
 }

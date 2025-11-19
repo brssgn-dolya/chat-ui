@@ -7,7 +7,6 @@
 
 import SwiftUI
 import FloatingButton
-import SwiftUIIntrospect
 import ExyteMediaPicker
 
 public typealias MediaPickerParameters = SelectionParamsHolder

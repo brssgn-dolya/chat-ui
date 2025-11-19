@@ -25,6 +25,6 @@ extension MockUser {
 
 extension MockUser {
     func toChatUser() -> ExyteChat.User {
-        ExyteChat.User(id: uid, name: name, avatarURL: avatar, isCurrentUser: isCurrentUser)
+        ExyteChat.User(id: uid, name: name, avatarURL: avatar, avatarCachedImage: nil, isCurrentUser: isCurrentUser)
     }
 }

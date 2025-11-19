@@ -13,7 +13,7 @@ struct MockImage {
     func toChatAttachment() -> Attachment {
         Attachment(
             id: id,
-            thumbnail: thumbnail,
+            thumbnail: thumbnail, thumbnailData: nil,
             full: full,
             type: .image
         )
@@ -28,7 +28,7 @@ struct MockVideo {
     func toChatAttachment() -> Attachment {
         Attachment(
             id: id,
-            thumbnail: thumbnail,
+            thumbnail: thumbnail, thumbnailData: nil,
             full: full,
             type: .video
         )

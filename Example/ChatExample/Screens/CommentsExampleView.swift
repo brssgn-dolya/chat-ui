@@ -9,6 +9,10 @@ import SwiftUI
 import ExyteChat
 
 enum Action: MessageMenuAction {
+    func type() -> ExyteChat.MessageMenuActionType {
+        .copy
+    }
+    
     case reply, edit, delete, print
 
     func title() -> String {
@@ -43,41 +47,42 @@ struct CommentsExampleView: View {
     @StateObject var viewModel = CommentsExampleViewModel()
 
     var body: some View {
-        VStack {
-            ZStack {
-                Color.blue.opacity(0.2)
-                Text("An interesting post for people to comment on")
-                    .font(.system(size: 30))
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(30)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-
-            ChatView(messages: viewModel.messages, chatType: .comments, replyMode: .answer) { draft in
-                viewModel.send(draft: draft)
-            } messageBuilder: { message, positionInGroup, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
-                messageCell(message, positionInCommentsGroup, showMenuClosure: showContextMenuClosure, actionClosure: messageActionClosure, attachmentClosure: showAttachmentClosure)
-            } messageMenuAction: { (action: Action, defaultActionClosure, message) in
-                switch action {
-                case .reply:
-                    defaultActionClosure(message, .reply)
-                case .edit:
-                    defaultActionClosure(message, .edit { editedText in
-                        // update this message's text on your BE
-                        print(editedText)
-                    })
-                case .delete:
-                    print("deleted")
-                case .print:
-                    print(message.text)
-                }
-            }
-            .showDateHeaders(false)
-        }
-        .navigationTitle("Comments example")
-        .onAppear(perform: viewModel.onStart)
-        .onDisappear(perform: viewModel.onStop)
+        EmptyView()
+//        VStack {
+//            ZStack {
+//                Color.blue.opacity(0.2)
+//                Text("An interesting post for people to comment on")
+//                    .font(.system(size: 30))
+//                    .fontWeight(.bold)
+//                    .frame(maxWidth: .infinity)
+//                    .padding(30)
+//            }
+//            .fixedSize(horizontal: false, vertical: true)
+//
+//            ChatView(messages: viewModel.messages, chatType: .comments, replyMode: .answer) { draft in
+//                viewModel.send(draft: draft)
+//            } messageBuilder: { message, positionInGroup, positionInCommentsGroup, showContextMenuClosure, messageActionClosure, showAttachmentClosure in
+//                messageCell(message, positionInCommentsGroup, showMenuClosure: showContextMenuClosure, actionClosure: messageActionClosure, attachmentClosure: showAttachmentClosure)
+//            } messageMenuAction: { (action: Action, defaultActionClosure, message) in
+//                switch action {
+//                case .reply:
+//                    defaultActionClosure(message, .reply)
+//                case .edit:
+//                    defaultActionClosure(message, .edit { editedText in
+//                        // update this message's text on your BE
+//                        print(editedText)
+//                    })
+//                case .delete:
+//                    print("deleted")
+//                case .print:
+//                    print(message.text)
+//                }
+//            }
+//            .showDateHeaders(false)
+//        }
+//        .navigationTitle("Comments example")
+//        .onAppear(perform: viewModel.onStart)
+//        .onDisappear(perform: viewModel.onStop)
     }
 
     @ViewBuilder

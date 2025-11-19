@@ -1,12 +1,12 @@
 {
   "pins" : [
     {
-      "identity" : "activityindicatorview",
+      "identity" : "anchoredpopup",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/exyte/ActivityIndicatorView",
+      "location" : "https://github.com/exyte/AnchoredPopup.git",
       "state" : {
-        "revision" : "9970fd0bb7a05dad0b6566ae1f56937716686b24",
-        "version" : "1.1.1"
+        "revision" : "d7478c34e761725ff06ad74e44e675d0d56a4150",
+        "version" : "1.0.7"
       }
     },
     {
@@ -23,17 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/exyte/MediaPicker.git",
       "state" : {
-        "revision" : "88769b1b69c2b5e5fa5b65522c08bc7b667a6cb8",
-        "version" : "2.2.3"
-      }
-    },
-    {
-      "identity" : "swiftui-introspect",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/siteline/swiftui-introspect",
-      "state" : {
-        "revision" : "668a65735751432b640260c56dfa621cec568368",
-        "version" : "1.2.0"
+        "revision" : "fd71c0b560aa79eee1b87f73ce93fac5576a01df",
+        "version" : "3.2.4"
       }
     }
   ],

@@ -7,7 +7,7 @@
 
 import SwiftUI
 import ExyteMediaPicker
-import ActivityIndicatorView
+//import ActivityIndicatorView
 import AVFoundation
 
 struct AttachmentsEditor<InputViewContent: View>: View {
@@ -58,7 +58,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
             mediaPicker
 
             if inputViewModel.showActivityIndicator {
-                ActivityIndicator()
+//                ActivityIndicator()
             }
         }
         .onDisappear {
