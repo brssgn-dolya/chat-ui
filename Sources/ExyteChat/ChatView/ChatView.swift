@@ -144,18 +144,10 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var shouldScrollToTop: () -> () = {}
 
     @State private var isShowingMenu = false
-    @State private var needsScrollView = false
-    @State private var readyToShowScrollView = false
-    @State private var menuButtonsSize: CGSize = .zero
-    @State private var contentHeight: CGFloat = 0
-    @State private var menuButtonsCount: Int = 0
     @State private var tableContentHeight: CGFloat = 0
-    @State private var inputViewSize = CGSize.zero
     @State private var cellFrames = [String: CGRect]()
-    @State private var menuCellPosition: CGPoint = .zero
-    @State private var menuCellOpacity: CGFloat = 0
-    @State private var menuScrollView: UIScrollView?
-    @State private var menuDirection: Direction = .bottom
+    @State private var inputViewSize = CGSize.zero
+
     @State private var showAttachmentSavedAlert: Bool = false
     @State private var isUploading: Bool = false
     @State private var retryCount = 0
@@ -386,7 +378,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
 
     @ViewBuilder
     var list: some View {
-        UIList(
+        SonataUIList(
+//        UIList(
             viewModel: viewModel,
             inputViewModel: inputViewModel,
             isScrolledToBottom: $isScrolledToBottom,
@@ -514,7 +507,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 avatarSize: avatarSize,
                 tapAvatarClosure: tapAvatarClosure,
                 messageUseMarkdown: messageUseMarkdown,
-                isDisplayingMessageMenu: false,
+                isDisplayingMessageMenu: true,
                 showMessageTimeView: showMessageTimeView,
                 showAvatar: showAvatars,
                 messageFont: messageFont,
