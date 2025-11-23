@@ -116,8 +116,6 @@ struct MessageView: View {
                 
                 bubbleView(message)
             }
-
-            encryptionIndicatorView(isEncrypted: message.isEncrypted)
         }
         .padding(.top, topPadding)
         .padding(.bottom, bottomPadding)
@@ -303,21 +301,7 @@ struct MessageView: View {
         .padding(.horizontal, MessageView.horizontalTextPadding)
         .padding(.top, 8)
     }
-    
-    @ViewBuilder
-    func encryptionIndicatorView(isEncrypted: Bool) -> some View {
-        Group {
-            if !isEncrypted {
-                Image(systemName: "lock.open.trianglebadge.exclamationmark.fill")
-                    .foregroundStyle(Color(uiColor: .systemOrange))
-                    .padding(.bottom, 4)
-                    .padding(.horizontal, 4)
-            } else {
-                EmptyView()
-            }
-        }
-    }
-    
+
     @ViewBuilder
     func documentView(_ message: Message) -> some View {
         HStack(spacing: 8) {
