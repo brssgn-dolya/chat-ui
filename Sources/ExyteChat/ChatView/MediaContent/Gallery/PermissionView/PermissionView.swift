@@ -5,7 +5,6 @@
 //  Created by Bohdan Yankivskyi on 09.11.2025.
 //
 
-
 import UIKit
 
 final class PermissionView: UIView {
@@ -38,6 +37,14 @@ final class PermissionView: UIView {
     
     private var iconTimer: Timer?
 
+    private enum IconState { case base, gear }
+    private var iconState: IconState = .base
+
+    private let baseSymbol = "photo.badge.shield.exclamationmark.fill"
+    private let gearSymbol = "gearshape.fill"
+
+    private lazy var toBase = UIImage(systemName: baseSymbol)!
+    private lazy var toGear = UIImage(systemName: gearSymbol)!
 
     // MARK: - Constraints we may rely on
     private var centerMinHeightConstraint: NSLayoutConstraint?
@@ -59,6 +66,16 @@ final class PermissionView: UIView {
         updateScrollingIfNeeded()
     }
 
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+
+        if window == nil {
+            stopIconTimer()
+        } else {
+            startIconTimer()
+        }
+    }
+
     // MARK: - Setup
     private func setupUI() {
         backgroundColor = .systemBackground
@@ -72,9 +89,9 @@ final class PermissionView: UIView {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.showsVerticalScrollIndicator = false
-        scrollView.alwaysBounceVertical = false // IMPORTANT: no scroll/bounce if it fits
-        scrollView.bounces = false              // will be enabled only if needed
-        scrollView.isScrollEnabled = false      // will be enabled only if needed
+        scrollView.alwaysBounceVertical = false
+        scrollView.bounces = false
+        scrollView.isScrollEnabled = false
         addSubview(scrollView)
 
         scrollContent.translatesAutoresizingMaskIntoConstraints = false
@@ -120,23 +137,6 @@ final class PermissionView: UIView {
         iconView.contentMode = .scaleAspectFit
         iconView.tintColor = .label
         iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 34, weight: .semibold)
-        iconView.removeAllSymbolEffects()
-
-        // 2) timer: first switch happens after 3s, then repeats every 3s
-        iconTimer?.invalidate()
-
-        iconTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            guard let self else { return }
-
-            let next = (self.iconView.image === toGear) ? toBase : toGear
-            self.iconView.setSymbolImage(next, contentTransition: .replace.downUp)
-
-            self.iconView.removeAllSymbolEffects()
-            if next === toGear, #available(iOS 18.0, *) {
-                self.iconView.addSymbolEffect(.rotate, options: .repeating)
-            }
-        }
-
         iconContainer.addSubview(iconView)
 
         // Title
@@ -179,11 +179,9 @@ final class PermissionView: UIView {
         secondaryButton.titleLabel?.adjustsFontForContentSizeCategory = true
 
         // Close button
-        let img = UIImage(systemName: "xmark.circle.fill")?
-            .applyingSymbolConfiguration(.init(pointSize: 26, weight: .semibold))
-        closeButton.setImage(img, for: .normal)
-        closeButton.tintColor = .tertiaryLabel
         closeButton.translatesAutoresizingMaskIntoConstraints = false
+        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+        closeButton.tintColor = .label
         addSubview(closeButton)
 
         // Stack hierarchy
@@ -253,12 +251,41 @@ final class PermissionView: UIView {
         centerMinHeightConstraint = minH
     }
     
+    private func startIconTimer() {
+        guard iconTimer == nil else { return }
+
+        iconState = .base
+        iconView.image = toBase
+        iconView.removeAllSymbolEffects()
+
+        iconTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            guard let self else { return }
+
+            self.iconView.removeAllSymbolEffects()
+
+            self.iconState = (self.iconState == .gear) ? .base : .gear
+            let nextImage = (self.iconState == .gear) ? self.toGear : self.toBase
+
+            UIView.transition(
+                with: self.iconView,
+                duration: 0.28,
+                options: [.transitionCrossDissolve, .allowUserInteraction]
+            ) {
+                self.iconView.image = nextImage
+            } completion: { _ in
+                guard self.iconState == .gear else { return }
+                if #available(iOS 18.0, *) {
+                    self.iconView.addSymbolEffect(.rotate, options: .repeating)
+                }
+            }
+        }
+    }
+    
     private func stopIconTimer() {
         iconTimer?.invalidate()
         iconTimer = nil
         iconView.removeAllSymbolEffects()
     }
-
 
     private func setupActions() {
         primaryButton.addAction(UIAction { [weak self] _ in
@@ -268,7 +295,7 @@ final class PermissionView: UIView {
         secondaryButton.addAction(UIAction { [weak self] _ in
             guard let self else { return }
             self.onNotNow?()
-            self.onClose?() // IMPORTANT: close on "Не зараз"
+            self.onClose?()
         }, for: .primaryActionTriggered)
 
         closeButton.addAction(UIAction { [weak self] _ in
@@ -278,7 +305,6 @@ final class PermissionView: UIView {
 
     // MARK: - Scrolling logic
     private func updateScrollingIfNeeded() {
-        // Ensure layout is up-to-date for correct measurements
         layoutIfNeeded()
 
         // Visible height inside scrollView

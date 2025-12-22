@@ -196,14 +196,21 @@ final class PreviewViewController: UIViewController,
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.itemSize = collectionView.bounds.size
             layout.invalidateLayout()
         }
+
+        if items.isEmpty { return }
+        if currentIndex < 0 { currentIndex = 0 }
+        if currentIndex >= items.count { currentIndex = items.count - 1 }
+
         if collectionView.indexPathsForVisibleItems.isEmpty {
             let indexPath = IndexPath(item: currentIndex, section: 0)
             collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: false)
         }
+
         preheatAround(index: currentIndex)
         updateBarsUI()
     }

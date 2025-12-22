@@ -55,6 +55,7 @@ final class GridViewController: UIViewController {
     private let topRightGuide = UILayoutGuide()
 
     private var thumbnailPixelSize: CGSize = CGSize(width: 600, height: 600)
+    private let emptyStateView = LimitedGalleryEmptyStateView()
 
     // MARK: - Init / Deinit
 
@@ -87,7 +88,54 @@ final class GridViewController: UIViewController {
         configureCollectionView()
         configureDataSource()
         configureBars()
+        
+        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(emptyStateView)
+
+        NSLayoutConstraint.activate([
+            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
+            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+
+        emptyStateView.onPickMore = { [weak self] in
+            guard let self else { return }
+            self.presentLimitedPicker(from: self)
+        }
+        
+        emptyStateView.onClose = { [weak self] in
+            self?.onCancel()
+        }
+
         Task { await requestAuthAndLoadIfNeeded() }
+    }
+    
+    private func updateLimitedEmptyStateUI() {
+        if auth == .limited, !selectedIDs.isEmpty {
+            let allowed = Set(items.map(\.localID))
+            let filtered = selectedIDs.filter { allowed.contains($0) }
+            
+            if filtered.count != selectedIDs.count {
+                var newSet = OrderedSet<String>()
+                for id in filtered {
+                    newSet.append(id)
+                }
+                selectedIDs = newSet
+                updateSendButtonState()
+            }
+        }
+        
+        let shouldShow = (auth == .limited) && items.isEmpty
+        
+        emptyStateView.isHidden = !shouldShow
+        collectionView.isHidden = shouldShow
+        sendButton.isHidden = shouldShow
+        
+        if shouldShow, !selectedIDs.isEmpty {
+            selectedIDs = OrderedSet()
+            updateSendButtonState()
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -297,7 +345,12 @@ final class GridViewController: UIViewController {
             }
 
             cell.onToggle = { [weak self] in self?.toggleSelect(item) }
-            cell.onPeek   = { [weak self] in self?.openPreview(startingAt: indexPath.item) }
+            cell.onPeek = { [weak self] in
+                guard let self else { return }
+                guard let idx = self.items.firstIndex(where: { $0.localID == item.localID }) else { return }
+                self.openPreview(startingAt: idx)
+            }
+
             return cell
         }
     }
@@ -344,6 +397,7 @@ final class GridViewController: UIViewController {
         applySnapshot()
         updateCachedAssets()
         updateLimitedButtonVisibility()
+        updateLimitedEmptyStateUI()
     }
 
     // MARK: - Snapshot
