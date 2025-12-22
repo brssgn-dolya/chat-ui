@@ -4,8 +4,9 @@
 
 import Foundation
 import Combine
-import ExyteMediaPicker
 import CoreLocation
+import PhotosUI
+import SwiftUI
 
 final class InputViewModel: ObservableObject {
 
@@ -23,8 +24,10 @@ final class InputViewModel: ObservableObject {
 
     @Published var showActivityIndicator = false
     @Published var mentions: [MentionedUser] = []
-    @Published var caretPosition: Int = 0
-
+    
+    @Published var showSystemPhotoPicker = false
+    @Published var systemPickedItems: [PhotosPickerItem] = []
+    
     var recordingPlayer: RecordingPlayer?
     var didSendMessage: ((DraftMessage) -> Void)?
 
@@ -35,10 +38,10 @@ final class InputViewModel: ObservableObject {
     private var recordPlayerSubscription: AnyCancellable?
     private var playerStateSubscription: AnyCancellable?
     private var subscriptions = Set<AnyCancellable>()
+    private var pendingAutoSendFromSystemPicker = false
 
     func onStart() {
         subscribeValidation()
-        subscribePicker()
     }
 
     func onStop() {
@@ -386,5 +389,47 @@ extension InputViewModel {
     var formattedText: String {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return applyMentionTags(to: trimmedText)
+    }
+}
+
+extension InputViewModel {
+    func handleCustomPickerResults(_ results: [PickerResult]) {
+        systemPickedItems.removeAll()
+        var medias: [Media] = []
+        for r in results {
+            switch r.kind {
+            case .image(let data):
+                if let img = UIImage(data: data) {
+                    medias.append(.from(image: img))
+                }
+            case .video(let url):
+                medias.append(.from(videoURL: url))
+            }
+        }
+        attachments.medias = medias
+        validateDraft()
+        if !medias.isEmpty {
+            pendingAutoSendFromSystemPicker = false
+            send()
+        } else {
+            state = .empty
+        }
+    }
+}
+
+extension InputViewModel {
+    func handleCameraCapture(_ media: CapturedMedia) {
+        var newMedias: [Media] = []
+        switch media {
+        case .photo(let image):
+            newMedias.append(.from(image: image))
+        case .video(let url):
+            newMedias.append(.from(videoURL: url))
+        }
+        attachments.medias = newMedias
+        validateDraft()
+        if !newMedias.isEmpty {
+            send()
+        }
     }
 }
