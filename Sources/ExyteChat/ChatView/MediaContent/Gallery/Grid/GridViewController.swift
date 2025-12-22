@@ -5,9 +5,9 @@
 //  Created by Bohdan Yankivskyi on 09.11.2025.
 //
 
-
 import UIKit
 import Photos
+import SwiftUI
 
 // MARK: - GridViewController
 
@@ -35,8 +35,7 @@ final class GridViewController: UIViewController {
 
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, AssetItem>!
-    
-    private weak var permissionView: PermissionView?
+    private var permissionHost: UIHostingController<GalleryPermissionView>?
     
     private let sendButton = UIButton(type: .system)
     private let moreButton = UIButton(type: .system)
@@ -438,46 +437,57 @@ final class GridViewController: UIViewController {
         }
     }
 
-    // MARK: - Permission View
+    // MARK: - Permission View (SwiftUI Hosting)
 
     private func showPermissionView() {
-        if permissionView != nil { return }
+        if permissionHost != nil { return }
 
-        let v = PermissionView()
-        v.translatesAutoresizingMaskIntoConstraints = false
-
-        v.onOpenSettings = {
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
+        let swiftUIView = GalleryPermissionView(
+            title: "Доступ до Фото",
+            subtitle: "Дозвольте доступ до Фото, щоб обрати медіа для відправки.",
+            onOpenSettings: {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            },
+            onNotNow: { },
+            onClose: { [weak self] in
+                guard let self else { return }
+                self.dismissPermissionView()
+                self.onCancel()
             }
-        }
+        )
 
-        v.onClose = { [weak self, weak v] in
-            guard let self else { return }
-            self.dismissPermissionView()
-            self.onCancel()
-        }
+        let host = UIHostingController(rootView: swiftUIView)
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        host.view.backgroundColor = .clear
 
-        view.addSubview(v)
+        addChild(host)
+        view.addSubview(host.view)
         NSLayoutConstraint.activate([
-            v.topAnchor.constraint(equalTo: view.topAnchor),
-            v.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            v.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            v.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            host.view.topAnchor.constraint(equalTo: view.topAnchor),
+            host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
+        host.didMove(toParent: self)
 
-        permissionView = v
-        v.alpha = 0
-        UIView.animate(withDuration: 0.2) { v.alpha = 1 }
+        permissionHost = host
+
+        host.view.alpha = 0
+        UIView.animate(withDuration: 0.2) { host.view.alpha = 1 }
     }
 
     private func dismissPermissionView() {
-        guard let v = permissionView else { return }
-        permissionView = nil
+        guard let host = permissionHost else { return }
+        permissionHost = nil
+
+        host.willMove(toParent: nil)
         UIView.animate(withDuration: 0.2, animations: {
-            v.alpha = 0
+            host.view.alpha = 0
         }, completion: { _ in
-            v.removeFromSuperview()
+            host.view.removeFromSuperview()
+            host.removeFromParent()
         })
     }
 
@@ -762,7 +772,7 @@ extension GridViewController: UICollectionViewDelegate, UIScrollViewDelegate {
                 removed.append(CGRect(x: new.origin.x, y: new.maxY, width: new.width, height: old.maxY - new.maxY))
             }
             if old.minY < new.minY {
-                removed.append(CGRect(x: new.origin.x, y: old.minY, width: new.width, height: new.minY - old.minY))
+                removed.append(CGRect(x: new.origin.x, y: old.minY, width: new.width, height: new.minY - new.minY))
             }
             return (added, removed)
         } else {

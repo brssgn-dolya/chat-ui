@@ -246,11 +246,12 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             }
 
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
-                SystemCameraPicker(
-                    isPresented: $inputViewModel.showPicker
-                ) { media in
-                    inputViewModel.handleCameraCapture(media)
-                }
+                CameraModal(
+                    isPresented: $inputViewModel.showPicker,
+                    onMediaPicked: { media in
+                        inputViewModel.handleCameraCapture(media)
+                    }
+                )
                 .ignoresSafeArea()
             }
         
