@@ -7,8 +7,6 @@
 
 import SwiftUI
 import Photos
-import AVFoundation
-import AVKit
 import UIKit
 
 // MARK: - ImagePreviewCell
@@ -51,9 +49,7 @@ final class ImagePreviewCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        if let hv = hosting?.view {
-            hv.frame = contentView.bounds
-        }
+        hosting?.view.frame = contentView.bounds
     }
 
     override func prepareForReuse() {
@@ -72,26 +68,27 @@ final class ImagePreviewCell: UICollectionViewCell {
 
         if let model = zoomModel {
             model.image = placeholder
-        } else {
-            let model = ZoomingImageModel(image: placeholder)
-            zoomModel = model
-
-            let root = ZoomingImageRoot(model: model)
-            let hc = UIHostingController(rootView: root)
-            hc.view.backgroundColor = .clear
-            hc.view.translatesAutoresizingMaskIntoConstraints = true
-            hc.view.frame = contentView.bounds
-
-            if let parentVC = findViewController() {
-                parentVC.addChild(hc)
-                contentView.insertSubview(hc.view, belowSubview: spinner)
-                hc.didMove(toParent: parentVC)
-            } else {
-                contentView.insertSubview(hc.view, belowSubview: spinner)
-            }
-
-            hosting = hc
+            return
         }
+
+        let model = ZoomingImageModel(image: placeholder)
+        zoomModel = model
+
+        let root = ZoomingImageRoot(model: model)
+        let hc = UIHostingController(rootView: root)
+        hc.view.backgroundColor = .clear
+        hc.view.translatesAutoresizingMaskIntoConstraints = true
+        hc.view.frame = contentView.bounds
+
+        if let parentVC = findViewController() {
+            parentVC.addChild(hc)
+            contentView.insertSubview(hc.view, belowSubview: spinner)
+            hc.didMove(toParent: parentVC)
+        } else {
+            contentView.insertSubview(hc.view, belowSubview: spinner)
+        }
+
+        hosting = hc
     }
 
     func requestFullImage(asset: PHAsset, targetSize: CGSize, manager: PHCachingImageManager) {

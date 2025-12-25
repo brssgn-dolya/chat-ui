@@ -34,7 +34,6 @@ final class PreviewViewController: UIViewController,
     private var pendingReq: [Int: PHImageRequestID] = [:]
 
     private let imageManager: PHCachingImageManager = .init()
-    private var cachedAssetIndices: Set<Int> = []
 
     private weak var checkButton: UIButton?
     private weak var sendButton: UIButton?
@@ -67,6 +66,7 @@ final class PreviewViewController: UIViewController,
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
     }
+
     required init?(coder: NSCoder) { fatalError() }
 
     // MARK: - Lifecycle
@@ -165,10 +165,7 @@ final class PreviewViewController: UIViewController,
 
         collectionView.bottomAnchor.constraint(equalTo: bottom.topAnchor).isActive = true
 
-        SendButtonStyle.apply(
-            to: send,
-            state: .init(selectedCount: selectedCount(), sending: false)
-        )
+        SendButtonStyle.apply(to: send, state: .init(selectedCount: selectedCount(), sending: false))
         send.addAction(UIAction { [weak self] _ in
             guard let self else { return }
             self.isSending = true
@@ -193,7 +190,7 @@ final class PreviewViewController: UIViewController,
             send.heightAnchor.constraint(equalToConstant: 56)
         ])
     }
-    
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
@@ -229,8 +226,10 @@ final class PreviewViewController: UIViewController,
             let cell = cv.dequeueReusableCell(withReuseIdentifier: ImagePreviewCell.reuseId, for: indexPath) as! ImagePreviewCell
             let thumb = thumbProvider(it.localID)
             cell.configurePlaceholder(thumb: thumb)
-            let targetSize = CGSize(width: max(1, cell.bounds.width) * UIScreen.main.scale,
-                                    height: max(1, cell.bounds.height) * UIScreen.main.scale)
+            let targetSize = CGSize(
+                width: max(1, cell.bounds.width) * UIScreen.main.scale,
+                height: max(1, cell.bounds.height) * UIScreen.main.scale
+            )
             cell.requestFullImage(asset: it.asset, targetSize: targetSize, manager: imageManager)
             return cell
         }
@@ -274,10 +273,11 @@ final class PreviewViewController: UIViewController,
             }) {
                 pendingReq[indexPath.item] = reqID
             }
-        }
-        else if let icell = cell as? ImagePreviewCell {
-            let targetSize = CGSize(width: max(1, icell.bounds.width) * UIScreen.main.scale,
-                                    height: max(1, icell.bounds.height) * UIScreen.main.scale)
+        } else if let icell = cell as? ImagePreviewCell {
+            let targetSize = CGSize(
+                width: max(1, icell.bounds.width) * UIScreen.main.scale,
+                height: max(1, icell.bounds.height) * UIScreen.main.scale
+            )
             icell.retryIfNeeded(asset: item.asset, targetSize: targetSize, manager: imageManager)
         }
     }
@@ -331,13 +331,13 @@ final class PreviewViewController: UIViewController,
             return items[idx.item].mediaType == .video ? nil : items[idx.item].asset
         }
         guard !assets.isEmpty else { return }
+
         imageManager.startCachingImages(
             for: assets,
             targetSize: prefetchTargetSize(),
             contentMode: .aspectFit,
             options: Self.imageRequestOptions
         )
-        indexPaths.forEach { cachedAssetIndices.insert($0.item) }
     }
 
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
@@ -346,19 +346,21 @@ final class PreviewViewController: UIViewController,
             return items[idx.item].mediaType == .video ? nil : items[idx.item].asset
         }
         guard !assets.isEmpty else { return }
+
         imageManager.stopCachingImages(
             for: assets,
             targetSize: prefetchTargetSize(),
             contentMode: .aspectFit,
             options: Self.imageRequestOptions
         )
-        indexPaths.forEach { cachedAssetIndices.remove($0.item) }
     }
 
     private func prefetchTargetSize() -> CGSize {
         let size = collectionView.bounds.size
-        return CGSize(width: max(1, size.width) * UIScreen.main.scale,
-                      height: max(1, size.height) * UIScreen.main.scale)
+        return CGSize(
+            width: max(1, size.width) * UIScreen.main.scale,
+            height: max(1, size.height) * UIScreen.main.scale
+        )
     }
 
     private func preheatAround(index: Int) {
@@ -367,19 +369,19 @@ final class PreviewViewController: UIViewController,
             items[i].mediaType == .video ? nil : items[i].asset
         }
         guard !assets.isEmpty else { return }
+
         imageManager.startCachingImages(
             for: assets,
             targetSize: prefetchTargetSize(),
             contentMode: .aspectFit,
             options: Self.imageRequestOptions
         )
-        neighbors.forEach { cachedAssetIndices.insert($0) }
     }
 
     // MARK: - Bars UI
 
     private func updateBarsUI() {
-        if let check = checkButton {
+        if let check = checkButton, !items.isEmpty {
             let id = items[currentIndex].localID
             let selected = isSelectedAt(id)
             let name = selected ? "checkmark.circle.fill" : "circle"

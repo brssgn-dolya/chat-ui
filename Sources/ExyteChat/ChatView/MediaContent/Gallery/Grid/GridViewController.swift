@@ -28,7 +28,6 @@ final class GridViewController: UIViewController {
     private var previousPreheatRect: CGRect = .zero
 
     private var pendingThumb: [String: PHImageRequestID] = [:]
-
     private var isSending = false
 
     // MARK: - UI
@@ -50,6 +49,7 @@ final class GridViewController: UIViewController {
     private let setIsSending: (Bool) -> Void
 
     // MARK: - Layout Metrics
+    
     private let topLeftGuide  = UILayoutGuide()
     private let topRightGuide = UILayoutGuide()
 
@@ -75,8 +75,12 @@ final class GridViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         PHPhotoLibrary.shared().register(self)
     }
+
     required init?(coder: NSCoder) { fatalError() }
-    deinit { PHPhotoLibrary.shared().unregisterChangeObserver(self) }
+
+    deinit {
+        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+    }
 
     // MARK: - Lifecycle
 
@@ -102,19 +106,25 @@ final class GridViewController: UIViewController {
             guard let self else { return }
             self.presentLimitedPicker(from: self)
         }
-        
+
         emptyStateView.onClose = { [weak self] in
             self?.onCancel()
         }
 
         Task { await requestAuthAndLoadIfNeeded() }
     }
-    
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateCachedAssets()
+        recalcThumbnailSizeIfNeeded()
+    }
+
     private func updateLimitedEmptyStateUI() {
         if auth == .limited, !selectedIDs.isEmpty {
             let allowed = Set(items.map(\.localID))
             let filtered = selectedIDs.filter { allowed.contains($0) }
-            
+
             if filtered.count != selectedIDs.count {
                 var newSet = OrderedSet<String>()
                 for id in filtered {
@@ -124,23 +134,17 @@ final class GridViewController: UIViewController {
                 updateSendButtonState()
             }
         }
-        
+
         let shouldShow = (auth == .limited) && items.isEmpty
-        
+
         emptyStateView.isHidden = !shouldShow
         collectionView.isHidden = shouldShow
         sendButton.isHidden = shouldShow
-        
+
         if shouldShow, !selectedIDs.isEmpty {
             selectedIDs = OrderedSet()
             updateSendButtonState()
         }
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        updateCachedAssets()
-        recalcThumbnailSizeIfNeeded()
     }
 
     // MARK: - UI Setup
@@ -151,14 +155,20 @@ final class GridViewController: UIViewController {
             let columns = 3
             let fraction = 1.0 / CGFloat(columns)
 
-            let item = NSCollectionLayoutItem(layoutSize:
-                .init(widthDimension: .fractionalWidth(1.0),
-                      heightDimension: .fractionalHeight(1.0)))
+            let item = NSCollectionLayoutItem(
+                layoutSize: .init(
+                    widthDimension: .fractionalWidth(1.0),
+                    heightDimension: .fractionalHeight(1.0)
+                )
+            )
 
             let group = NSCollectionLayoutGroup.horizontal(
-                layoutSize: .init(widthDimension: .fractionalWidth(1.0),
-                                  heightDimension: .fractionalWidth(fraction)),
-                subitem: item, count: columns
+                layoutSize: .init(
+                    widthDimension: .fractionalWidth(1.0),
+                    heightDimension: .fractionalWidth(fraction)
+                ),
+                subitem: item,
+                count: columns
             )
             group.interItemSpacing = .fixed(spacing)
 
@@ -287,14 +297,6 @@ final class GridViewController: UIViewController {
             sendButton.trailingAnchor.constraint(lessThanOrEqualTo: bottom.safeAreaLayoutGuide.trailingAnchor, constant: -24),
             sendButton.heightAnchor.constraint(equalToConstant: 56)
         ])
-
-        collectionView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: top.bottomAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: bottom.topAnchor)
-        ])
     }
 
     // MARK: - Diffable Data Source
@@ -320,10 +322,12 @@ final class GridViewController: UIViewController {
                     self.caching.cancelImageRequest(prev)
                     self.pendingThumb.removeValue(forKey: item.localID)
                 }
+                
                 let reqID = self.requestThumb(for: item, targetSize: self.thumbnailPixelSize) { [weak self, weak cell] image, isDegraded in
                     guard let self,
                           let cell,
                           cell.representedAssetIdentifier == item.localID else { return }
+
                     if let image {
                         if !isDegraded {
                             self.thumbCache.setObject(
@@ -440,7 +444,7 @@ final class GridViewController: UIViewController {
     // MARK: - Permission View (SwiftUI Hosting)
 
     private func showPermissionView() {
-        if permissionHost != nil { return }
+        guard permissionHost == nil else { return }
 
         let swiftUIView = GalleryPermissionView(
             title: "Доступ до Фото",
@@ -500,6 +504,7 @@ final class GridViewController: UIViewController {
             guard selectionLimit == 0 || selectedIDs.count < selectionLimit else { return }
             selectedIDs.append(item.localID)
         }
+
         updateSendButtonState()
 
         if let index = items.firstIndex(where: { $0.localID == item.localID }),
@@ -564,7 +569,6 @@ final class GridViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func didTapSend() { exportAndSend() }
-
     @objc private func didTapClose() { onCancel() }
 
     @objc private func didTapMore() {
@@ -605,9 +609,11 @@ final class GridViewController: UIViewController {
     // MARK: - Thumbnails
 
     @discardableResult
-    private func requestThumb(for item: AssetItem,
-                              targetSize: CGSize,
-                              completion: @escaping (UIImage?, Bool) -> Void) -> PHImageRequestID {
+    private func requestThumb(
+        for item: AssetItem,
+        targetSize: CGSize,
+        completion: @escaping (UIImage?, Bool) -> Void
+    ) -> PHImageRequestID {
         let opts = PHImageRequestOptions()
         opts.isSynchronous = false
         opts.isNetworkAccessAllowed = true
@@ -643,7 +649,7 @@ final class GridViewController: UIViewController {
         let map = Dictionary(uniqueKeysWithValues: items.map { ($0.localID, $0.asset) })
         let ordered = selectedIDs.compactMap { map[$0] }
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .utility).async {
             let results = self.exportAssets(ordered)
             DispatchQueue.main.async {
                 self.setSendingUI(false)
@@ -664,6 +670,7 @@ final class GridViewController: UIViewController {
         videoOpts.isNetworkAccessAllowed = true
 
         let group = DispatchGroup()
+        let lock = NSLock()
 
         for a in assets {
             switch a.mediaType {
@@ -677,22 +684,28 @@ final class GridViewController: UIViewController {
                 ) { img, _ in
                     defer { group.leave() }
                     guard let img, let data = img.downscaledJPEGData(maxSide: 2048, quality: 0.7) else { return }
+                    lock.lock()
                     out.append(.init(kind: .image(data: data)))
+                    lock.unlock()
                 }
 
             case .video:
                 group.enter()
                 caching.requestAVAsset(forVideo: a, options: videoOpts) { avAsset, _, _ in
                     guard let avAsset else { group.leave(); return }
+
                     let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
                         .appendingPathComponent(UUID().uuidString)
                         .appendingPathExtension("mp4")
+
                     if let exporter = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPreset1280x720) {
                         exporter.outputURL = tmp
                         exporter.outputFileType = .mp4
                         exporter.exportAsynchronously {
                             if exporter.status == .completed {
+                                lock.lock()
                                 out.append(.init(kind: .video(url: tmp)))
+                                lock.unlock()
                             }
                             group.leave()
                         }
@@ -700,7 +713,9 @@ final class GridViewController: UIViewController {
                         group.leave()
                     }
                 }
-            default: break
+
+            default:
+                break
             }
         }
 
@@ -732,14 +747,18 @@ extension GridViewController: UICollectionViewDelegate, UIScrollViewDelegate {
         let addedAssets = assets(in: added)
         let removedAssets = assets(in: removed)
 
-        caching.startCachingImages(for: addedAssets,
-                                   targetSize: thumbnailPixelSize,
-                                   contentMode: .aspectFill,
-                                   options: nil)
-        caching.stopCachingImages(for: removedAssets,
-                                  targetSize: thumbnailPixelSize,
-                                  contentMode: .aspectFill,
-                                  options: nil)
+        caching.startCachingImages(
+            for: addedAssets,
+            targetSize: thumbnailPixelSize,
+            contentMode: .aspectFill,
+            options: nil
+        )
+        caching.stopCachingImages(
+            for: removedAssets,
+            targetSize: thumbnailPixelSize,
+            contentMode: .aspectFill,
+            options: nil
+        )
 
         previousPreheatRect = preheatRect
     }
@@ -802,6 +821,7 @@ extension GridViewController: UICollectionViewDataSourcePrefetching {
         }
         caching.startCachingImages(for: assets, targetSize: thumbnailPixelSize, contentMode: .aspectFill, options: nil)
     }
+
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
         let assets = indexPaths.compactMap { idx in
             items.indices.contains(idx.item) ? items[idx.item].asset : nil
@@ -829,6 +849,7 @@ private extension UIImage {
 
         UIGraphicsBeginImageContextWithOptions(target, true, 1.0)
         defer { UIGraphicsEndImageContext() }
+
         self.draw(in: CGRect(origin: .zero, size: target))
         let scaled = UIGraphicsGetImageFromCurrentImageContext()
         return scaled?.jpegData(compressionQuality: quality)
@@ -849,8 +870,11 @@ extension UIButton.Configuration {
         let isEnabledNow = (selectedCount > 0) && !sending
         sendButton.isEnabled = isEnabledNow
 
-        let base = "Відправити"
-        let title = (selectedCount > 0) ? "\(base) (\(selectedCount))" : base
+        let idleTitle = "Надіслати"
+        let sendingTitle = "Надсилання"
+        let base = sending ? sendingTitle : idleTitle
+        let title = selectedCount > 0 ? "\(base) (\(selectedCount))" : base
+
         var att = AttributedString(title)
         att.font = .monospacedDigitSystemFont(ofSize: 17, weight: .semibold)
         cfg.attributedTitle = att
@@ -870,19 +894,22 @@ extension UIButton.Configuration {
             : UIColor(white: 0.90, alpha: 1.0)
         }
         let disabledFG = UIColor { tc in
-            tc.userInterfaceStyle == .dark
-            ? UIColor.white.withAlphaComponent(0.70)
-            : UIColor.label.withAlphaComponent(0.70)
+            let alpha: CGFloat = 0.70
+            return tc.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(alpha)
+            : UIColor.label.withAlphaComponent(alpha)
         }
 
         cfg.background.backgroundColorTransformer = UIConfigurationColorTransformer { color in
             isEnabledNow ? color : disabledBG
         }
+
         cfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var out = incoming
             out.foregroundColor = isEnabledNow ? .white : disabledFG
             return out
         }
+
         cfg.imageColorTransformer = UIConfigurationColorTransformer { _ in
             isEnabledNow ? .white : disabledFG
         }
