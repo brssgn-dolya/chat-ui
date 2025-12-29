@@ -52,6 +52,10 @@ final class AssetCell: UICollectionViewCell {
         checkBadgeView.layer.shadowOffset = CGSize(width: 0, height: 1)
 
         checkButton.tintColor = .white
+        checkButton.setPreferredSymbolConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold),
+            forImageIn: .normal
+        )
         checkButton.setImage(UIImage(systemName: "circle"), for: .normal)
         checkButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         checkButton.addTarget(self, action: #selector(tapToggle), for: .touchUpInside)
@@ -83,13 +87,13 @@ final class AssetCell: UICollectionViewCell {
             videoBadge.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
             videoBadge.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
 
-            checkButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 0),
-            checkButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0),
+            checkButton.topAnchor.constraint(equalTo: contentView.topAnchor),
+            checkButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             checkButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
             checkButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
 
-            checkBadgeView.widthAnchor.constraint(equalToConstant: 36),
-            checkBadgeView.heightAnchor.constraint(equalToConstant: 36),
+            checkBadgeView.widthAnchor.constraint(equalToConstant: 40),
+            checkBadgeView.heightAnchor.constraint(equalToConstant: 40),
             checkBadgeView.centerXAnchor.constraint(equalTo: checkButton.centerXAnchor),
             checkBadgeView.centerYAnchor.constraint(equalTo: checkButton.centerYAnchor),
         ])
@@ -114,8 +118,11 @@ final class AssetCell: UICollectionViewCell {
         bottomScrim.frame = CGRect(x: 0, y: bounds.height - 44, width: bounds.width, height: 44)
         contentView.layer.insertSublayer(bottomScrim, above: imageView.layer)
 
-        checkBadgeView.layer.cornerRadius = 0
-        checkBadgeView.layer.shadowPath = UIBezierPath(rect: checkBadgeView.bounds).cgPath
+        checkBadgeView.layer.cornerRadius = 10
+        checkBadgeView.layer.shadowPath = UIBezierPath(
+            roundedRect: checkBadgeView.bounds,
+            cornerRadius: checkBadgeView.layer.cornerRadius
+        ).cgPath
     }
 
     override func prepareForReuse() {
@@ -163,7 +170,6 @@ final class AssetCell: UICollectionViewCell {
     }
 
     @objc private func tapToggle() {
-        print("[Cell] tapToggle id:", representedAssetIdentifier ?? "nil")
         guard let id = representedAssetIdentifier else { return }
         onToggle?(id)
     }
