@@ -88,6 +88,9 @@ struct AssetItem: Hashable {
     let localID: String
     let asset: PHAsset
     var mediaType: PHAssetMediaType { asset.mediaType }
+
+    func hash(into hasher: inout Hasher) { hasher.combine(localID) }
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.localID == rhs.localID }
 }
 
 enum Section: Hashable { case main }

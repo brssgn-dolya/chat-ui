@@ -26,7 +26,7 @@ final class PreviewViewController: UIViewController,
     private let cancelRequest: (PHImageRequestID) -> Void
 
     private let isSelectedAt: (String) -> Bool
-    private let toggleAt: (String) -> Void
+    private let toggleAt: (String) -> Bool
     private let selectedCount: () -> Int
     private let onSend: () async -> Void
 
@@ -50,7 +50,7 @@ final class PreviewViewController: UIViewController,
         requestPlayer: @escaping (PHAsset, @escaping (AVPlayer?) -> Void) -> PHImageRequestID?,
         cancelRequest: @escaping (PHImageRequestID) -> Void,
         isSelectedAt: @escaping (String) -> Bool,
-        toggleAt: @escaping (String) -> Void,
+        toggleAt: @escaping (String) -> Bool,
         selectedCount: @escaping () -> Int,
         onSend: @escaping () async -> Void
     ) {
@@ -131,7 +131,10 @@ final class PreviewViewController: UIViewController,
         check.addAction(UIAction { [weak self] _ in
             guard let self else { return }
             let id = self.items[self.currentIndex].localID
-            self.toggleAt(id)
+            let changed = self.toggleAt(id)
+            if !changed {
+                self.showSelectionLimitAlert(limit: 10)
+            }
             self.updateBarsUI()
         }, for: .touchUpInside)
         self.checkButton = check
@@ -404,4 +407,16 @@ final class PreviewViewController: UIViewController,
         o.isNetworkAccessAllowed = true
         return o
     }()
+}
+
+extension UIViewController {
+    func showSelectionLimitAlert(limit: Int) {
+        let alert = UIAlertController(
+            title: "Ліміт вибору",
+            message: "Максимальна кількість елементів — \(limit).",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
 }

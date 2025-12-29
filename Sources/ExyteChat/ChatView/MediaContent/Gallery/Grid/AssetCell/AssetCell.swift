@@ -10,17 +10,16 @@ import UIKit
 final class AssetCell: UICollectionViewCell {
     static let reuseID = "AssetCell"
 
-    var onToggle: (() -> Void)?
+    var onToggle: ((String) -> Void)?
     var onPeek: (() -> Void)?
 
     private let imageView = UIImageView()
     private let selectionOverlay = UIView()
     private let videoBadge = VideoBadgeView()
     private let checkButton = UIButton(type: .system)
+    private let checkBadgeView = UIView()
 
     private let bottomScrim = CAGradientLayer()
-    private let shimmerLayer = CAGradientLayer()
-    private var isShimmering = false
 
     var representedAssetIdentifier: String?
 
@@ -43,19 +42,31 @@ final class AssetCell: UICollectionViewCell {
         selectionOverlay.isHidden = true
         selectionOverlay.isUserInteractionEnabled = false
 
+        checkBadgeView.isUserInteractionEnabled = false
+        checkBadgeView.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        checkBadgeView.layer.borderWidth = 1.0
+        checkBadgeView.layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
+        checkBadgeView.layer.shadowColor = UIColor.black.cgColor
+        checkBadgeView.layer.shadowOpacity = 0.25
+        checkBadgeView.layer.shadowRadius = 4
+        checkBadgeView.layer.shadowOffset = CGSize(width: 0, height: 1)
+
         checkButton.tintColor = .white
         checkButton.setImage(UIImage(systemName: "circle"), for: .normal)
         checkButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         checkButton.addTarget(self, action: #selector(tapToggle), for: .touchUpInside)
+        checkButton.backgroundColor = .clear
 
         contentView.addSubview(imageView)
         contentView.addSubview(selectionOverlay)
         contentView.addSubview(videoBadge)
+        contentView.addSubview(checkBadgeView)
         contentView.addSubview(checkButton)
 
         imageView.translatesAutoresizingMaskIntoConstraints = false
         selectionOverlay.translatesAutoresizingMaskIntoConstraints = false
         videoBadge.translatesAutoresizingMaskIntoConstraints = false
+        checkBadgeView.translatesAutoresizingMaskIntoConstraints = false
         checkButton.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
@@ -76,6 +87,11 @@ final class AssetCell: UICollectionViewCell {
             checkButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0),
             checkButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
             checkButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+
+            checkBadgeView.widthAnchor.constraint(equalToConstant: 36),
+            checkBadgeView.heightAnchor.constraint(equalToConstant: 36),
+            checkBadgeView.centerXAnchor.constraint(equalTo: checkButton.centerXAnchor),
+            checkBadgeView.centerYAnchor.constraint(equalTo: checkButton.centerYAnchor),
         ])
 
         bottomScrim.colors = [
@@ -86,8 +102,6 @@ final class AssetCell: UICollectionViewCell {
         bottomScrim.contentsScale = UIScreen.main.scale
         contentView.layer.addSublayer(bottomScrim)
 
-        configureShimmer()
-
         let tap = UITapGestureRecognizer(target: self, action: #selector(tapPeek))
         contentView.addGestureRecognizer(tap)
     }
@@ -96,13 +110,12 @@ final class AssetCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+
         bottomScrim.frame = CGRect(x: 0, y: bounds.height - 44, width: bounds.width, height: 44)
         contentView.layer.insertSublayer(bottomScrim, above: imageView.layer)
 
-        shimmerLayer.frame = contentView.bounds
-        if shimmerLayer.superlayer == nil {
-            contentView.layer.insertSublayer(shimmerLayer, below: imageView.layer)
-        }
+        checkBadgeView.layer.cornerRadius = 0
+        checkBadgeView.layer.shadowPath = UIBezierPath(rect: checkBadgeView.bounds).cgPath
     }
 
     override func prepareForReuse() {
@@ -115,8 +128,6 @@ final class AssetCell: UICollectionViewCell {
         selectionOverlay.isHidden = true
         setSelected(false)
         videoBadge.isHidden = true
-
-        startShimmer()
     }
 
     func configure(with image: UIImage?, isVideo: Bool, duration: TimeInterval, isSelected: Bool) {
@@ -130,7 +141,6 @@ final class AssetCell: UICollectionViewCell {
         }
 
         if let img = image {
-            if isShimmering { stopShimmer() }
             if imageView.image == nil {
                 imageView.alpha = 0.0
                 imageView.image = img
@@ -141,7 +151,6 @@ final class AssetCell: UICollectionViewCell {
                 imageView.image = img
             }
         } else {
-            startShimmer()
             imageView.image = nil
             imageView.alpha = 1.0
         }
@@ -153,41 +162,11 @@ final class AssetCell: UICollectionViewCell {
         checkButton.setImage(UIImage(systemName: name), for: .normal)
     }
 
-    @objc private func tapToggle() { onToggle?() }
+    @objc private func tapToggle() {
+        print("[Cell] tapToggle id:", representedAssetIdentifier ?? "nil")
+        guard let id = representedAssetIdentifier else { return }
+        onToggle?(id)
+    }
+
     @objc private func tapPeek() { onPeek?() }
-}
-
-private extension AssetCell {
-    func configureShimmer() {
-        let base = UIColor.secondarySystemFill.cgColor
-        let glow = UIColor.tertiarySystemFill.withAlphaComponent(0.6).cgColor
-        shimmerLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-        shimmerLayer.endPoint   = CGPoint(x: 1.0, y: 0.5)
-        shimmerLayer.colors = [base, glow, base]
-        shimmerLayer.locations = [0.0, 0.5, 1.0]
-        shimmerLayer.isHidden = true
-        shimmerLayer.masksToBounds = true
-        shimmerLayer.contentsScale = UIScreen.main.scale
-    }
-
-    func startShimmer() {
-        guard !isShimmering else { return }
-        isShimmering = true
-        shimmerLayer.isHidden = false
-
-        let anim = CABasicAnimation(keyPath: "locations")
-        anim.fromValue = [-0.5, -0.25, 0.0]
-        anim.toValue   = [1.0, 1.25, 1.5]
-        anim.duration  = 1.25
-        anim.repeatCount = .infinity
-        anim.isRemovedOnCompletion = false
-        shimmerLayer.add(anim, forKey: "shimmer.locations")
-    }
-
-    func stopShimmer() {
-        guard isShimmering else { return }
-        isShimmering = false
-        shimmerLayer.removeAnimation(forKey: "shimmer.locations")
-        shimmerLayer.isHidden = true
-    }
 }

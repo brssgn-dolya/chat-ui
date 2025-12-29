@@ -347,7 +347,10 @@ final class GridViewController: UIViewController {
                 self.pendingThumb[item.localID] = reqID
             }
 
-            cell.onToggle = { [weak self] in self?.toggleSelect(item) }
+            cell.onToggle = { [weak self] id in
+                _ = self?.toggleSelect(withID: id)
+            }
+
             cell.onPeek = { [weak self] in
                 guard let self else { return }
                 guard let idx = self.items.firstIndex(where: { $0.localID == item.localID }) else { return }
@@ -497,20 +500,29 @@ final class GridViewController: UIViewController {
 
     // MARK: - Selection
 
-    private func toggleSelect(_ item: AssetItem) {
-        if let idx = selectedIDs.firstIndex(of: item.localID) {
+    @discardableResult
+    private func toggleSelect(withID id: String) -> Bool {
+        if let idx = selectedIDs.firstIndex(of: id) {
             selectedIDs.remove(at: idx)
         } else {
-            guard selectionLimit == 0 || selectedIDs.count < selectionLimit else { return }
-            selectedIDs.append(item.localID)
+            let limit = 10
+            guard selectedIDs.count < limit else {
+                showSelectionLimitAlert(limit: limit)
+                return false
+            }
+            selectedIDs.append(id)
         }
 
         updateSendButtonState()
 
-        if let index = items.firstIndex(where: { $0.localID == item.localID }),
-           let cell = collectionView.cellForItem(at: IndexPath(item: index, section: 0)) as? AssetCell {
-            cell.setSelected(selectedIDs.contains(item.localID))
+        guard let item = items.first(where: { $0.localID == id }) else { return true }
+        var snap = dataSource.snapshot()
+        if snap.indexOfItem(item) != nil {
+            snap.reconfigureItems([item])
+            dataSource.apply(snap, animatingDifferences: false)
         }
+
+        return true
     }
 
     private func updateSendButtonState() {
@@ -552,8 +564,7 @@ final class GridViewController: UIViewController {
                 self?.selectedIDs.contains(id) ?? false
             },
             toggleAt: { [weak self] id in
-                guard let self, let item = self.items.first(where: { $0.localID == id }) else { return }
-                self.toggleSelect(item)
+                self?.toggleSelect(withID: id) ?? false
             },
             selectedCount: { [weak self] in
                 self?.selectedIDs.count ?? 0
