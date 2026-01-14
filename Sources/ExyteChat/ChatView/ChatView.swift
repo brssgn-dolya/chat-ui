@@ -7,8 +7,6 @@
 
 import SwiftUI
 import FloatingButton
-import SwiftUIIntrospect
-import ExyteMediaPicker
 
 public typealias MediaPickerParameters = SelectionParamsHolder
 
@@ -128,7 +126,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var tapDocumentClosure: TapDocumentClosure?
     var documentSelectionClosure: DocumentSelectionClosure?
     var mediaPickerSelectionParameters: MediaPickerParameters?
-    var orientationHandler: MediaPickerOrientationHandler = {_ in}
+    
     var chatTitle: String?
     var paginationHandler: PaginationHandler?
     var showMessageTimeView = true
@@ -211,15 +209,12 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                         },
                         onSave: { index in
                             let attachment = attachments[index]
-                            // Save attachment to user's photo library
                             AttachmentSaver.saveToPhotoLibrary(attachment: attachment) { success in
                                 if success {
-                                    // Show success alert after small delay
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                         showAttachmentSavedAlert = true
                                     }
                                 } else {
-                                    // Saving failed
                                     print("[❌ Save Failed] Could not save attachment.")
                                 }
                             }
@@ -234,8 +229,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     Button(action.title) {
                         switch action {
                         case .gallery:
-                            inputViewModel.mediaPickerMode = .photos
-                            inputViewModel.showPicker = true
+                            inputViewModel.showSystemPhotoPicker = true
                         case .file:
                             inputViewModel.showFilePicker = true
                         case .location:
@@ -252,7 +246,13 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             }
 
             .fullScreenCover(isPresented: $inputViewModel.showPicker) {
-                makeAttachmentsEditor()
+                CameraModal(
+                    isPresented: $inputViewModel.showPicker,
+                    onMediaPicked: { media in
+                        inputViewModel.handleCameraCapture(media)
+                    }
+                )
+                .ignoresSafeArea()
             }
         
             .alert("Медіа-файл успішно збережено", isPresented: $showAttachmentSavedAlert) {
@@ -309,27 +309,27 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 ActivityIndicator(showBackground: false)
             }
         }
+
+        .sheet(isPresented: $inputViewModel.showSystemPhotoPicker) {
+            CustomPhotoPicker(
+                isPresented: $inputViewModel.showSystemPhotoPicker,
+                selectionLimit: (mediaPickerSelectionParameters?.selectionLimit ?? 10),
+                mediaFilter: (mediaPickerSelectionParameters?.mediaType ?? .any).toCustomFilter
+            ) { results in
+                inputViewModel.handleCustomPickerResults(results)
+            }
+        }
+        
+        .onChange(of: inputViewModel.showSystemPhotoPicker) { _, isShown in
+            if isShown { inputViewModel.systemPickedItems.removeAll() }
+        }
+
         .onReceive(NotificationCenter.default.publisher(for: .uploadStarted)) { _ in
             isUploading = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .uploadFinished)) { _ in
             isUploading = false
         }
-    }
-    
-    @ViewBuilder
-    func makeAttachmentsEditor() -> some View {
-        AttachmentsEditor(
-            inputViewModel: inputViewModel,
-            inputViewBuilder: inputViewBuilder,
-            chatTitle: chatTitle,
-            messageUseMarkdown: messageUseMarkdown,
-            orientationHandler: orientationHandler,
-            mediaPickerSelectionParameters: mediaPickerSelectionParameters,
-            availableInput: availablelInput
-//            mediaPickerMode: $inputViewModel.mediaPickerMode
-        )
-        .environmentObject(globalFocusState)
     }
 
     var mainView: some View {
@@ -508,7 +508,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 avatarSize: avatarSize,
                 tapAvatarClosure: tapAvatarClosure,
                 messageUseMarkdown: messageUseMarkdown,
-                isDisplayingMessageMenu: true,
+                isDisplayingMessageMenu: false,
                 showMessageTimeView: showMessageTimeView,
                 showAvatar: showAvatars,
                 messageFont: messageFont,
@@ -650,13 +650,6 @@ public extension ChatView {
     func setMediaPickerSelectionParameters(_ params: MediaPickerParameters) -> ChatView {
         var view = self
         view.mediaPickerSelectionParameters = params
-        return view
-    }
-
-    func orientationHandler(orientationHandler: @escaping MediaPickerOrientationHandler) -> ChatView {
-        var view = self
-        print("orientationHandler = \(orientationHandler)")
-        view.orientationHandler = orientationHandler
         return view
     }
 
@@ -817,5 +810,15 @@ public struct ChatLocalization: Hashable {
         self.waitingForNetwork = waitingForNetwork
         self.recordingText = recordingText
         self.replyToText = replyToText
+    }
+}
+
+extension SelectionParamsHolder.MediaSelectionType {
+    var toCustomFilter: CustomPhotoPicker.MediaFilter {
+        switch self {
+        case .any:    return .any
+        case .images: return .images
+        case .videos: return .videos
+        }
     }
 }
