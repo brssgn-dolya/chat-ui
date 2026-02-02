@@ -45,6 +45,13 @@ struct MessageView: View {
     enum DateArrangement {
         case hstack, vstack, overlay
     }
+    
+    private var isFileLoading: Bool {
+        message.type == .file
+        && message.attachments.isEmpty
+        && message.recording == nil
+        && (message.text == "···" || message.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
 
     var additionalMediaInset: CGFloat {
         message.attachments.count > 1 ? MessageView.horizontalAttachmentPadding * 2 : 0
@@ -143,7 +150,17 @@ struct MessageView: View {
                     }
                 }
                 
-                if !message.text.isEmpty && message.type != .document && message.type != .geo {
+                if isFileLoading {
+                    HStack(spacing: 8) {
+                        FileDownloadActivityIndicatorView(style: .medium)
+                            .frame(width: 18, height: 18)
+                        Text("Завантаження…")
+                            .font(.footnote)
+                            .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                } else if !message.text.isEmpty && message.type != .document && message.type != .geo {
                     textWithTimeView(message)
                         .font(Font(font))
                 }
