@@ -12,15 +12,15 @@ public final class NetworkConnectivityMonitor: ObservableObject {
     private let networkMonitor = NWPathMonitor()
     private let workerQueue = DispatchQueue(label: "com.sonata.network-conectivity-monitor")
 
-    @Published public private(set) var isConnected = false
+    @Published public private(set) var isNetworkAvailable: Bool? = nil
 
     public init() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
             let newStatus = path.status == .satisfied
             Task { @MainActor in
                 guard let self else { return }
-                if self.isConnected != newStatus {
-                    self.isConnected = newStatus
+                if self.isNetworkAvailable != newStatus {
+                    self.isNetworkAvailable = newStatus
                 }
             }
         }
