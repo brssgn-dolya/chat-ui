@@ -50,7 +50,7 @@ public struct MessageStatusView: View {
                 onRetry()
             } label: {
                 HStack(spacing: 4.0) {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image("icon.message.status.error")
                         .resizable()
                         .foregroundColor(resolvedColor)
                         .viewSize(MessageView.statusViewSize)
