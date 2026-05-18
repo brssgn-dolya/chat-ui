@@ -85,7 +85,7 @@ public struct MessageStatusView: View {
                         .scaledToFit()
                         .foregroundColor(resolvedColor)
                 case .received:
-                    Image("icon.message.status.delivered")
+                    Image("icon.message.status.received")
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
