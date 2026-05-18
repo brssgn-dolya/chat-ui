@@ -127,6 +127,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     var documentSelectionClosure: DocumentSelectionClosure?
     var mediaPickerSelectionParameters: MediaPickerParameters?
     
+    var emptyChatText: String = "Почни діалог з привітання"
     var chatTitle: String?
     var paginationHandler: PaginationHandler?
     var showMessageTimeView = true
@@ -372,9 +373,11 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 .resizable()
                 .scaledToFit()
                 .frame(width: 64, height: 64)
-            Text("Почни діалог з привітання")
+            Text(emptyChatText)
                 .font(.subheadline)
                 .foregroundColor(theme.colors.buttonBackground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
@@ -733,6 +736,12 @@ public extension ChatView {
     func messageUseMarkdown(messageUseMarkdown: Bool) -> ChatView {
         var view = self
         view.messageUseMarkdown = messageUseMarkdown
+        return view
+    }
+
+    func emptyChatText(_ text: String) -> ChatView {
+        var view = self
+        view.emptyChatText = text
         return view
     }
 
