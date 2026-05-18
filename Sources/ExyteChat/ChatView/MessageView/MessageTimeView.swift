@@ -9,12 +9,16 @@ struct MessageTimeText: View {
     let isCurrentUser: Bool
     var theme: ChatTheme
     var needsCapsule: Bool
+    var isDeleted: Bool = false
 
     private var resolvedColor: Color {
-        needsCapsule
-        ? .white.opacity(0.85)
-        : (isCurrentUser ? theme.colors.myMessageTime
-                         : theme.colors.frientMessageTime)
+        if isDeleted {
+            return Color(red: 176/255, green: 203/255, blue: 255/255)
+        }
+        return needsCapsule
+            ? .white.opacity(0.85)
+            : (isCurrentUser ? theme.colors.myMessageTime
+                             : theme.colors.frientMessageTime)
     }
 
     var body: some View {

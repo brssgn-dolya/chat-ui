@@ -161,13 +161,16 @@ extension MessageTextView {
     @ViewBuilder
     private func retractedMessage(attributedText: AttributedString) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            Image(systemName: "nosign")
-                .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
-                .font(.system(size: 14, weight: .semibold))
-            
+            Image("icon.message.removed")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+                .foregroundColor(Color(red: 176/255, green: 203/255, blue: 255/255))
+
             Text(attributedText)
-                .foregroundColor(inbound ? .gray : Color.white.opacity(0.85))
-                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color(red: 176/255, green: 203/255, blue: 255/255))
+                .font(.custom("Onest-Regular", size: 15))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .background(Color.clear)

@@ -190,7 +190,20 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                             .scaledToFill()
                     }
                 })
-                .background(theme.colors.mainBackground)
+                .background {
+                    VStack(spacing: 0) {
+                        theme.colors.mainBackground
+                            .frame(maxHeight: .infinity)
+                        LinearGradient(
+                            colors: [theme.colors.mainBackground,
+                                     theme.colors.inputDarkContextBackground],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 260)
+                    }
+                }
+                .background(theme.colors.inputDarkContextBackground)
                 .environmentObject(keyboardState)
 
             .fullScreenCover(isPresented: $viewModel.fullscreenAttachmentPresented) {
@@ -353,6 +366,20 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         .ignoresSafeArea(isShowingMenu ? .keyboard : [])
     }
 
+    private var emptyChatView: some View {
+        VStack(spacing: 16) {
+            Image("welcome-bird-logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
+            Text("Почни діалог з привітання")
+                .font(.subheadline)
+                .foregroundColor(theme.colors.buttonBackground)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+    }
+
     @ViewBuilder
     var listWithButton: some View {
         switch type {
@@ -360,13 +387,22 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             ZStack(alignment: .bottomTrailing) {
                 list
 
+                if sections.isEmpty {
+                    emptyChatView
+                }
+
                 if !isScrolledToBottom {
                     Button {
                         NotificationCenter.default.post(name: .onScrollToBottom, object: nil)
                     } label: {
-                        theme.images.scrollToBottom
+                        Image(systemName: "chevron.down")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
+                            .foregroundStyle(Color(red: 176/255, green: 203/255, blue: 255/255))
+                            .fontWeight(.semibold)
                             .frame(width: 40, height: 40)
-                            .circleBackground(theme.colors.friendMessage)
+                            .circleBackground(Color(red: 21/255, green: 33/255, blue: 66/255))
                     }
                     .padding(8)
                 }

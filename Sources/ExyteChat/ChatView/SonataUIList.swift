@@ -219,12 +219,16 @@ struct SonataUIList<MessageContent: View, InputView: View>: UIViewRepresentable 
                     if let hb = self.headerBuilder {
                         return AnyView(hb(section.date))
                     } else {
+                        let theme = self.outer.theme
                         return AnyView(
                             Text(section.formattedDate)
-                                .font(.system(size: 11))
-                                .padding(.top, 30)
-                                .padding(.bottom, 8)
-                                .foregroundColor(.gray)
+                                .font(.custom("Onest-Regular", size: 11))
+                                .foregroundColor(theme.colors.timeCapsuleForeground)
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 8)
+                                .background(theme.colors.timeCapsuleBackground)
+                                .clipShape(Capsule())
+                                .padding(.vertical, 8)
                         )
                     }
                 }, flipped: self.outer.type == .conversation)

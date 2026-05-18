@@ -117,7 +117,7 @@ struct MessageView: View {
                 if !message.user.isCurrentUser && (positionInUserGroup == .single || (chatType == .conversation && positionInUserGroup == .first)) && isGroup {
                     Text(message.user.name)
                         .font(.caption)
-                        .foregroundStyle(Color(uiColor: .label.withAlphaComponent(0.7)))
+                        .foregroundStyle(Color(red: 176/255, green: 203/255, blue: 255/255))
                         .offset(x: 8.0)
                 }
                 
@@ -364,13 +364,17 @@ public extension View {
     func bubbleBackground(_ message: Message, theme: ChatTheme, isReply: Bool = false) -> some View {
         let radius: CGFloat = !message.attachments.isEmpty ? 12 : 20
         let additionalMediaInset: CGFloat = message.attachments.count > 1 ? 2 : 0
+        let deletedBubbleColor = Color(red: 24/255, green: 38/255, blue: 74/255)
+        let bubbleColor: Color = message.isDeleted
+            ? deletedBubbleColor
+            : (message.user.isCurrentUser ? theme.colors.myMessage : theme.colors.friendMessage)
         self
             .frame(width: message.attachments.isEmpty ? nil : MessageView.widthWithMedia + additionalMediaInset)
             .foregroundColor(message.user.isCurrentUser ? (isReply ? theme.colors.textMyReply : theme.colors.textDarkContext) : theme.colors.textLightContext)
             .background {
                 if isReply || !message.text.isEmpty || message.recording != nil {
                     RoundedRectangle(cornerRadius: radius)
-                        .foregroundColor(message.user.isCurrentUser ? theme.colors.myMessage : theme.colors.friendMessage)
+                        .foregroundColor(bubbleColor)
                         .opacity(isReply ? 0.5 : 1)
                 }
             }
@@ -455,14 +459,16 @@ extension MessageView {
                 MessageTimeText(
                     text: message.time,
                     isCurrentUser: message.user.isCurrentUser,
-                    theme: theme, needsCapsule: needsCapsule
+                    theme: theme, needsCapsule: needsCapsule,
+                    isDeleted: message.isDeleted
                 )
             }
         } else {
             MessageTimeText(
                 text: message.time,
                 isCurrentUser: message.user.isCurrentUser,
-                theme: theme, needsCapsule: needsCapsule
+                theme: theme, needsCapsule: needsCapsule,
+                isDeleted: message.isDeleted
             )
         }
     }
@@ -483,7 +489,8 @@ extension MessageView {
             MessageTimeText(
                 text: message.time,
                 isCurrentUser: message.user.isCurrentUser,
-                theme: theme, needsCapsule: needsCapsule
+                theme: theme, needsCapsule: needsCapsule,
+                isDeleted: message.isDeleted
             )
             .alignmentGuide(.lastTextBaseline) { d in d[.lastTextBaseline] }
         }

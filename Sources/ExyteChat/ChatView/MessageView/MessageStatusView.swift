@@ -30,11 +30,11 @@ public struct MessageStatusView: View {
         case .sending:
             return colorSet?.sending ?? statusColor
         case .sent:
-            return colorSet?.sent ?? statusColor
+            return colorSet?.sent ?? Color(red: 130/255, green: 170/255, blue: 255/255)
         case .received:
-            return colorSet?.received ?? statusColor
+            return colorSet?.received ?? Color(red: 130/255, green: 170/255, blue: 255/255)
         case .read:
-            return colorSet?.read ?? .cyan
+            return colorSet?.read ?? Color(red: 232/255, green: 240/255, blue: 255/255)
         case .error:
             return colorSet?.error ?? theme.colors.errorStatus
         }
@@ -79,17 +79,22 @@ public struct MessageStatusView: View {
                             .foregroundStyle(resolvedColor)
                     }
                 case .sent:
-                    theme.images.message.checkmark
+                    Image("icon.message.status.sent")
+                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
                         .foregroundColor(resolvedColor)
                 case .received:
-                    theme.images.message.checkmarks
+                    Image("icon.message.status.delivered")
+                        .renderingMode(.template)
                         .resizable()
+                        .scaledToFit()
                         .foregroundColor(resolvedColor)
                 case .read:
-                    theme.images.message.checkmarks
+                    Image("icon.message.status.read")
+                        .renderingMode(.template)
                         .resizable()
+                        .scaledToFit()
                         .foregroundColor(resolvedColor)
                 case .error:
                     EmptyView()
