@@ -28,7 +28,7 @@ public struct MessageStatusView: View {
     private var resolvedColor: Color {
         switch status {
         case .sending:
-            return colorSet?.sending ?? statusColor
+            return colorSet?.sending ?? (needsCapsule ? .white.opacity(0.85) : Color("blue300"))
         case .sent:
             return colorSet?.sent ?? Color(red: 130/255, green: 170/255, blue: 255/255)
         case .received:
